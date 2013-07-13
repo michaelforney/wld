@@ -49,6 +49,12 @@ struct wld_font_context * wld_font_create_context()
     return NULL;
 }
 
+void wld_font_destroy_context(struct wld_font_context * context)
+{
+    FT_Done_FreeType(context->library);
+    free(context);
+}
+
 struct wld_font * wld_font_open_name(struct wld_font_context * context,
                                      const char * name)
 {
