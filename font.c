@@ -36,7 +36,7 @@ struct wld_font_context * wld_font_create_context()
 
     if (FT_Init_FreeType(&context->library) != 0)
     {
-        printf("failed to initialize ft library\n");
+        DEBUG("Failed to initialize FreeType library\n");
 
         goto error1;
     }
@@ -55,7 +55,7 @@ struct wld_font * wld_font_open_name(struct wld_font_context * context,
     FcPattern * pattern, * match;
     FcResult result;
 
-    printf("name: %s\n", name);
+    DEBUG("Opening font with name: %s\n", name);
 
     pattern = FcNameParse((const FcChar8 *) name);
     FcConfigSubstitute(NULL, pattern, FcMatchPattern);

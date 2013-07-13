@@ -97,14 +97,12 @@ static const struct wld_drm_interface * find_drm_interface(int fd)
     path_part = path + strlen(path);
 
     strcpy(path_part, "device/vendor");
-    puts(path);
     file = fopen(path, "r");
     fgets(id, sizeof id, file);
     fclose(file);
     vendor_id = strtoul(id, NULL, 0);
 
     strcpy(path_part, "device/device");
-    puts(path);
     file = fopen(path, "r");
     fgets(id, sizeof id, file);
     fclose(file);
