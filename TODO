@@ -1,0 +1,7 @@
+TODO
+====
+- Non-monochrome text rendering
+    - Probably requires 3d engine blending for intel backend
+- Optional damage tracking and handling for Wayland drawables
+- Add doxygen documentation
+
