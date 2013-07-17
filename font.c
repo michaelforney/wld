@@ -213,7 +213,7 @@ void wld_font_text_extents_utf8_n(struct wld_font * font_base,
 
     extents->advance = 0;
 
-    while ((ret = FcUtf8ToUcs4((FcChar8 *) text, &c, length) > 0))
+    while ((ret = FcUtf8ToUcs4((FcChar8 *) text, &c, length) > 0) && c != '\0')
     {
         length -= ret;
         text += ret;
