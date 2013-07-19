@@ -177,12 +177,22 @@ void intel_draw_text_utf8(struct wld_drawable * drawable,
             byte += (glyph->bitmap.width + 7) / 8;
         }
 
-        xy_text_immediate_blt(&intel->context->batch, intel->bo,
-                              x + glyph->x, y + glyph->y,
-                              x + glyph->x + glyph->bitmap.width,
-                              y + glyph->y + glyph->bitmap.rows,
-                              (byte - immediate + 3) / 4,
-                              (uint32_t *) immediate);
+      retry:
+        ret = xy_text_immediate_blt(&intel->context->batch, intel->bo,
+                                    x + glyph->x, y + glyph->y,
+                                    x + glyph->x + glyph->bitmap.width,
+                                    y + glyph->y + glyph->bitmap.rows,
+                                    (byte - immediate + 3) / 4,
+                                    (uint32_t *) immediate);
+
+        if (ret == INTEL_BATCH_NO_SPACE)
+        {
+            intel_batch_flush(&intel->context->batch);
+            xy_setup_blt(&intel->context->batch, true,
+                         INTEL_BLT_RASTER_OPERATION_SRC, 0, color,
+                         intel->bo, intel->drm.pitch);
+            goto retry;
+        }
 
       advance:
         x += glyph->advance;
