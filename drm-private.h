@@ -46,7 +46,7 @@ struct drm_drawable
     struct wld_drawable base;
 
     unsigned long pitch;
-    uint32_t name;
+    int fd;
 };
 
 _Static_assert(offsetof(struct drm_drawable, base) == 0,

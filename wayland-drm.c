@@ -41,6 +41,7 @@ struct wld_drm_context
     struct wl_drm * wl;
     struct wl_registry * registry;
     struct wl_array formats;
+    uint32_t capabilities;
     int fd;
     bool authenticated;
 
@@ -55,6 +56,8 @@ static void registry_global(void * data, struct wl_registry * registry,
 static void drm_device(void * data, struct wl_drm * wl, const char * name);
 static void drm_format(void * data, struct wl_drm * wl, uint32_t format);
 static void drm_authenticated(void * data, struct wl_drm * wl);
+static void drm_capabilities(void * data, struct wl_drm * wl,
+                             uint32_t capabilities);
 
 const struct wld_wayland_interface wayland_drm_interface = {
     .create_context = (wayland_create_context_func_t) &wld_drm_create_context,
@@ -70,7 +73,8 @@ const static struct wl_registry_listener registry_listener = {
 const static struct wl_drm_listener drm_listener = {
     .device = &drm_device,
     .format = &drm_format,
-    .authenticated = &drm_authenticated
+    .authenticated = &drm_authenticated,
+    .capabilities = &drm_capabilities
 };
 
 const static struct wld_drm_interface * drm_interfaces[] = {
@@ -128,6 +132,7 @@ struct wld_drm_context * wld_drm_create_context(struct wl_display * display,
 
     drm->wl = NULL;
     drm->fd = -1;
+    drm->capabilities = 0;
     wl_array_init(&drm->formats);
 
     drm->registry = wl_display_get_registry(display);
@@ -149,8 +154,14 @@ struct wld_drm_context * wld_drm_create_context(struct wl_display * display,
 
     wl_drm_add_listener(drm->wl, &drm_listener, drm);
 
-    /* Wait for DRM device. */
+    /* Wait for DRM capabilities and device. */
     wayland_roundtrip(display, queue);
+
+    if (!(drm->capabilities & WL_DRM_CAPABILITY_PRIME))
+    {
+        DEBUG("No PRIME support\n");
+        goto error3;
+    }
 
     if (drm->fd == -1)
     {
@@ -244,10 +255,12 @@ struct wld_drawable * wld_drm_create_drawable(struct wld_drm_context * drm,
     drawable1 = (void *) drm->interface->create_drawable(drm->context,
                                                          width, height, format);
 
-    buffer0 = wl_drm_create_buffer(drm->wl, drawable0->name, width, height,
-                                   drawable0->pitch, format);
-    buffer1 = wl_drm_create_buffer(drm->wl, drawable1->name, width, height,
-                                   drawable1->pitch, format);
+    buffer0 = wl_drm_create_prime_buffer(drm->wl, drawable0->fd, width, height,
+                                         format, 0, drawable0->pitch,
+                                         0, 0, 0, 0);
+    buffer1 = wl_drm_create_prime_buffer(drm->wl, drawable1->fd, width, height,
+                                         format, 0, drawable1->pitch,
+                                         0, 0, 0, 0);
 
     return wld_wayland_create_drawable_from_buffers(surface,
                                                     buffer0, &drawable0->base,
@@ -259,8 +272,8 @@ void registry_global(void * data, struct wl_registry * registry, uint32_t name,
 {
     struct wld_drm_context * drm = data;
 
-    if (strcmp(interface, "wl_drm") == 0)
-        drm->wl = wl_registry_bind(registry, name, &wl_drm_interface, 1);
+    if (strcmp(interface, "wl_drm") == 0 && version >= 2)
+        drm->wl = wl_registry_bind(registry, name, &wl_drm_interface, 2);
 }
 
 void drm_device(void * data, struct wl_drm * wl, const char * name)
@@ -292,5 +305,12 @@ void drm_authenticated(void * data, struct wl_drm * wl)
     struct wld_drm_context * drm = data;
 
     drm->authenticated = true;
+}
+
+void drm_capabilities(void * data, struct wl_drm * wl, uint32_t capabilities)
+{
+    struct wld_drm_context * drm = data;
+
+    drm->capabilities = capabilities;
 }
 

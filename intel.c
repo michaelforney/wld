@@ -25,6 +25,7 @@
 #include "drm-private.h"
 #include "wld-private.h"
 
+#include <unistd.h>
 #include <intelbatch/batch.h>
 #include <intelbatch/blt.h>
 #include <intelbatch/mi.h>
@@ -118,8 +119,7 @@ struct wld_drawable * wld_intel_create_drawable
     intel->bo = drm_intel_bo_alloc_tiled(context->bufmgr, "drawable",
                                          width, height, 4,
                                          &tiling_mode, &intel->drm.pitch, 0);
-
-    drm_intel_bo_flink(intel->bo, &intel->drm.name);
+    drm_intel_bo_gem_export_to_prime(intel->bo, &intel->drm.fd);
 
     return &intel->drm.base;
 }
@@ -210,6 +210,7 @@ void intel_destroy(struct wld_drawable * drawable)
 {
     struct intel_drawable * intel = (void *) drawable;
     drm_intel_bo_unreference(intel->bo);
+    close(intel->drm.fd);
     free(intel);
 }
 
