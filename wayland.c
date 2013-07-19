@@ -33,6 +33,7 @@
 
 struct wld_wayland_context
 {
+    struct wl_event_queue * queue;
     const struct wld_wayland_interface * interface;
     void * context;
 };
@@ -100,6 +101,7 @@ struct wld_wayland_context * wld_wayland_create_context
     if (!wayland)
         goto error0;
 
+    wayland->queue = wl_display_create_queue(display);
     wayland->context = NULL;
     wayland->interface = NULL;
 
@@ -110,7 +112,10 @@ struct wld_wayland_context * wld_wayland_create_context
         if (interfaces_tried[id] || !interfaces[id])
             continue;
 
-        if ((wayland->context = interfaces[id]->create_context(display)))
+        wayland->context
+            = interfaces[id]->create_context(display, wayland->queue);
+
+        if (wayland->context)
         {
             wayland->interface = interfaces[id];
             break;
@@ -130,7 +135,10 @@ struct wld_wayland_context * wld_wayland_create_context
             if (interfaces_tried[id] || !interfaces[id])
                 continue;
 
-            if ((wayland->context = interfaces[id]->create_context(display)))
+            wayland->context
+                = interfaces[id]->create_context(display, wayland->queue);
+
+            if (wayland->context)
             {
                 wayland->interface = interfaces[id];
                 break;
@@ -140,12 +148,14 @@ struct wld_wayland_context * wld_wayland_create_context
 
     if (!wayland->context)
     {
-        DEBUG("Could not initialize any of the specified interfaces");
-        goto error1;
+        DEBUG("Could not initialize any of the specified interfaces\n");
+        goto error2;
     }
 
     return wayland;
 
+  error2:
+    wl_event_queue_destroy(wayland->queue);
   error1:
     free(wayland);
   error0:

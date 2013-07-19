@@ -40,7 +40,6 @@ struct wld_drm_context
 {
     struct wl_drm * wl;
     struct wl_registry * registry;
-    struct wl_event_queue * queue;
     struct wl_array formats;
     int fd;
     bool authenticated;
@@ -117,59 +116,55 @@ static const struct wld_drm_interface * find_drm_interface(int fd)
     return NULL;
 }
 
-struct wld_drm_context * wld_drm_create_context(struct wl_display * display)
+struct wld_drm_context * wld_drm_create_context(struct wl_display * display,
+                                                struct wl_event_queue * queue)
 {
     struct wld_drm_context * drm;
 
     drm = malloc(sizeof *drm);
 
     if (!drm)
-        return 0;
+        goto error0;
 
     drm->wl = NULL;
     drm->fd = -1;
     wl_array_init(&drm->formats);
 
-    drm->queue = wl_display_create_queue(display);
-
-    if (!drm->queue)
-        goto error2;
-
     drm->registry = wl_display_get_registry(display);
 
     if (!drm->registry)
-        goto error3;
+        goto error1;
 
     wl_registry_add_listener(drm->registry, &registry_listener, drm);
-    wl_proxy_set_queue((struct wl_proxy *) drm->registry, drm->queue);
+    wl_proxy_set_queue((struct wl_proxy *) drm->registry, queue);
 
     /* Wait for wl_drm global. */
-    wayland_roundtrip(display, drm->queue);
+    wayland_roundtrip(display, queue);
 
     if (!drm->wl)
     {
         DEBUG("No wl_drm global\n");
-        goto error3;
+        goto error2;
     }
 
     wl_drm_add_listener(drm->wl, &drm_listener, drm);
 
     /* Wait for DRM device. */
-    wayland_roundtrip(display, drm->queue);
+    wayland_roundtrip(display, queue);
 
     if (drm->fd == -1)
     {
         DEBUG("No DRM device\n");
-        goto error4;
+        goto error3;
     }
 
     /* Wait for DRM authentication. */
-    wayland_roundtrip(display, drm->queue);
+    wayland_roundtrip(display, queue);
 
     if (!drm->authenticated)
     {
         DEBUG("DRM authentication failed\n");
-        goto error5;
+        goto error4;
     }
 
     drm->interface = find_drm_interface(drm->fd);
@@ -177,7 +172,7 @@ struct wld_drm_context * wld_drm_create_context(struct wl_display * display)
     if (!drm->interface)
     {
         DEBUG("Couldn't find drawable implementation for DRM device\n");
-        goto error5;
+        goto error4;
     }
 
     drm->context = drm->interface->create_context(drm->fd);
@@ -185,19 +180,17 @@ struct wld_drm_context * wld_drm_create_context(struct wl_display * display)
     if (!drm->context)
     {
         DEBUG("Couldn't create context for DRM drawable implementation\n");
-        goto error5;
+        goto error4;
     }
 
     return drm;
 
-  error5:
-    close(drm->fd);
   error4:
-    wl_drm_destroy(drm->wl);
+    close(drm->fd);
   error3:
-    wl_registry_destroy(drm->registry);
+    wl_drm_destroy(drm->wl);
   error2:
-    wl_event_queue_destroy(drm->queue);
+    wl_registry_destroy(drm->registry);
   error1:
     wl_array_release(&drm->formats);
     free(drm);
@@ -211,7 +204,6 @@ void wld_drm_destroy_context(struct wld_drm_context * drm)
     close(drm->fd);
     wl_drm_destroy(drm->wl);
     wl_registry_destroy(drm->registry);
-    wl_event_queue_destroy(drm->queue);
     wl_array_release(&drm->formats);
 
     free(drm);
@@ -271,10 +263,7 @@ void registry_global(void * data, struct wl_registry * registry, uint32_t name,
     struct wld_drm_context * drm = data;
 
     if (strcmp(interface, "wl_drm") == 0)
-    {
         drm->wl = wl_registry_bind(registry, name, &wl_drm_interface, 1);
-        wl_proxy_set_queue((struct wl_proxy *) drm->wl, drm->queue);
-    }
 }
 
 void drm_device(void * data, struct wl_drm * wl, const char * name)

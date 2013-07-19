@@ -32,13 +32,15 @@ struct wld_drawable;
 enum wld_format;
 
 struct wl_display;
+struct wl_event_queue;
 struct wl_surface;
 
 /**
  * Create a new drawable context which creates Wayland buffers through the
  * wl_shm interface, back by Pixman drawables.
  */
-struct wld_shm_context * wld_shm_create_context(struct wl_display * display);
+struct wld_shm_context * wld_shm_create_context(struct wl_display * display,
+                                                struct wl_event_queue * queue);
 
 /**
  * Destroy an SHM context.

@@ -37,7 +37,6 @@
 struct wld_shm_context
 {
     struct wl_registry * registry;
-    struct wl_event_queue * queue;
     struct wl_shm * wl;
     struct wl_array formats;
 
@@ -78,7 +77,8 @@ static inline uint32_t wayland_format(enum wld_format format)
     }
 }
 
-struct wld_shm_context * wld_shm_create_context(struct wl_display * display)
+struct wld_shm_context * wld_shm_create_context(struct wl_display * display,
+                                                struct wl_event_queue * queue)
 {
     struct wld_shm_context * shm;
 
@@ -90,15 +90,14 @@ struct wld_shm_context * wld_shm_create_context(struct wl_display * display)
     shm->wl = NULL;
     wl_array_init(&shm->formats);
 
-    shm->queue = wl_display_create_queue(display);
     shm->registry = wl_display_get_registry(display);
     wl_registry_add_listener(shm->registry, &registry_listener, shm);
-    wl_proxy_set_queue((struct wl_proxy *) shm->registry, shm->queue);
+    wl_proxy_set_queue((struct wl_proxy *) shm->registry, queue);
 
     shm->pixman_context = wld_pixman_create_context();
 
     /* Wait for wl_shm global. */
-    wayland_roundtrip(display, shm->queue);
+    wayland_roundtrip(display, queue);
 
     if (!shm->wl)
     {
@@ -109,13 +108,12 @@ struct wld_shm_context * wld_shm_create_context(struct wl_display * display)
     wl_shm_add_listener(shm->wl, &shm_listener, shm);
 
     /* Wait for SHM formats. */
-    wayland_roundtrip(display, shm->queue);
+    wayland_roundtrip(display, queue);
 
     return shm;
 
   error2:
     wl_registry_destroy(shm->registry);
-    wl_event_queue_destroy(shm->queue);
   error1:
     wl_array_release(&shm->formats);
     free(shm);
@@ -128,7 +126,6 @@ void wld_shm_destroy_context(struct wld_shm_context * shm)
     wld_pixman_destroy_context(shm->pixman_context);
     wl_shm_destroy(shm->wl);
     wl_registry_destroy(shm->registry);
-    wl_event_queue_destroy(shm->queue);
     wl_array_release(&shm->formats);
 
     free(shm);
@@ -206,10 +203,7 @@ void registry_global(void * data, struct wl_registry * registry, uint32_t name,
     struct wld_shm_context * shm = data;
 
     if (strcmp(interface, "wl_shm") == 0)
-    {
         shm->wl = wl_registry_bind(registry, name, &wl_shm_interface, 1);
-        wl_proxy_set_queue((struct wl_proxy *) shm->wl, shm->queue);
-    }
 }
 
 void shm_format(void * data, struct wl_shm * wl, uint32_t format)

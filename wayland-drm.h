@@ -32,13 +32,15 @@ struct wld_drawable;
 enum wld_format;
 
 struct wl_display;
+struct wl_event_queue;
 struct wl_surface;
 
 /**
  * Create a new drawable context which creates Wayland buffers through the
  * wl_drm interface, backed by hardware specific drawable implementations.
  */
-struct wld_drm_context * wld_drm_create_context(struct wl_display * display);
+struct wld_drm_context * wld_drm_create_context(struct wl_display * display,
+                                                struct wl_event_queue * queue);
 
 /**
  * Destroy a DRM context.

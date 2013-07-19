@@ -32,7 +32,8 @@ enum wld_format format;
 struct wl_display;
 struct wl_event_queue;
 
-typedef void * (* wayland_create_context_func_t)(struct wl_display * display);
+typedef void * (* wayland_create_context_func_t)(struct wl_display * display,
+                                                 struct wl_event_queue * queue);
 typedef void (* wayland_destroy_context_func_t)(void * context);
 typedef struct wld_drawable * (* wayland_create_drawable_func_t)
     (void * context, struct wl_surface * surface,
