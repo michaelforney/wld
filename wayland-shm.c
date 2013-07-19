@@ -85,12 +85,19 @@ struct wld_shm_context * wld_shm_create_context(struct wl_display * display,
     shm = malloc(sizeof *shm);
 
     if (!shm)
-        return 0;
+        goto error0;
 
     shm->wl = NULL;
     wl_array_init(&shm->formats);
 
     shm->registry = wl_display_get_registry(display);
+
+    if (!shm->registry)
+    {
+        DEBUG("Couldn't get registry\n");
+        goto error1;
+    }
+
     wl_registry_add_listener(shm->registry, &registry_listener, shm);
     wl_proxy_set_queue((struct wl_proxy *) shm->registry, queue);
 
