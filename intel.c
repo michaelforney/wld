@@ -150,10 +150,6 @@ void intel_draw_text_utf8(struct wld_drawable * drawable,
     uint8_t * byte;
     uint8_t byte_index;
 
-    /* For some reason the text doesn't render if we don't flush the command
-     * buffer first. */
-    intel_batch_flush(&intel->context->batch);
-
     xy_setup_blt(&intel->context->batch, true, INTEL_BLT_RASTER_OPERATION_SRC,
                  0, color, intel->bo, intel->drm.pitch);
 
