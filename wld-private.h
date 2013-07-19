@@ -38,10 +38,10 @@
 
 #define ARRAY_LENGTH(array) (sizeof (array) / sizeof (array)[0])
 #if ENABLE_DEBUG
-#   define DEBUG(format, args...) \
-        fprintf(stderr, "# %s: " format, __func__, ## args)
+#   define DEBUG(format, ...) \
+        fprintf(stderr, "# %s: " format, __func__, ## __VA_ARGS__)
 #else
-#   define DEBUG(format, args...)
+#   define DEBUG(format, ...)
 #endif
 
 struct wld_font_context
