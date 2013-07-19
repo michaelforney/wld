@@ -261,6 +261,11 @@ struct wld_drawable * wld_drm_create_drawable(struct wld_drm_context * drm,
     return &drawable->base;
 }
 
+int wld_drm_get_prime_fd(struct wld_drawable * drawable)
+{
+    return ((struct drm_drawable *)(void *) drawable)->fd;
+}
+
 void registry_global(void * data, struct wl_registry * registry, uint32_t name,
                      const char * interface, uint32_t version)
 {

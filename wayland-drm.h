@@ -68,5 +68,12 @@ struct wld_drawable * wld_drm_create_drawable(struct wld_drm_context * context,
                                               enum wld_format format,
                                               struct wl_buffer ** buffer);
 
+/**
+ * Get a PRIME file descriptor for this DRM drawable.
+ *
+ * @note The drawable must have been created with wld_drm_create_drawable
+ */
+int wld_drm_get_prime_fd(struct wld_drawable * drawable);
+
 #endif
 
