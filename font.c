@@ -152,7 +152,7 @@ struct wld_font * wld_font_open_pattern(struct wld_font_context * context,
 
 void wld_font_close(struct wld_font * font_base)
 {
-    struct font * font = container_of(font_base, typeof(*font), base);
+    struct font * font = (void *) font_base;
 
     FT_Done_Face(font->face);
     free(font);
@@ -194,7 +194,7 @@ bool font_ensure_glyph(struct font * font, FT_UInt glyph_index)
 
 bool wld_font_ensure_char(struct wld_font * font_base, uint32_t character)
 {
-    struct font * font = container_of(font_base, typeof(*font), base);
+    struct font * font = (void *) font_base;
     FT_UInt glyph_index;
 
     glyph_index = FT_Get_Char_Index(font->face, character);
@@ -206,7 +206,7 @@ void wld_font_text_extents_utf8_n(struct wld_font * font_base,
                                   const char * text, int32_t length,
                                   struct wld_extents * extents)
 {
-    struct font * font = container_of(font_base, typeof(*font), base);
+    struct font * font = (void *) font_base;
     int ret;
     uint32_t c;
     FT_UInt glyph_index;

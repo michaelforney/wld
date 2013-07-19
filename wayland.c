@@ -50,6 +50,9 @@ struct wayland_drawable
     uint8_t front_buffer;
 };
 
+_Static_assert(offsetof(struct wayland_drawable, base) == 0,
+               "Non-zero offset of base field");
+
 static void callback_done(void * data, struct wl_callback * callback,
                           uint32_t msecs);
 
@@ -239,9 +242,8 @@ void callback_done(void * data, struct wl_callback * callback, uint32_t msecs)
 void wayland_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
                             pixman_rectangle16_t * rectangle)
 {
-    struct wayland_drawable * wayland;
+    struct wayland_drawable * wayland = (void *) drawable;
 
-    wayland = container_of(drawable, typeof(*wayland), base);
     wld_fill_rectangle(BACKBUF(wayland).drawable, color, rectangle);
 }
 
@@ -249,9 +251,8 @@ void wayland_fill_rectangles(struct wld_drawable * drawable, uint32_t color,
                              pixman_rectangle16_t * rectangles,
                              uint32_t num_rectangles)
 {
-    struct wayland_drawable * wayland;
+    struct wayland_drawable * wayland = (void *) drawable;
 
-    wayland = container_of(drawable, typeof(*wayland), base);
     wld_fill_rectangles(BACKBUF(wayland).drawable, color,
                         rectangles, num_rectangles);
 }
@@ -261,18 +262,15 @@ void wayland_draw_text_utf8(struct wld_drawable * drawable,
                             int32_t x, int32_t y,
                             const char * text, int32_t length)
 {
-    struct wayland_drawable * wayland;
+    struct wayland_drawable * wayland = (void *) drawable;
 
-    wayland = container_of(drawable, typeof(*wayland), base);
     wld_draw_text_utf8_n(BACKBUF(wayland).drawable, &font->base, color,
                          x, y, text, length);
 }
 
 void wayland_flush(struct wld_drawable * drawable)
 {
-    struct wayland_drawable * wayland;
-
-    wayland = container_of(drawable, typeof(*wayland), base);
+    struct wayland_drawable * wayland = (void *) drawable;
 
     wld_flush(BACKBUF(wayland).drawable);
     wl_surface_attach(wayland->surface, BACKBUF(wayland).buffer, 0, 0);
@@ -282,9 +280,8 @@ void wayland_flush(struct wld_drawable * drawable)
 
 void wayland_destroy(struct wld_drawable * drawable)
 {
-    struct wayland_drawable * wayland;
+    struct wayland_drawable * wayland = (void *) drawable;
 
-    wayland = container_of(drawable, typeof(*wayland), base);
     wl_buffer_destroy(wayland->buffers[0].buffer);
     wl_buffer_destroy(wayland->buffers[1].buffer);
     wld_destroy_drawable(wayland->buffers[0].drawable);

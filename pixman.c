@@ -43,6 +43,9 @@ struct pixman_drawable
     struct wld_pixman_context * context;
 };
 
+_Static_assert(offsetof(struct pixman_drawable, base) == 0,
+               "Non-zero offset of base field");
+
 static void pixman_fill_rectangles(struct wld_drawable * drawable,
                                    uint32_t color,
                                    pixman_rectangle16_t * rectangles,
@@ -130,10 +133,9 @@ static void pixman_fill_rectangles(struct wld_drawable * drawable,
                                    pixman_rectangle16_t * rectangles,
                                    uint32_t num_rectangles)
 {
-    struct pixman_drawable * pixman;
+    struct pixman_drawable * pixman = (void *) drawable;
     pixman_color_t pixman_color = PIXMAN_COLOR(color);
 
-    pixman = container_of(drawable, typeof(*pixman), base);
     pixman_image_fill_rectangles(PIXMAN_OP_SRC, pixman->image, &pixman_color,
                                  num_rectangles, rectangles);
 }
@@ -152,7 +154,7 @@ static void pixman_draw_text_utf8(struct wld_drawable * drawable,
                                   int32_t x, int32_t y,
                                   const char * text, int32_t length)
 {
-    struct pixman_drawable * pixman;
+    struct pixman_drawable * pixman = (void *) drawable;
     int ret;
     uint32_t c;
     struct glyph * glyph;
@@ -162,7 +164,6 @@ static void pixman_draw_text_utf8(struct wld_drawable * drawable,
     pixman_color_t pixman_color = PIXMAN_COLOR(color);
     pixman_image_t * solid;
 
-    pixman = container_of(drawable, typeof(*pixman), base);
     solid = pixman_image_create_solid_fill(&pixman_color);
 
     while ((ret = FcUtf8ToUcs4((FcChar8 *) text, &c, length)) > 0 && c != '\0')
@@ -239,9 +240,8 @@ static void pixman_draw_text_utf8(struct wld_drawable * drawable,
 
 void pixman_destroy(struct wld_drawable * drawable)
 {
-    struct pixman_drawable * pixman;
+    struct pixman_drawable * pixman = (void *) drawable;
 
-    pixman = container_of(drawable, typeof(*pixman), base);
     pixman_image_unref(pixman->image);
     free(pixman);
 }

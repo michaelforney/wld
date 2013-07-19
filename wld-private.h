@@ -36,11 +36,6 @@
 #   define offsetof __builtin_offsetof
 #endif
 
-#define container_of(ptr, type, member) ({                                  \
-    const typeof(((type *) 0)->member) *__mptr = (ptr);                     \
-    ((type *) ((uintptr_t) __mptr - offsetof(type, member)));               \
-})
-
 #define ARRAY_LENGTH(array) (sizeof (array) / sizeof (array)[0])
 #if ENABLE_DEBUG
 #   define DEBUG(format, args...) \
@@ -77,6 +72,9 @@ struct font
     FT_Face face;
     struct glyph ** glyphs;
 };
+
+_Static_assert(offsetof(struct font, base) == 0,
+               "Non-zero offset of base field");
 
 struct wld_draw_interface
 {

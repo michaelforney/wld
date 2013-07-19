@@ -60,7 +60,7 @@ void wld_draw_text_utf8_n(struct wld_drawable * drawable,
                           int32_t x, int32_t y,
                           const char * text, int32_t length)
 {
-    struct font * font = container_of(font_base, typeof(*font), base);
+    struct font * font = (void *) font_base;
 
     drawable->interface->draw_text_utf8(drawable, font, color, x, y,
                                         text, length);

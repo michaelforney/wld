@@ -45,6 +45,9 @@ struct intel_drawable
     drm_intel_bo * bo;
 };
 
+_Static_assert(offsetof(struct intel_drawable, drm) == 0,
+               "Non-zero offset of base field");
+
 static void intel_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
                           pixman_rectangle16_t * rectangle);
 static void intel_draw_text_utf8(struct wld_drawable * drawable,
@@ -124,9 +127,8 @@ struct wld_drawable * wld_intel_create_drawable
 void intel_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
                           pixman_rectangle16_t * rectangle)
 {
-    struct intel_drawable * intel;
+    struct intel_drawable * intel = (void *) drawable;
 
-    intel = container_of(drawable, typeof(*intel), drm.base);
     xy_color_blt(&intel->context->batch, intel->bo, intel->drm.pitch,
                  rectangle->x, rectangle->y,
                  rectangle->x + rectangle->width,
@@ -138,7 +140,7 @@ void intel_draw_text_utf8(struct wld_drawable * drawable,
                           int32_t x, int32_t y,
                           const char * text, int32_t length)
 {
-    struct intel_drawable * intel;
+    struct intel_drawable * intel = (void *) drawable;
     int ret;
     struct glyph * glyph;
     uint32_t row;
@@ -147,8 +149,6 @@ void intel_draw_text_utf8(struct wld_drawable * drawable,
     uint8_t immediate[512];
     uint8_t * byte;
     uint8_t byte_index;
-
-    intel = container_of(drawable, typeof(*intel), drm.base);
 
     /* For some reason the text doesn't render if we don't flush the command
      * buffer first. */
@@ -195,17 +195,14 @@ void intel_draw_text_utf8(struct wld_drawable * drawable,
 
 void intel_flush(struct wld_drawable * drawable)
 {
-    struct intel_drawable * intel;
+    struct intel_drawable * intel = (void *) drawable;
 
-    intel = container_of(drawable, typeof(*intel), drm.base);
     intel_batch_flush(&intel->context->batch);
 }
 
 void intel_destroy(struct wld_drawable * drawable)
 {
-    struct intel_drawable * intel;
-
-    intel = container_of(drawable, typeof(*intel), drm.base);
+    struct intel_drawable * intel = (void *) drawable;
     drm_intel_bo_unreference(intel->bo);
     free(intel);
 }
