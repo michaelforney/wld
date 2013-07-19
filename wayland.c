@@ -41,6 +41,8 @@ struct wld_wayland_context
 struct wayland_drawable
 {
     struct wld_drawable base;
+
+    struct wld_wayland_context * context;
     struct wl_surface * surface;
     struct
     {
@@ -175,20 +177,32 @@ struct wld_drawable * wld_wayland_create_drawable
     (struct wld_wayland_context * context, struct wl_surface * surface,
      uint32_t width, uint32_t height, enum wld_format format)
 {
-    return context->interface->create_drawable(context->context, surface,
-                                               width, height, format);
+    struct wayland_drawable * wayland;
+    struct wld_drawable * drawables[2];
+    struct wl_buffer * buffers[2];
+
+    drawables[0] = context->interface->create_drawable
+        (context->context, width, height, format, &buffers[0]);
+    drawables[1] = context->interface->create_drawable
+        (context->context, width, height, format, &buffers[1]);
+
+    wayland = (void *) wld_wayland_create_drawable_from_buffers
+        (surface, buffers, drawables);
+
+    wayland->context = context;
+
+    return &wayland->base;
 }
 
 struct wld_drawable * wld_wayland_create_drawable_from_buffers
     (struct wl_surface * surface,
-     struct wl_buffer * buffer0, struct wld_drawable * drawable0,
-     struct wl_buffer * buffer1, struct wld_drawable * drawable1)
+     struct wl_buffer * buffers[], struct wld_drawable * drawables[])
 {
     struct wayland_drawable * wayland;
     uint32_t * data;
 
-    if (drawable0->width != drawable1->width
-        || drawable0->height != drawable1->height)
+    if (drawables[0]->width != drawables[1]->width
+        || drawables[0]->height != drawables[1]->height)
     {
         DEBUG("Drawables aren't the same dimensions\n");
         return NULL;
@@ -199,16 +213,17 @@ struct wld_drawable * wld_wayland_create_drawable_from_buffers
     if (!wayland)
         return NULL;
 
-    wayland->buffers[0].buffer = buffer0;
-    wayland->buffers[1].buffer = buffer1;
-    wayland->buffers[0].drawable = drawable0;
-    wayland->buffers[1].drawable = drawable1;
+    wayland->context = NULL;
+    wayland->buffers[0].buffer = buffers[0];
+    wayland->buffers[1].buffer = buffers[1];
+    wayland->buffers[0].drawable = drawables[0];
+    wayland->buffers[1].drawable = drawables[1];
     wayland->front_buffer = 0;
     wayland->surface = surface;
 
     wayland->base.interface = &wayland_draw;
-    wayland->base.width = drawable0->width;
-    wayland->base.height = drawable0->height;
+    wayland->base.width = drawables[0]->width;
+    wayland->base.height = drawables[0]->height;
 
     return &wayland->base;
 }

@@ -81,13 +81,14 @@ struct wld_drawable * wld_wayland_create_drawable
  * Create a new Wayland drawable for the given surface, using the given buffers
  * and drawables as backing for the surface.
  *
+ * You must pass exactly two buffers and drawables
+ *
  * This method does not require a Wayland context to be created because buffers
  * and drawables are passed to it explicitly.
  */
 struct wld_drawable * wld_wayland_create_drawable_from_buffers
     (struct wl_surface * surface,
-     struct wl_buffer * buffer0, struct wld_drawable * drawable0,
-     struct wl_buffer * buffer1, struct wld_drawable * drawable1);
+     struct wl_buffer * buffers[], struct wld_drawable * drawables[]);
 
 #endif
 

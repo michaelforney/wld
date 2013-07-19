@@ -31,13 +31,14 @@ enum wld_format format;
 
 struct wl_display;
 struct wl_event_queue;
+struct wl_buffer;
 
 typedef void * (* wayland_create_context_func_t)(struct wl_display * display,
                                                  struct wl_event_queue * queue);
 typedef void (* wayland_destroy_context_func_t)(void * context);
 typedef struct wld_drawable * (* wayland_create_drawable_func_t)
-    (void * context, struct wl_surface * surface,
-     uint32_t width, uint32_t height, enum wld_format format);
+    (void * context, uint32_t width, uint32_t height, enum wld_format format,
+     struct wl_buffer ** buffer);
 
 struct wld_wayland_interface
 {

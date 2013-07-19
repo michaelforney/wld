@@ -33,7 +33,7 @@ enum wld_format;
 
 struct wl_display;
 struct wl_event_queue;
-struct wl_surface;
+struct wl_buffer;
 
 /**
  * Create a new drawable context which creates Wayland buffers through the
@@ -64,9 +64,9 @@ int wld_drm_get_fd(struct wld_drm_context * context);
  * Create a new DRM drawable with the specified dimensions.
  */
 struct wld_drawable * wld_drm_create_drawable(struct wld_drm_context * context,
-                                              struct wl_surface * surface,
                                               uint32_t width, uint32_t height,
-                                              enum wld_format format);
+                                              enum wld_format format,
+                                              struct wl_buffer ** buffer);
 
 #endif
 
