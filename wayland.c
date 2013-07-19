@@ -99,7 +99,7 @@ struct wld_wayland_context * wld_wayland_create_context
 {
     struct wld_wayland_context * wayland;
     va_list requested_interfaces;
-    bool interfaces_tried[ARRAY_LENGTH(interfaces)] = {};
+    bool interfaces_tried[ARRAY_LENGTH(interfaces)] = {0};
 
     wayland = malloc(sizeof *wayland);
 
