@@ -49,7 +49,7 @@ _Static_assert(offsetof(struct intel_drawable, drm) == 0,
                "Non-zero offset of base field");
 
 static void intel_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
-                          pixman_rectangle16_t * rectangle);
+                                 pixman_rectangle16_t * rectangle);
 static void intel_draw_text_utf8(struct wld_drawable * drawable,
                                  struct font * font, uint32_t color,
                                  int32_t x, int32_t y,
