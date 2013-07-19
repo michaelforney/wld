@@ -232,29 +232,26 @@ struct wld_drawable * wld_drm_create_drawable(struct wld_drm_context * drm,
                                               uint32_t width, uint32_t height,
                                               uint32_t format)
 {
-    struct wld_drawable * drawable0, * drawable1;
+    struct drm_drawable * drawable0, * drawable1;
     uint32_t name0, name1, pitch0, pitch1;
     struct wl_buffer * buffer0, * buffer1;
 
     if (!wld_drm_has_format(drm, format))
         return NULL;
 
-    drawable0 = drm->interface->create_drawable(drm->context, width, height,
-                                                format);
-    drawable1 = drm->interface->create_drawable(drm->context, width, height,
-                                                format);
+    drawable0 = (void *) drm->interface->create_drawable(drm->context,
+                                                         width, height, format);
+    drawable1 = (void *) drm->interface->create_drawable(drm->context,
+                                                         width, height, format);
 
-    drm->interface->get_drawable_info(drawable0, &name0, &pitch0);
-    drm->interface->get_drawable_info(drawable1, &name1, &pitch1);
-
-    buffer0 = wl_drm_create_buffer(drm->wl, name0, width, height,
-                                   pitch0, format);
-    buffer1 = wl_drm_create_buffer(drm->wl, name1, width, height,
-                                   pitch1, format);
+    buffer0 = wl_drm_create_buffer(drm->wl, drawable0->name, width, height,
+                                   drawable0->pitch, format);
+    buffer1 = wl_drm_create_buffer(drm->wl, drawable1->name, width, height,
+                                   drawable1->pitch, format);
 
     return wld_wayland_create_drawable_from_buffers(surface,
-                                                    buffer0, drawable0,
-                                                    buffer1, drawable1);
+                                                    buffer0, &drawable0->base,
+                                                    buffer1, &drawable1->base);
 }
 
 void registry_global(void * data, struct wl_registry * registry, uint32_t name,

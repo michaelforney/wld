@@ -24,14 +24,14 @@
 #ifndef WLD_DRM_PRIVATE_H
 #define WLD_DRM_PRIVATE_H 1
 
+#include "wld-private.h"
+
 typedef bool (* drm_device_supported_func_t)(uint32_t vendor_id,
                                              uint32_t device_id);
 typedef void * (* drm_create_context_func_t)(int drm_fd);
 typedef void (* drm_destroy_context_func_t)(void * context);
 typedef struct wld_drawable * (* drm_create_drawable_func_t)
     (void * context, uint32_t width, uint32_t height, uint32_t format);
-typedef void (* drm_get_drawable_info_func_t)
-    (struct wld_drawable * drawable, uint32_t * name, uint32_t * pitch);
 
 struct wld_drm_interface
 {
@@ -39,7 +39,14 @@ struct wld_drm_interface
     drm_create_context_func_t create_context;
     drm_destroy_context_func_t destroy_context;
     drm_create_drawable_func_t create_drawable;
-    drm_get_drawable_info_func_t get_drawable_info;
+};
+
+struct drm_drawable
+{
+    struct wld_drawable base;
+
+    unsigned long pitch;
+    uint32_t name;
 };
 
 #if ENABLE_INTEL

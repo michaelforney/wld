@@ -55,11 +55,5 @@ struct wld_drawable * wld_intel_create_drawable
     (struct wld_intel_context * context, uint32_t width, uint32_t height,
      enum wld_format format);
 
-/**
- * Get the name and pitch of the underlying BO for this Intel drawable.
- */
-void wld_intel_get_drawable_info(struct wld_drawable * drawable,
-                                 uint32_t * name, uint32_t * pitch);
-
 #endif
 

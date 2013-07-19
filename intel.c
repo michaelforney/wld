@@ -39,12 +39,9 @@ struct wld_intel_context
 
 struct intel_drawable
 {
-    struct wld_drawable base;
+    struct drm_drawable drm;
 
     struct wld_intel_context * context;
-    uint32_t name;
-    unsigned long pitch;
-
     drm_intel_bo * bo;
 };
 
@@ -70,7 +67,6 @@ const struct wld_drm_interface intel_drm = {
     .create_context = (drm_create_context_func_t) &wld_intel_create_context,
     .destroy_context = (drm_destroy_context_func_t) &wld_intel_destroy_context,
     .create_drawable = (drm_create_drawable_func_t) &wld_intel_create_drawable,
-    .get_drawable_info = &wld_intel_get_drawable_info
 };
 
 bool wld_intel_device_supported(uint32_t vendor_id, uint32_t device_id)
@@ -111,28 +107,18 @@ struct wld_drawable * wld_intel_create_drawable
     if (!intel)
         return NULL;
 
-    intel->base.interface = &intel_draw;
-    intel->base.width = width;
-    intel->base.height = height;
+    intel->drm.base.interface = &intel_draw;
+    intel->drm.base.width = width;
+    intel->drm.base.height = height;
 
     intel->context = context;
     intel->bo = drm_intel_bo_alloc_tiled(context->bufmgr, "drawable",
                                          width, height, 4,
-                                         &tiling_mode, &intel->pitch, 0);
+                                         &tiling_mode, &intel->drm.pitch, 0);
 
-    drm_intel_bo_flink(intel->bo, &intel->name);
+    drm_intel_bo_flink(intel->bo, &intel->drm.name);
 
-    return &intel->base;
-}
-
-void wld_intel_get_drawable_info(struct wld_drawable * drawable,
-                                 uint32_t * name, uint32_t * pitch)
-{
-    struct intel_drawable * intel;
-
-    intel = container_of(drawable, typeof(*intel), base);
-    *name = intel->name;
-    *pitch = intel->pitch;
+    return &intel->drm.base;
 }
 
 void intel_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
@@ -140,8 +126,8 @@ void intel_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
 {
     struct intel_drawable * intel;
 
-    intel = container_of(drawable, typeof(*intel), base);
-    xy_color_blt(&intel->context->batch, intel->bo, intel->pitch,
+    intel = container_of(drawable, typeof(*intel), drm.base);
+    xy_color_blt(&intel->context->batch, intel->bo, intel->drm.pitch,
                  rectangle->x, rectangle->y,
                  rectangle->x + rectangle->width,
                  rectangle->y + rectangle->height, color);
@@ -162,14 +148,14 @@ void intel_draw_text_utf8(struct wld_drawable * drawable,
     uint8_t * byte;
     uint8_t byte_index;
 
-    intel = container_of(drawable, typeof(*intel), base);
+    intel = container_of(drawable, typeof(*intel), drm.base);
 
     /* For some reason the text doesn't render if we don't flush the command
      * buffer first. */
     intel_batch_flush(&intel->context->batch);
 
     xy_setup_blt(&intel->context->batch, true, INTEL_BLT_RASTER_OPERATION_SRC,
-                 0, color, intel->bo, intel->pitch);
+                 0, color, intel->bo, intel->drm.pitch);
 
     while ((ret = FcUtf8ToUcs4((FcChar8 *) text, &c, length)) > 0 && c != '\0')
     {
@@ -211,7 +197,7 @@ void intel_flush(struct wld_drawable * drawable)
 {
     struct intel_drawable * intel;
 
-    intel = container_of(drawable, typeof(*intel), base);
+    intel = container_of(drawable, typeof(*intel), drm.base);
     intel_batch_flush(&intel->context->batch);
 }
 
@@ -219,7 +205,7 @@ void intel_destroy(struct wld_drawable * drawable)
 {
     struct intel_drawable * intel;
 
-    intel = container_of(drawable, typeof(*intel), base);
+    intel = container_of(drawable, typeof(*intel), drm.base);
     drm_intel_bo_unreference(intel->bo);
     free(intel);
 }
