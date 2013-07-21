@@ -46,7 +46,7 @@ struct wayland_drawable
     struct wl_surface * surface;
     struct
     {
-        struct wl_buffer * buffer;
+        struct wl_buffer * wl;
         struct wld_drawable * drawable;
     } buffers[2];
     uint8_t front_buffer;
@@ -55,8 +55,8 @@ struct wayland_drawable
 _Static_assert(offsetof(struct wayland_drawable, base) == 0,
                "Non-zero offset of base field");
 
-static void callback_done(void * data, struct wl_callback * callback,
-                          uint32_t msecs);
+static void sync_done(void * data, struct wl_callback * callback,
+                      uint32_t msecs);
 
 static void wayland_fill_rectangle(struct wld_drawable * drawable,
                                    uint32_t color,
@@ -72,8 +72,8 @@ static void wayland_draw_text_utf8(struct wld_drawable * drawable,
 static void wayland_flush(struct wld_drawable * drawable);
 static void wayland_destroy(struct wld_drawable * drawable);
 
-const struct wl_callback_listener callback_listener = {
-    .done = &callback_done
+const struct wl_callback_listener sync_listener = {
+    .done = &sync_done
 };
 
 const struct wld_draw_interface wayland_draw = {
@@ -214,8 +214,8 @@ struct wld_drawable * wld_wayland_create_drawable_from_buffers
         return NULL;
 
     wayland->context = NULL;
-    wayland->buffers[0].buffer = buffers[0];
-    wayland->buffers[1].buffer = buffers[1];
+    wayland->buffers[0].wl = buffers[0];
+    wayland->buffers[1].wl = buffers[1];
     wayland->buffers[0].drawable = drawables[0];
     wayland->buffers[1].drawable = drawables[1];
     wayland->front_buffer = 0;
@@ -236,7 +236,7 @@ int wayland_roundtrip(struct wl_display * display,
     int ret = 0;
 
     callback = wl_display_sync(display);
-    wl_callback_add_listener(callback, &callback_listener, &done);
+    wl_callback_add_listener(callback, &sync_listener, &done);
     wl_proxy_set_queue((struct wl_proxy *) callback, queue);
 
     while (!done && ret >= 0)
@@ -248,7 +248,7 @@ int wayland_roundtrip(struct wl_display * display,
     return ret;
 }
 
-void callback_done(void * data, struct wl_callback * callback, uint32_t msecs)
+void sync_done(void * data, struct wl_callback * callback, uint32_t msecs)
 {
     bool * done = data;
 
@@ -288,7 +288,7 @@ void wayland_flush(struct wld_drawable * drawable)
     struct wayland_drawable * wayland = (void *) drawable;
 
     wld_flush(BACKBUF(wayland).drawable);
-    wl_surface_attach(wayland->surface, BACKBUF(wayland).buffer, 0, 0);
+    wl_surface_attach(wayland->surface, BACKBUF(wayland).wl, 0, 0);
     wl_surface_commit(wayland->surface);
     wayland->front_buffer ^= 1;
 }
@@ -297,8 +297,8 @@ void wayland_destroy(struct wld_drawable * drawable)
 {
     struct wayland_drawable * wayland = (void *) drawable;
 
-    wl_buffer_destroy(wayland->buffers[0].buffer);
-    wl_buffer_destroy(wayland->buffers[1].buffer);
+    wl_buffer_destroy(wayland->buffers[0].wl);
+    wl_buffer_destroy(wayland->buffers[1].wl);
     wld_destroy_drawable(wayland->buffers[0].drawable);
     wld_destroy_drawable(wayland->buffers[1].drawable);
 }
