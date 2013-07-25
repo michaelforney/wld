@@ -23,32 +23,33 @@
 
 #include "wld-private.h"
 
-void default_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
-                            pixman_rectangle16_t * rectangle)
+void default_fill_region(struct wld_drawable * drawable, uint32_t color,
+                         pixman_region32_t * region)
 {
-    wld_fill_rectangles(drawable, color, rectangle, 1);
-}
+    pixman_box32_t * boxes;
+    int num_boxes;
+    uint32_t index;
 
-void default_fill_rectangles(struct wld_drawable * drawable, uint32_t color,
-                             pixman_rectangle16_t * rectangles,
-                             uint32_t num_rectangles)
-{
-    while (num_rectangles--)
-        wld_fill_rectangle(drawable, color, &rectangles[num_rectangles]);
+    boxes = pixman_region32_rectangles(region, &num_boxes);
+
+    for (index = 0; index < num_boxes; ++index)
+    {
+        wld_fill_rectangle(drawable, color, boxes[index].x1, boxes[index].y1,
+                           boxes[index].x2 - boxes[index].x1,
+                           boxes[index].y2 - boxes[index].y1);
+    }
 }
 
 void wld_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
-                        pixman_rectangle16_t * rectangle)
+                        int32_t x, int32_t y, uint32_t width, uint32_t height)
 {
-    drawable->interface->fill_rectangle(drawable, color, rectangle);
+    drawable->interface->fill_rectangle(drawable, color, x, y, width, height);
 }
 
-void wld_fill_rectangles(struct wld_drawable * drawable, uint32_t color,
-                         pixman_rectangle16_t * rectangles,
-                         uint32_t num_rectangles)
+void wld_fill_region(struct wld_drawable * drawable, uint32_t color,
+                     pixman_region32_t * region)
 {
-    drawable->interface->fill_rectangles(drawable, color, rectangles,
-                                         num_rectangles);
+    drawable->interface->fill_region(drawable, color, region);
 }
 
 void wld_draw_text_utf8_n(struct wld_drawable * drawable,

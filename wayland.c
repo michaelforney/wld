@@ -59,12 +59,10 @@ static void sync_done(void * data, struct wl_callback * callback,
                       uint32_t msecs);
 
 static void wayland_fill_rectangle(struct wld_drawable * drawable,
-                                   uint32_t color,
-                                   pixman_rectangle16_t * rectangles);
-static void wayland_fill_rectangles(struct wld_drawable * drawable,
-                                    uint32_t color,
-                                    pixman_rectangle16_t * rectangles,
-                                    uint32_t num_rectangles);
+                                   uint32_t color, int32_t x, int32_t y,
+                                   uint32_t width, uint32_t height);
+static void wayland_fill_region(struct wld_drawable * drawable, uint32_t color,
+                                pixman_region32_t * region);
 static void wayland_draw_text_utf8(struct wld_drawable * drawable,
                                    struct font * font, uint32_t color,
                                    int32_t x, int32_t y,
@@ -78,7 +76,7 @@ const struct wl_callback_listener sync_listener = {
 
 const struct wld_draw_interface wayland_draw = {
     .fill_rectangle = &wayland_fill_rectangle,
-    .fill_rectangles = &wayland_fill_rectangles,
+    .fill_region = &wayland_fill_region,
     .draw_text_utf8 = &wayland_draw_text_utf8,
     .flush = &wayland_flush,
     .destroy = &wayland_destroy
@@ -256,23 +254,20 @@ void sync_done(void * data, struct wl_callback * callback, uint32_t msecs)
 }
 
 static void wayland_fill_rectangle(struct wld_drawable * drawable,
-                                   uint32_t color,
-                                   pixman_rectangle16_t * rectangle)
+                                   uint32_t color, int32_t x, int32_t y,
+                                   uint32_t width, uint32_t height)
 {
     struct wayland_drawable * wayland = (void *) drawable;
 
-    wld_fill_rectangle(BACKBUF(wayland).drawable, color, rectangle);
+    wld_fill_rectangle(BACKBUF(wayland).drawable, color, x, y, width, height);
 }
 
-static void wayland_fill_rectangles(struct wld_drawable * drawable,
-                                    uint32_t color,
-                                    pixman_rectangle16_t * rectangles,
-                                    uint32_t num_rectangles)
+static void wayland_fill_region(struct wld_drawable * drawable, uint32_t color,
+                                pixman_region32_t * region)
 {
     struct wayland_drawable * wayland = (void *) drawable;
 
-    wld_fill_rectangles(BACKBUF(wayland).drawable, color,
-                        rectangles, num_rectangles);
+    wld_fill_region(BACKBUF(wayland).drawable, color, region);
 }
 
 static void wayland_draw_text_utf8(struct wld_drawable * drawable,

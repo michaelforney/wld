@@ -46,10 +46,11 @@ struct pixman_drawable
 _Static_assert(offsetof(struct pixman_drawable, base) == 0,
                "Non-zero offset of base field");
 
-static void pixman_fill_rectangles(struct wld_drawable * drawable,
-                                   uint32_t color,
-                                   pixman_rectangle16_t * rectangles,
-                                   uint32_t num_rectangles);
+static void pixman_fill_rectangle(struct wld_drawable * drawable,
+                                  uint32_t color, int32_t x, int32_t y,
+                                  uint32_t width, uint32_t height);
+static void pixman_fill_region(struct wld_drawable * drawable, uint32_t color,
+                               pixman_region32_t * region);
 static void pixman_draw_text_utf8(struct wld_drawable * drawable,
                                   struct font * font, uint32_t color,
                                   int32_t x, int32_t y,
@@ -58,8 +59,8 @@ static void pixman_flush(struct wld_drawable * drawable);
 static void pixman_destroy(struct wld_drawable * drawable);
 
 const static struct wld_draw_interface pixman_draw = {
-    .fill_rectangle = &default_fill_rectangle,
-    .fill_rectangles = &pixman_fill_rectangles,
+    .fill_rectangle = &pixman_fill_rectangle,
+    .fill_region = &pixman_fill_region,
     .draw_text_utf8 = &pixman_draw_text_utf8,
     .flush = &pixman_flush,
     .destroy = &pixman_destroy
@@ -129,16 +130,29 @@ struct wld_drawable * wld_pixman_create_drawable
     return NULL;
 }
 
-static void pixman_fill_rectangles(struct wld_drawable * drawable,
-                                   uint32_t color,
-                                   pixman_rectangle16_t * rectangles,
-                                   uint32_t num_rectangles)
+static void pixman_fill_rectangle(struct wld_drawable * drawable,
+                                  uint32_t color, int32_t x, int32_t y,
+                                  uint32_t width, uint32_t height)
 {
     struct pixman_drawable * pixman = (void *) drawable;
     pixman_color_t pixman_color = PIXMAN_COLOR(color);
+    pixman_box32_t box = { x, y, x + width, y + height };
 
-    pixman_image_fill_rectangles(PIXMAN_OP_SRC, pixman->image, &pixman_color,
-                                 num_rectangles, rectangles);
+    pixman_image_fill_boxes(PIXMAN_OP_SRC, pixman->image, &pixman_color,
+                            1, &box);
+}
+
+static void pixman_fill_region(struct wld_drawable * drawable, uint32_t color,
+                               pixman_region32_t * region)
+{
+    struct pixman_drawable * pixman = (void *) drawable;
+    pixman_color_t pixman_color = PIXMAN_COLOR(color);
+    pixman_box32_t * boxes;
+    int num_boxes;
+
+    boxes = pixman_region32_rectangles(region, &num_boxes);
+    pixman_image_fill_boxes(PIXMAN_OP_SRC, pixman->image, &pixman_color,
+                            num_boxes, boxes);
 }
 
 static inline uint8_t reverse(uint8_t byte)

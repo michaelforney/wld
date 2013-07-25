@@ -50,7 +50,8 @@ _Static_assert(offsetof(struct intel_drawable, drm) == 0,
                "Non-zero offset of base field");
 
 static void intel_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
-                                 pixman_rectangle16_t * rectangle);
+                                 int32_t x, int32_t y,
+                                 uint32_t width, uint32_t height);
 static void intel_draw_text_utf8(struct wld_drawable * drawable,
                                  struct font * font, uint32_t color,
                                  int32_t x, int32_t y,
@@ -60,7 +61,7 @@ static void intel_destroy(struct wld_drawable * drawable);
 
 const static struct wld_draw_interface intel_draw = {
     .fill_rectangle = &intel_fill_rectangle,
-    .fill_rectangles = &default_fill_rectangles,
+    .fill_region = &default_fill_region,
     .draw_text_utf8 = &intel_draw_text_utf8,
     .flush = &intel_flush,
     .destroy = &intel_destroy
@@ -125,14 +126,13 @@ struct wld_drawable * wld_intel_create_drawable
 }
 
 static void intel_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
-                                 pixman_rectangle16_t * rectangle)
+                                 int32_t x, int32_t y,
+                                 uint32_t width, uint32_t height)
 {
     struct intel_drawable * intel = (void *) drawable;
 
     xy_color_blt(&intel->context->batch, intel->bo, intel->drm.pitch,
-                 rectangle->x, rectangle->y,
-                 rectangle->x + rectangle->width,
-                 rectangle->y + rectangle->height, color);
+                 x, y, x + width, y + height, color);
 }
 
 static void intel_draw_text_utf8(struct wld_drawable * drawable,

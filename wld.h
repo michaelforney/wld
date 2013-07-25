@@ -124,11 +124,10 @@ struct wld_drawable
 void wld_destroy_drawable(struct wld_drawable * drawable);
 
 void wld_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
-                        pixman_rectangle16_t * rectangle);
+                        int32_t x, int32_t y, uint32_t width, uint32_t height);
 
-void wld_fill_rectangles(struct wld_drawable * drawable, uint32_t color,
-                         pixman_rectangle16_t * rectangles,
-                         uint32_t num_rectangles);
+void wld_fill_region(struct wld_drawable * drawable, uint32_t color,
+                     pixman_region32_t * region);
 
 void wld_draw_text_utf8_n(struct wld_drawable * drawable,
                           struct wld_font * font, uint32_t color,

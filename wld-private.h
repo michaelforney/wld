@@ -79,10 +79,10 @@ _Static_assert(offsetof(struct font, base) == 0,
 struct wld_draw_interface
 {
     void (* fill_rectangle)(struct wld_drawable * drawable, uint32_t color,
-                            pixman_rectangle16_t * rectangle);
-    void (* fill_rectangles)(struct wld_drawable * drawable, uint32_t color,
-                             pixman_rectangle16_t * rectangle,
-                             uint32_t num_rectangles);
+                            int32_t x, int32_t y,
+                            uint32_t width, uint32_t height);
+    void (* fill_region)(struct wld_drawable * drawable, uint32_t color,
+                         pixman_region32_t * region);
     void (* draw_text_utf8)(struct wld_drawable * drawable,
                             struct font * font, uint32_t color,
                             int32_t x, int32_t y,
@@ -110,19 +110,10 @@ static inline uint8_t format_bytes_per_pixel(enum wld_format format)
 }
 
 /**
- * This default fill_rectangle method is implemented as fill_rectangles with a
- * length parameter of 1.
+ * This default fill_region method is implemented in terms of fill_rectangle.
  */
-void default_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
-                            pixman_rectangle16_t * rectangle);
-
-/**
- * This default fill_rectangles method is implemented in terms of the singular
- * fill_rectangle.
- */
-void default_fill_rectangles(struct wld_drawable * drawable, uint32_t color,
-                             pixman_rectangle16_t * rectangles,
-                             uint32_t num_rectangles);
+void default_fill_region(struct wld_drawable * drawable, uint32_t color,
+                         pixman_region32_t * region);
 
 #endif
 
