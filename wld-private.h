@@ -124,10 +124,5 @@ void default_fill_rectangles(struct wld_drawable * drawable, uint32_t color,
                              pixman_rectangle16_t * rectangles,
                              uint32_t num_rectangles);
 
-/**
- * This is a NO-OP for implementations that do not require flushing.
- */
-void default_flush(struct wld_drawable * drawable);
-
 #endif
 

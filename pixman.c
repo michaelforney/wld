@@ -54,13 +54,14 @@ static void pixman_draw_text_utf8(struct wld_drawable * drawable,
                                   struct font * font, uint32_t color,
                                   int32_t x, int32_t y,
                                   const char * text, int32_t length);
+static void pixman_flush(struct wld_drawable * drawable);
 static void pixman_destroy(struct wld_drawable * drawable);
 
 const static struct wld_draw_interface pixman_draw = {
     .fill_rectangle = &default_fill_rectangle,
     .fill_rectangles = &pixman_fill_rectangles,
     .draw_text_utf8 = &pixman_draw_text_utf8,
-    .flush = &default_flush,
+    .flush = &pixman_flush,
     .destroy = &pixman_destroy
 };
 
@@ -236,6 +237,10 @@ static void pixman_draw_text_utf8(struct wld_drawable * drawable,
                                     index, glyphs);
 
     pixman_image_unref(solid);
+}
+
+void pixman_flush(struct wld_drawable * drawable)
+{
 }
 
 void pixman_destroy(struct wld_drawable * drawable)

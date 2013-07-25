@@ -37,10 +37,6 @@ void default_fill_rectangles(struct wld_drawable * drawable, uint32_t color,
         wld_fill_rectangle(drawable, color, &rectangles[num_rectangles]);
 }
 
-void default_flush(struct wld_drawable * drawable)
-{
-}
-
 void wld_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
                         pixman_rectangle16_t * rectangle)
 {
