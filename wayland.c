@@ -50,8 +50,10 @@ struct wayland_drawable
         struct wl_buffer * wl;
         struct wld_drawable * drawable;
         bool busy;
+        pixman_region32_t damage;
     } buffers[2];
     uint8_t front_buffer;
+    uint32_t damage_tracking;
 };
 
 _Static_assert(offsetof(struct wayland_drawable, base) == 0,
@@ -194,7 +196,8 @@ void wld_wayland_destroy_context(struct wld_wayland_context * wayland)
 
 struct wld_drawable * wld_wayland_create_drawable
     (struct wld_wayland_context * context, struct wl_surface * surface,
-     uint32_t width, uint32_t height, enum wld_format format)
+     uint32_t width, uint32_t height, enum wld_format format,
+     uint32_t damage_flags)
 {
     struct wayland_drawable * wayland;
 
@@ -218,8 +221,11 @@ struct wld_drawable * wld_wayland_create_drawable
 
     wayland->buffers[0].busy = false;
     wayland->buffers[1].busy = false;
+    pixman_region32_init(&wayland->buffers[0].damage);
+    pixman_region32_init(&wayland->buffers[1].damage);
     wayland->front_buffer = 0;
     wayland->surface = surface;
+    wayland->damage_tracking = damage_flags;
 
     wayland->base.interface = &wayland_draw;
     wayland->base.width = width;
@@ -238,6 +244,20 @@ struct wld_drawable * wld_wayland_create_drawable
     free(wayland);
   error0:
     return NULL;
+}
+
+void wld_wayland_drawable_set_damage_tracking(struct wld_drawable * drawable,
+                                              uint32_t flags)
+{
+    struct wayland_drawable * wayland = (void *) drawable;
+
+    if (!wayland->damage_tracking && flags)
+    {
+        pixman_region32_clear(&wayland->buffers[0].damage);
+        pixman_region32_clear(&wayland->buffers[1].damage);
+    }
+
+    wayland->damage_tracking = flags;
 }
 
 int wayland_roundtrip(struct wl_display * display,
@@ -293,6 +313,16 @@ static void begin(struct wayland_drawable * wayland)
 {
     /* Wait for the back buffer to become available. */
     wait_for_backbuf(wayland);
+
+    /* Copy across damage from front buffer. */
+    if (wayland->damage_tracking & WLD_WAYLAND_DAMAGE_COPY
+        && pixman_region32_not_empty(&FRONTBUF(wayland).damage))
+    {
+        wld_copy_region(FRONTBUF(wayland).drawable,
+                        BACKBUF(wayland).drawable,
+                        &FRONTBUF(wayland).damage, 0, 0);
+        pixman_region32_clear(&FRONTBUF(wayland).damage);
+    }
 }
 
 static void wayland_fill_rectangle(struct wld_drawable * drawable,
@@ -303,6 +333,13 @@ static void wayland_fill_rectangle(struct wld_drawable * drawable,
 
     begin(wayland);
     wld_fill_rectangle(BACKBUF(wayland).drawable, color, x, y, width, height);
+
+    if (wayland->damage_tracking)
+    {
+        pixman_region32_union_rect(&BACKBUF(wayland).damage,
+                                   &BACKBUF(wayland).damage,
+                                   x, y, width, height);
+    }
 }
 
 static void wayland_fill_region(struct wld_drawable * drawable, uint32_t color,
@@ -312,6 +349,12 @@ static void wayland_fill_region(struct wld_drawable * drawable, uint32_t color,
 
     begin(wayland);
     wld_fill_region(BACKBUF(wayland).drawable, color, region);
+
+    if (wayland->damage_tracking)
+    {
+        pixman_region32_union(&BACKBUF(wayland).damage,
+                              &BACKBUF(wayland).damage, region);
+    }
 }
 
 static void wayland_copy_rectangle(struct wld_drawable * src_drawable,
@@ -337,20 +380,49 @@ static void wayland_draw_text_utf8(struct wld_drawable * drawable,
                                    const char * text, int32_t length,
                                    struct wld_extents * extents)
 {
+    struct wld_extents extents0;
     struct wayland_drawable * wayland = (void *) drawable;
+
+    if (wayland->damage_tracking && !extents)
+        extents = &extents0;
 
     begin(wayland);
     wld_draw_text_utf8_n(BACKBUF(wayland).drawable, &font->base, color,
                          x, y, text, length, extents);
+
+    if (wayland->damage_tracking)
+    {
+        pixman_region32_union_rect(&BACKBUF(wayland).damage,
+                                   &BACKBUF(wayland).damage,
+                                   x, y - font->base.ascent,
+                                   extents->advance, font->base.height);
+    }
 }
 
 static void wayland_flush(struct wld_drawable * drawable)
 {
     struct wayland_drawable * wayland = (void *) drawable;
+    pixman_region32_t damage;
 
     wait_for_backbuf(wayland);
 
     wld_flush(BACKBUF(wayland).drawable);
+
+    if (wayland->damage_tracking & WLD_WAYLAND_DAMAGE_SUBMIT)
+    {
+        pixman_box32_t * box;
+        int num_boxes;
+
+        box = pixman_region32_rectangles(&BACKBUF(wayland).damage, &num_boxes);
+
+        while (num_boxes--)
+        {
+            wl_surface_damage(wayland->surface, box->x1, box->y1,
+                              box->x2 - box->x1, box->y2 - box->y1);
+            ++box;
+        }
+    }
+
     wl_surface_attach(wayland->surface, BACKBUF(wayland).wl, 0, 0);
     wl_surface_commit(wayland->surface);
 
@@ -367,5 +439,7 @@ static void wayland_destroy(struct wld_drawable * drawable)
     wl_buffer_destroy(wayland->buffers[1].wl);
     wld_destroy_drawable(wayland->buffers[0].drawable);
     wld_destroy_drawable(wayland->buffers[1].drawable);
+    pixman_region32_fini(&wayland->buffers[0].damage);
+    pixman_region32_fini(&wayland->buffers[1].damage);
 }
 
