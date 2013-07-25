@@ -187,54 +187,40 @@ struct wld_drawable * wld_wayland_create_drawable
      uint32_t width, uint32_t height, enum wld_format format)
 {
     struct wayland_drawable * wayland;
-    struct wld_drawable * drawables[2];
-    struct wl_buffer * buffers[2];
-
-    drawables[0] = context->interface->create_drawable
-        (context->context, width, height, format, &buffers[0]);
-    drawables[1] = context->interface->create_drawable
-        (context->context, width, height, format, &buffers[1]);
-
-    wayland = (void *) wld_wayland_create_drawable_from_buffers
-        (surface, buffers, drawables);
-
-    wayland->context = context;
-
-    return &wayland->base;
-}
-
-struct wld_drawable * wld_wayland_create_drawable_from_buffers
-    (struct wl_surface * surface,
-     struct wl_buffer * buffers[], struct wld_drawable * drawables[])
-{
-    struct wayland_drawable * wayland;
-    uint32_t * data;
-
-    if (drawables[0]->width != drawables[1]->width
-        || drawables[0]->height != drawables[1]->height)
-    {
-        DEBUG("Drawables aren't the same dimensions\n");
-        return NULL;
-    }
 
     wayland = malloc(sizeof *wayland);
 
     if (!wayland)
-        return NULL;
+        goto error0;
 
-    wayland->context = NULL;
-    wayland->buffers[0].wl = buffers[0];
-    wayland->buffers[1].wl = buffers[1];
-    wayland->buffers[0].drawable = drawables[0];
-    wayland->buffers[1].drawable = drawables[1];
+    wayland->context = context;
+    wayland->buffers[0].drawable = context->interface->create_drawable
+        (context->context, width, height, format, &wayland->buffers[0].wl);
+
+    if (!wayland->buffers[0].drawable)
+        goto error1;
+
+    wayland->buffers[1].drawable = context->interface->create_drawable
+        (context->context, width, height, format, &wayland->buffers[1].wl);
+
+    if (!wayland->buffers[1].drawable)
+        goto error2;
+
     wayland->front_buffer = 0;
     wayland->surface = surface;
 
     wayland->base.interface = &wayland_draw;
-    wayland->base.width = drawables[0]->width;
-    wayland->base.height = drawables[0]->height;
+    wayland->base.width = width;
+    wayland->base.height = height;
 
     return &wayland->base;
+
+  error2:
+    wld_destroy_drawable(wayland->buffers[0].drawable);
+  error1:
+    free(wayland);
+  error0:
+    return NULL;
 }
 
 int wayland_roundtrip(struct wl_display * display,
