@@ -28,8 +28,8 @@
 #include <stdlib.h>
 #include <wayland-client.h>
 
-#define BACKBUF(drawable) (drawable)->buffers[(drawable)->front_buffer ^ 1]
-#define FRONTBUF(drawable) (drawable)->buffers[(drawable)->front_buffer]
+#define BACKBUF(drawable) ((drawable)->buffers[(drawable)->front_buffer ^ 1])
+#define FRONTBUF(drawable) ((drawable)->buffers[(drawable)->front_buffer])
 
 struct wld_wayland_context
 {
