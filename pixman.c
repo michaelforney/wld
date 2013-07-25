@@ -239,11 +239,11 @@ static void pixman_draw_text_utf8(struct wld_drawable * drawable,
     pixman_image_unref(solid);
 }
 
-void pixman_flush(struct wld_drawable * drawable)
+static void pixman_flush(struct wld_drawable * drawable)
 {
 }
 
-void pixman_destroy(struct wld_drawable * drawable)
+static void pixman_destroy(struct wld_drawable * drawable)
 {
     struct pixman_drawable * pixman = (void *) drawable;
 

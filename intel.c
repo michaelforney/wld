@@ -124,8 +124,8 @@ struct wld_drawable * wld_intel_create_drawable
     return &intel->drm.base;
 }
 
-void intel_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
-                          pixman_rectangle16_t * rectangle)
+static void intel_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
+                                 pixman_rectangle16_t * rectangle)
 {
     struct intel_drawable * intel = (void *) drawable;
 
@@ -135,10 +135,10 @@ void intel_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
                  rectangle->y + rectangle->height, color);
 }
 
-void intel_draw_text_utf8(struct wld_drawable * drawable,
-                          struct font * font, uint32_t color,
-                          int32_t x, int32_t y,
-                          const char * text, int32_t length)
+static void intel_draw_text_utf8(struct wld_drawable * drawable,
+                                 struct font * font, uint32_t color,
+                                 int32_t x, int32_t y,
+                                 const char * text, int32_t length)
 {
     struct intel_drawable * intel = (void *) drawable;
     int ret;
@@ -199,14 +199,14 @@ void intel_draw_text_utf8(struct wld_drawable * drawable,
     }
 }
 
-void intel_flush(struct wld_drawable * drawable)
+static void intel_flush(struct wld_drawable * drawable)
 {
     struct intel_drawable * intel = (void *) drawable;
 
     intel_batch_flush(&intel->context->batch);
 }
 
-void intel_destroy(struct wld_drawable * drawable)
+static void intel_destroy(struct wld_drawable * drawable)
 {
     struct intel_drawable * intel = (void *) drawable;
     drm_intel_bo_unreference(intel->bo);
