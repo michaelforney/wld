@@ -26,18 +26,17 @@
 void default_fill_region(struct wld_drawable * drawable, uint32_t color,
                          pixman_region32_t * region)
 {
-    pixman_box32_t * boxes;
+    pixman_box32_t * box;
     int num_boxes;
-    uint32_t index;
 
-    boxes = pixman_region32_rectangles(region, &num_boxes);
+    box = pixman_region32_rectangles(region, &num_boxes);
 
-    for (index = 0; index < num_boxes; ++index)
+    while (num_boxes--)
     {
-        drawable->interface->fill_rectangle
-            (drawable, color, boxes[index].x1, boxes[index].y1,
-             boxes[index].x2 - boxes[index].x1,
-             boxes[index].y2 - boxes[index].y1);
+        drawable->interface->fill_rectangle(drawable, color, box->x1, box->y1,
+                                            box->x2 - box->x1,
+                                            box->y2 - box->y1);
+        ++box;
     }
 }
 
