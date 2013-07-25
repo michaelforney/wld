@@ -33,6 +33,7 @@
 
 struct wld_wayland_context
 {
+    struct wl_display * display;
     struct wl_event_queue * queue;
     const struct wld_wayland_interface * interface;
     void * context;
@@ -48,6 +49,7 @@ struct wayland_drawable
     {
         struct wl_buffer * wl;
         struct wld_drawable * drawable;
+        bool busy;
     } buffers[2];
     uint8_t front_buffer;
 };
@@ -57,6 +59,8 @@ _Static_assert(offsetof(struct wayland_drawable, base) == 0,
 
 static void sync_done(void * data, struct wl_callback * callback,
                       uint32_t msecs);
+
+static void buffer_release(void * data, struct wl_buffer * buffer);
 
 static void wayland_fill_rectangle(struct wld_drawable * drawable,
                                    uint32_t color, int32_t x, int32_t y,
@@ -81,6 +85,10 @@ static void wayland_destroy(struct wld_drawable * drawable);
 
 const struct wl_callback_listener sync_listener = {
     .done = &sync_done
+};
+
+const struct wl_buffer_listener buffer_listener = {
+    .release = &buffer_release
 };
 
 const struct wld_draw_interface wayland_draw = {
@@ -115,6 +123,7 @@ struct wld_wayland_context * wld_wayland_create_context
     if (!wayland)
         goto error0;
 
+    wayland->display = display;
     wayland->queue = wl_display_create_queue(display);
     wayland->context = NULL;
     wayland->interface = NULL;
@@ -206,12 +215,19 @@ struct wld_drawable * wld_wayland_create_drawable
     if (!wayland->buffers[1].drawable)
         goto error2;
 
+    wayland->buffers[0].busy = false;
+    wayland->buffers[1].busy = false;
     wayland->front_buffer = 0;
     wayland->surface = surface;
 
     wayland->base.interface = &wayland_draw;
     wayland->base.width = width;
     wayland->base.height = height;
+
+    wl_buffer_add_listener(wayland->buffers[0].wl, &buffer_listener,
+                           &wayland->buffers[0].busy);
+    wl_buffer_add_listener(wayland->buffers[1].wl, &buffer_listener,
+                           &wayland->buffers[1].busy);
 
     return &wayland->base;
 
@@ -250,12 +266,39 @@ void sync_done(void * data, struct wl_callback * callback, uint32_t msecs)
     *done = true;
 }
 
+void buffer_release(void * data, struct wl_buffer * buffer)
+{
+    bool * busy = data;
+
+    *busy = false;
+}
+
+static void wait_for_backbuf(struct wayland_drawable * wayland)
+{
+    if (BACKBUF(wayland).busy)
+    {
+        int ret, count = 0;
+
+        do {
+            ret = wl_display_dispatch_queue(wayland->context->display,
+                                            wayland->context->queue);
+        } while (BACKBUF(wayland).busy && ret != -1);
+    }
+}
+
+static void begin(struct wayland_drawable * wayland)
+{
+    /* Wait for the back buffer to become available. */
+    wait_for_backbuf(wayland);
+}
+
 static void wayland_fill_rectangle(struct wld_drawable * drawable,
                                    uint32_t color, int32_t x, int32_t y,
                                    uint32_t width, uint32_t height)
 {
     struct wayland_drawable * wayland = (void *) drawable;
 
+    begin(wayland);
     wld_fill_rectangle(BACKBUF(wayland).drawable, color, x, y, width, height);
 }
 
@@ -264,6 +307,7 @@ static void wayland_fill_region(struct wld_drawable * drawable, uint32_t color,
 {
     struct wayland_drawable * wayland = (void *) drawable;
 
+    begin(wayland);
     wld_fill_region(BACKBUF(wayland).drawable, color, region);
 }
 
@@ -291,6 +335,7 @@ static void wayland_draw_text_utf8(struct wld_drawable * drawable,
 {
     struct wayland_drawable * wayland = (void *) drawable;
 
+    begin(wayland);
     wld_draw_text_utf8_n(BACKBUF(wayland).drawable, &font->base, color,
                          x, y, text, length);
 }
@@ -299,9 +344,14 @@ static void wayland_flush(struct wld_drawable * drawable)
 {
     struct wayland_drawable * wayland = (void *) drawable;
 
+    wait_for_backbuf(wayland);
+
     wld_flush(BACKBUF(wayland).drawable);
     wl_surface_attach(wayland->surface, BACKBUF(wayland).wl, 0, 0);
     wl_surface_commit(wayland->surface);
+
+    BACKBUF(wayland).busy = true;
+
     wayland->front_buffer ^= 1;
 }
 
