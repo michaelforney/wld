@@ -52,6 +52,11 @@ _Static_assert(offsetof(struct intel_drawable, drm) == 0,
 static void intel_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
                                  int32_t x, int32_t y,
                                  uint32_t width, uint32_t height);
+static void intel_copy_rectangle(struct wld_drawable * src,
+                                 struct wld_drawable * dst,
+                                 int32_t src_x, int32_t src_y,
+                                 int32_t dst_x, int32_t dst_y,
+                                 uint32_t width, uint32_t height);
 static void intel_draw_text_utf8(struct wld_drawable * drawable,
                                  struct font * font, uint32_t color,
                                  int32_t x, int32_t y,
@@ -62,6 +67,8 @@ static void intel_destroy(struct wld_drawable * drawable);
 const static struct wld_draw_interface intel_draw = {
     .fill_rectangle = &intel_fill_rectangle,
     .fill_region = &default_fill_region,
+    .copy_rectangle = &intel_copy_rectangle,
+    .copy_region = &default_copy_region,
     .draw_text_utf8 = &intel_draw_text_utf8,
     .flush = &intel_flush,
     .destroy = &intel_destroy
@@ -133,6 +140,19 @@ static void intel_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
 
     xy_color_blt(&intel->context->batch, intel->bo, intel->drm.pitch,
                  x, y, x + width, y + height, color);
+}
+
+static void intel_copy_rectangle(struct wld_drawable * src_drawable,
+                                 struct wld_drawable * dst_drawable,
+                                 int32_t src_x, int32_t src_y,
+                                 int32_t dst_x, int32_t dst_y,
+                                 uint32_t width, uint32_t height)
+{
+    struct intel_drawable * src = (void *) src_drawable;
+    struct intel_drawable * dst = (void *) dst_drawable;
+
+    xy_src_copy_blt(&dst->context->batch, src->bo, src->drm.pitch, src_x, src_y,
+                    dst->bo, dst->drm.pitch, dst_x, dst_y, width, height);
 }
 
 static void intel_draw_text_utf8(struct wld_drawable * drawable,

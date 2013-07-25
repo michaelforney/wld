@@ -51,6 +51,15 @@ static void pixman_fill_rectangle(struct wld_drawable * drawable,
                                   uint32_t width, uint32_t height);
 static void pixman_fill_region(struct wld_drawable * drawable, uint32_t color,
                                pixman_region32_t * region);
+static void pixman_copy_rectangle(struct wld_drawable * src,
+                                  struct wld_drawable * dst,
+                                  int32_t src_x, int32_t src_y,
+                                  int32_t dst_x, int32_t dst_y,
+                                  uint32_t width, uint32_t height);
+static void pixman_copy_region(struct wld_drawable * src,
+                               struct wld_drawable * dst,
+                               pixman_region32_t * region,
+                               int32_t dst_x, int32_t dst_y);
 static void pixman_draw_text_utf8(struct wld_drawable * drawable,
                                   struct font * font, uint32_t color,
                                   int32_t x, int32_t y,
@@ -61,6 +70,8 @@ static void pixman_destroy(struct wld_drawable * drawable);
 const static struct wld_draw_interface pixman_draw = {
     .fill_rectangle = &pixman_fill_rectangle,
     .fill_region = &pixman_fill_region,
+    .copy_rectangle = &pixman_copy_rectangle,
+    .copy_region = &pixman_copy_region,
     .draw_text_utf8 = &pixman_draw_text_utf8,
     .flush = &pixman_flush,
     .destroy = &pixman_destroy
@@ -153,6 +164,37 @@ static void pixman_fill_region(struct wld_drawable * drawable, uint32_t color,
     boxes = pixman_region32_rectangles(region, &num_boxes);
     pixman_image_fill_boxes(PIXMAN_OP_SRC, pixman->image, &pixman_color,
                             num_boxes, boxes);
+}
+
+static void pixman_copy_rectangle(struct wld_drawable * src_drawable,
+                                  struct wld_drawable * dst_drawable,
+                                  int32_t src_x, int32_t src_y,
+                                  int32_t dst_x, int32_t dst_y,
+                                  uint32_t width, uint32_t height)
+{
+    struct pixman_drawable * src = (void *) src_drawable;
+    struct pixman_drawable * dst = (void *) dst_drawable;
+
+    pixman_image_composite32(PIXMAN_OP_SRC, src->image, NULL, dst->image,
+                             src_x, src_y, 0, 0, dst_x, dst_y, width, height);
+}
+
+static void pixman_copy_region(struct wld_drawable * src_drawable,
+                               struct wld_drawable * dst_drawable,
+                               pixman_region32_t * region,
+                               int32_t dst_x, int32_t dst_y)
+{
+    struct pixman_drawable * src = (void *) src_drawable;
+    struct pixman_drawable * dst = (void *) dst_drawable;
+
+    pixman_image_set_clip_region32(src->image, region);
+    pixman_image_composite32(PIXMAN_OP_SRC, src->image, NULL, dst->image,
+                             region->extents.x1, region->extents.y1, 0, 0,
+                             region->extents.x1 + dst_x,
+                             region->extents.y1 + dst_y,
+                             region->extents.x2 - region->extents.x1,
+                             region->extents.y2 - region->extents.y1);
+    pixman_image_set_clip_region32(src->image, NULL);
 }
 
 static inline uint8_t reverse(uint8_t byte)

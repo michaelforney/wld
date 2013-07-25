@@ -23,6 +23,8 @@
 
 #include "wld-private.h"
 
+#include <assert.h>
+
 void default_fill_region(struct wld_drawable * drawable, uint32_t color,
                          pixman_region32_t * region)
 {
@@ -40,6 +42,24 @@ void default_fill_region(struct wld_drawable * drawable, uint32_t color,
     }
 }
 
+void default_copy_region(struct wld_drawable * src, struct wld_drawable * dst,
+                         pixman_region32_t * region,
+                         int32_t dst_x, int32_t dst_y)
+{
+    pixman_box32_t * box;
+    int num_boxes;
+
+    box = pixman_region32_rectangles(region, &num_boxes);
+
+    while (num_boxes--)
+    {
+        dst->interface->copy_rectangle(src, dst, box->x1, box->y1,
+                                       dst_x + box->x1, dst_y + box->y1,
+                                       box->x2 - box->x1, box->y2 - box->y1);
+        ++box;
+    }
+}
+
 void wld_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
                         int32_t x, int32_t y, uint32_t width, uint32_t height)
 {
@@ -50,6 +70,23 @@ void wld_fill_region(struct wld_drawable * drawable, uint32_t color,
                      pixman_region32_t * region)
 {
     drawable->interface->fill_region(drawable, color, region);
+}
+
+void wld_copy_rectangle(struct wld_drawable * src, struct wld_drawable * dst,
+                        int32_t src_x, int32_t src_y,
+                        int32_t dst_x, int32_t dst_y,
+                        uint32_t width, uint32_t height)
+{
+    assert(src->interface == dst->interface);
+    dst->interface->copy_rectangle(src, dst, src_x, src_y, dst_x, dst_y,
+                                   width, height);
+}
+
+void wld_copy_region(struct wld_drawable * src, struct wld_drawable * dst,
+                     pixman_region32_t * region, int32_t dst_x, int32_t dst_y)
+{
+    assert(src->interface == dst->interface);
+    dst->interface->copy_region(src, dst, region, dst_x, dst_y);
 }
 
 void wld_draw_text_utf8_n(struct wld_drawable * drawable,

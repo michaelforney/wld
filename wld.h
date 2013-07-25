@@ -129,6 +129,14 @@ void wld_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
 void wld_fill_region(struct wld_drawable * drawable, uint32_t color,
                      pixman_region32_t * region);
 
+void wld_copy_rectangle(struct wld_drawable * src, struct wld_drawable * dst,
+                        int32_t src_x, int32_t src_y,
+                        int32_t dst_x, int32_t dst_y,
+                        uint32_t width, uint32_t height);
+
+void wld_copy_region(struct wld_drawable * src, struct wld_drawable * dst,
+                     pixman_region32_t * region, int32_t dst_x, int32_t dst_y);
+
 void wld_draw_text_utf8_n(struct wld_drawable * drawable,
                           struct wld_font * font, uint32_t color,
                           int32_t x, int32_t y,

@@ -83,6 +83,14 @@ struct wld_draw_interface
                             uint32_t width, uint32_t height);
     void (* fill_region)(struct wld_drawable * drawable, uint32_t color,
                          pixman_region32_t * region);
+    void (* copy_rectangle)(struct wld_drawable * src,
+                            struct wld_drawable * dst,
+                            int32_t src_x, int32_t src_y,
+                            int32_t dst_x, int32_t dst_y,
+                            uint32_t width, uint32_t height);
+    void (* copy_region)(struct wld_drawable * src, struct wld_drawable * dst,
+                         pixman_region32_t * region,
+                         int32_t dst_x, int32_t dst_y);
     void (* draw_text_utf8)(struct wld_drawable * drawable,
                             struct font * font, uint32_t color,
                             int32_t x, int32_t y,
@@ -114,6 +122,13 @@ static inline uint8_t format_bytes_per_pixel(enum wld_format format)
  */
 void default_fill_region(struct wld_drawable * drawable, uint32_t color,
                          pixman_region32_t * region);
+
+/**
+ * This default copy_region method is implemented in terms of copy_rectangle.
+ */
+void default_copy_region(struct wld_drawable * src, struct wld_drawable * dst,
+                         pixman_region32_t * region,
+                         int32_t dst_x, int32_t dst_y);
 
 #endif
 
