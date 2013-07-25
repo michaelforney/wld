@@ -137,17 +137,26 @@ void wld_copy_rectangle(struct wld_drawable * src, struct wld_drawable * dst,
 void wld_copy_region(struct wld_drawable * src, struct wld_drawable * dst,
                      pixman_region32_t * region, int32_t dst_x, int32_t dst_y);
 
+/**
+ * Draw a UTF-8 text string to the given drawable.
+ *
+ * @param length    The maximum number of bytes in the string to process
+ * @param extents   If not NULL, will be initialized to the extents of the
+ *                  drawn text
+ */
 void wld_draw_text_utf8_n(struct wld_drawable * drawable,
                           struct wld_font * font, uint32_t color,
                           int32_t x, int32_t y,
-                          const char * text, int32_t length);
+                          const char * text, int32_t length,
+                          struct wld_extents * extents);
 
 static inline void wld_draw_text_utf8(struct wld_drawable * drawable,
                         struct wld_font * font, uint32_t color,
                         int32_t x, int32_t y,
-                        const char * text)
+                        const char * text,
+                        struct wld_extents * extents)
 {
-    wld_draw_text_utf8_n(drawable, font, color, x, y, text, INT32_MAX);
+    wld_draw_text_utf8_n(drawable, font, color, x, y, text, INT32_MAX, extents);
 }
 
 void wld_flush(struct wld_drawable * drawable);

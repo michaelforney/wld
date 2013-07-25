@@ -92,12 +92,13 @@ void wld_copy_region(struct wld_drawable * src, struct wld_drawable * dst,
 void wld_draw_text_utf8_n(struct wld_drawable * drawable,
                           struct wld_font * font_base, uint32_t color,
                           int32_t x, int32_t y,
-                          const char * text, int32_t length)
+                          const char * text, int32_t length,
+                          struct wld_extents * extents)
 {
     struct font * font = (void *) font_base;
 
     drawable->interface->draw_text_utf8(drawable, font, color, x, y,
-                                        text, length);
+                                        text, length, extents);
 }
 
 void wld_destroy_drawable(struct wld_drawable * drawable)

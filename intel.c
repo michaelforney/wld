@@ -60,7 +60,8 @@ static void intel_copy_rectangle(struct wld_drawable * src,
 static void intel_draw_text_utf8(struct wld_drawable * drawable,
                                  struct font * font, uint32_t color,
                                  int32_t x, int32_t y,
-                                 const char * text, int32_t length);
+                                 const char * text, int32_t length,
+                                 struct wld_extents * extents);
 static void intel_flush(struct wld_drawable * drawable);
 static void intel_destroy(struct wld_drawable * drawable);
 
@@ -158,7 +159,8 @@ static void intel_copy_rectangle(struct wld_drawable * src_drawable,
 static void intel_draw_text_utf8(struct wld_drawable * drawable,
                                  struct font * font, uint32_t color,
                                  int32_t x, int32_t y,
-                                 const char * text, int32_t length)
+                                 const char * text, int32_t length,
+                                 struct wld_extents * extents)
 {
     struct intel_drawable * intel = (void *) drawable;
     int ret;
@@ -169,6 +171,7 @@ static void intel_draw_text_utf8(struct wld_drawable * drawable,
     uint8_t immediate[512];
     uint8_t * byte;
     uint8_t byte_index;
+    int32_t origin_x = x;
 
     xy_setup_blt(&intel->context->batch, true, INTEL_BLT_RASTER_OPERATION_SRC,
                  0, color, intel->bo, intel->drm.pitch);
@@ -199,8 +202,8 @@ static void intel_draw_text_utf8(struct wld_drawable * drawable,
 
       retry:
         ret = xy_text_immediate_blt(&intel->context->batch, intel->bo,
-                                    x + glyph->x, y + glyph->y,
-                                    x + glyph->x + glyph->bitmap.width,
+                                    origin_x + glyph->x, y + glyph->y,
+                                    origin_x + glyph->x + glyph->bitmap.width,
                                     y + glyph->y + glyph->bitmap.rows,
                                     (byte - immediate + 3) / 4,
                                     (uint32_t *) immediate);
@@ -215,8 +218,11 @@ static void intel_draw_text_utf8(struct wld_drawable * drawable,
         }
 
       advance:
-        x += glyph->advance;
+        origin_x += glyph->advance;
     }
+
+    if (extents)
+        extents->advance = origin_x - x;
 }
 
 static void intel_flush(struct wld_drawable * drawable)

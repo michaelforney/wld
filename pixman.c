@@ -63,7 +63,8 @@ static void pixman_copy_region(struct wld_drawable * src,
 static void pixman_draw_text_utf8(struct wld_drawable * drawable,
                                   struct font * font, uint32_t color,
                                   int32_t x, int32_t y,
-                                  const char * text, int32_t length);
+                                  const char * text, int32_t length,
+                                  struct wld_extents * extents);
 static void pixman_flush(struct wld_drawable * drawable);
 static void pixman_destroy(struct wld_drawable * drawable);
 
@@ -209,7 +210,8 @@ static inline uint8_t reverse(uint8_t byte)
 static void pixman_draw_text_utf8(struct wld_drawable * drawable,
                                   struct font * font, uint32_t color,
                                   int32_t x, int32_t y,
-                                  const char * text, int32_t length)
+                                  const char * text, int32_t length,
+                                  struct wld_extents * extents)
 {
     struct pixman_drawable * pixman = (void *) drawable;
     int ret;
@@ -217,7 +219,7 @@ static void pixman_draw_text_utf8(struct wld_drawable * drawable,
     struct glyph * glyph;
     FT_UInt glyph_index;
     pixman_glyph_t glyphs[strlen(text)];
-    uint32_t index = 0, glyph_x = 0;
+    uint32_t index = 0, origin_x = 0;
     pixman_color_t pixman_color = PIXMAN_COLOR(color);
     pixman_image_t * solid;
 
@@ -234,7 +236,7 @@ static void pixman_draw_text_utf8(struct wld_drawable * drawable,
 
         glyph = font->glyphs[glyph_index];
 
-        glyphs[index].x = glyph_x;
+        glyphs[index].x = origin_x;
         glyphs[index].y = 0;
         glyphs[index].glyph = pixman_glyph_cache_lookup
             (pixman->context->glyph_cache, font, glyph);
@@ -285,7 +287,7 @@ static void pixman_draw_text_utf8(struct wld_drawable * drawable,
         ++index;
 
       advance:
-        glyph_x += glyph->advance;
+        origin_x += glyph->advance;
     }
 
     pixman_composite_glyphs_no_mask(PIXMAN_OP_OVER, solid, pixman->image, 0, 0,
@@ -293,6 +295,9 @@ static void pixman_draw_text_utf8(struct wld_drawable * drawable,
                                     index, glyphs);
 
     pixman_image_unref(solid);
+
+    if (extents)
+        extents->advance = origin_x;
 }
 
 static void pixman_flush(struct wld_drawable * drawable)

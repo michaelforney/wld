@@ -94,7 +94,8 @@ struct wld_draw_interface
     void (* draw_text_utf8)(struct wld_drawable * drawable,
                             struct font * font, uint32_t color,
                             int32_t x, int32_t y,
-                            const char * text, int32_t length);
+                            const char * text, int32_t length,
+                            struct wld_extents * extents);
     void (* flush)(struct wld_drawable * drawable);
     void (* destroy)(struct wld_drawable * drawable);
 };

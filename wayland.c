@@ -79,7 +79,8 @@ static void wayland_copy_region(struct wld_drawable * src,
 static void wayland_draw_text_utf8(struct wld_drawable * drawable,
                                    struct font * font, uint32_t color,
                                    int32_t x, int32_t y,
-                                   const char * text, int32_t length);
+                                   const char * text, int32_t length,
+                                   struct wld_extents * extents);
 static void wayland_flush(struct wld_drawable * drawable);
 static void wayland_destroy(struct wld_drawable * drawable);
 
@@ -333,13 +334,14 @@ static void wayland_copy_region(struct wld_drawable * src_drawable,
 static void wayland_draw_text_utf8(struct wld_drawable * drawable,
                                    struct font * font, uint32_t color,
                                    int32_t x, int32_t y,
-                                   const char * text, int32_t length)
+                                   const char * text, int32_t length,
+                                   struct wld_extents * extents)
 {
     struct wayland_drawable * wayland = (void *) drawable;
 
     begin(wayland);
     wld_draw_text_utf8_n(BACKBUF(wayland).drawable, &font->base, color,
-                         x, y, text, length);
+                         x, y, text, length, extents);
 }
 
 static void wayland_flush(struct wld_drawable * drawable)
