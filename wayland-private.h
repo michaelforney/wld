@@ -55,6 +55,9 @@ extern const struct wld_wayland_interface wayland_drm_interface;
 extern const struct wld_wayland_interface wayland_shm_interface;
 #endif
 
+/**
+ * Like wl_display_roundtrip, but for a particular event queue.
+ */
 int wayland_roundtrip(struct wl_display * display,
                       struct wl_event_queue * queue);
 
