@@ -264,6 +264,8 @@ void sync_done(void * data, struct wl_callback * callback, uint32_t msecs)
     bool * done = data;
 
     *done = true;
+
+    wl_callback_destroy(callback);
 }
 
 void buffer_release(void * data, struct wl_buffer * buffer)
