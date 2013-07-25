@@ -34,9 +34,10 @@ void default_fill_region(struct wld_drawable * drawable, uint32_t color,
 
     for (index = 0; index < num_boxes; ++index)
     {
-        wld_fill_rectangle(drawable, color, boxes[index].x1, boxes[index].y1,
-                           boxes[index].x2 - boxes[index].x1,
-                           boxes[index].y2 - boxes[index].y1);
+        drawable->interface->fill_rectangle
+            (drawable, color, boxes[index].x1, boxes[index].y1,
+             boxes[index].x2 - boxes[index].x1,
+             boxes[index].y2 - boxes[index].y1);
     }
 }
 
