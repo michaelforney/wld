@@ -47,33 +47,41 @@ if test "x$with_wayland" = "xyes" ; then
 fi
 AM_CONDITIONAL([WITH_WAYLAND], test "x$with_wayland" = "xyes")
 
-# Wayland DRM
+# DRM
 AC_ARG_ENABLE([drm],
               AS_HELP_STRING([--disable-drm],
-                             [disable Wayland DRM support]),
+                             [disable DRM support]),
               enable_drm=$enableval,
-              enable_drm=$with_wayland)
-if test "x$enable_drm" = "xyes" ; then
+              enable_drm=yes)
+AM_CONDITIONAL([ENABLE_DRM], [test "x$enable_drm" = "xyes"])
+
+# Wayland DRM
+AC_ARG_ENABLE([wayland-drm],
+              AS_HELP_STRING([--disable-wayland-drm],
+                             [disable Wayland DRM support]),
+              enable_wayland_drm=$enableval,
+              enable_wayland_drm=$with_wayland)
+if test "x$enable_wayland_drm" = "xyes" ; then
     if test "x$with_wayland" != "xyes" ; then
-        AC_MSG_ERROR([--enable-drm requires --with-wayland])
+        AC_MSG_ERROR([--enable-wayland-drm requires --with-wayland])
     fi
     AC_DEFINE([ENABLE_WAYLAND_DRM], [1], [Enable Wayland DRM support])
 fi
-AM_CONDITIONAL([ENABLE_WAYLAND_DRM], test "x$enable_drm" = "xyes")
+AM_CONDITIONAL([ENABLE_WAYLAND_DRM], test "x$enable_wayland_drm" = "xyes")
 
 # Wayland SHM
-AC_ARG_ENABLE([shm],
-              AS_HELP_STRING([--disable-shm],
+AC_ARG_ENABLE([wayland-shm],
+              AS_HELP_STRING([--disable-wayland-shm],
                              [disable Wayland SHM support]),
               enable_shm=$enableval,
               enable_shm=$with_wayland)
-if test "x$enable_shm" = "xyes" ; then
+if test "x$enable_wayland_shm" = "xyes" ; then
     if test "x$with_wayland" != "xyes" ; then
-        AC_MSG_ERROR([--enable-shm requires --with-wayland])
+        AC_MSG_ERROR([--enable-wayland-shm requires --with-wayland])
     fi
     AC_DEFINE([ENABLE_WAYLAND_SHM], [1], [Enable Wayland SHM support])
 fi
-AM_CONDITIONAL([ENABLE_WAYLAND_SHM], test "x$enable_shm" = "xyes")
+AM_CONDITIONAL([ENABLE_WAYLAND_SHM], test "x$enable_wayland_shm" = "xyes")
 
 # Intel
 AC_ARG_ENABLE([intel],

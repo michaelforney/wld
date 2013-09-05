@@ -24,6 +24,7 @@
 #include "wayland-drm.h"
 #include "wayland-drm-client-protocol.h"
 #include "wayland.h"
+#include "drm.h"
 #include "wayland-private.h"
 #include "wld-private.h"
 #include "drm-private.h"
@@ -36,17 +37,16 @@
 
 #include <stdio.h>
 
-struct wld_drm_context
+struct wld_wayland_drm_context
 {
+    struct wld_drm_context context;
+
     struct wl_drm * wl;
     struct wl_registry * registry;
     struct wl_array formats;
     uint32_t capabilities;
     int fd;
     bool authenticated;
-
-    const struct wld_drm_interface * interface;
-    void * context;
 };
 
 static void registry_global(void * data, struct wl_registry * registry,
@@ -60,10 +60,12 @@ static void drm_capabilities(void * data, struct wl_drm * wl,
                              uint32_t capabilities);
 
 const struct wld_wayland_interface wayland_drm_interface = {
-    .create_context = (wayland_create_context_func_t) &wld_drm_create_context,
+    .create_context
+        = (wayland_create_context_func_t) &wld_wayland_drm_create_context,
     .destroy_context
-        = (wayland_destroy_context_func_t) &wld_drm_destroy_context,
-    .create_drawable = (wayland_create_drawable_func_t) &wld_drm_create_drawable
+        = (wayland_destroy_context_func_t) &wld_wayland_drm_destroy_context,
+    .create_drawable
+        = (wayland_create_drawable_func_t) &wld_wayland_drm_create_drawable
 };
 
 const static struct wl_registry_listener registry_listener = {
@@ -77,53 +79,10 @@ const static struct wl_drm_listener drm_listener = {
     .capabilities = &drm_capabilities
 };
 
-const static struct wld_drm_interface * drm_interfaces[] = {
-#if ENABLE_INTEL
-    &intel_drm
-#endif
-};
-
-static const struct wld_drm_interface * find_drm_interface(int fd)
+struct wld_wayland_drm_context * wld_wayland_drm_create_context
+    (struct wl_display * display, struct wl_event_queue * queue)
 {
-    char path[64], id[32];
-    uint32_t vendor_id, device_id;
-    char * path_part;
-    struct stat st;
-    FILE * file;
-    uint32_t index;
-
-    if (fstat(fd, &st) == -1)
-        return NULL;
-
-    snprintf(path, sizeof path, "/sys/dev/char/%u:%u/",
-             major(st.st_rdev), minor(st.st_rdev));
-    path_part = path + strlen(path);
-
-    strcpy(path_part, "device/vendor");
-    file = fopen(path, "r");
-    fgets(id, sizeof id, file);
-    fclose(file);
-    vendor_id = strtoul(id, NULL, 0);
-
-    strcpy(path_part, "device/device");
-    file = fopen(path, "r");
-    fgets(id, sizeof id, file);
-    fclose(file);
-    device_id = strtoul(id, NULL, 0);
-
-    for (index = 0; index < ARRAY_LENGTH(drm_interfaces); ++index)
-    {
-        if (drm_interfaces[index]->device_supported(vendor_id, device_id))
-            return drm_interfaces[index];
-    }
-
-    return NULL;
-}
-
-struct wld_drm_context * wld_drm_create_context(struct wl_display * display,
-                                                struct wl_event_queue * queue)
-{
-    struct wld_drm_context * drm;
+    struct wld_wayland_drm_context * drm;
 
     drm = malloc(sizeof *drm);
 
@@ -178,19 +137,9 @@ struct wld_drm_context * wld_drm_create_context(struct wl_display * display,
         goto error4;
     }
 
-    drm->interface = find_drm_interface(drm->fd);
-
-    if (!drm->interface)
+    if (!drm_initialize_context(&drm->context, drm->fd))
     {
-        DEBUG("Couldn't find drawable implementation for DRM device\n");
-        goto error4;
-    }
-
-    drm->context = drm->interface->create_context(drm->fd);
-
-    if (!drm->context)
-    {
-        DEBUG("Couldn't create context for DRM drawable implementation\n");
+        DEBUG("Couldn't initialize context for DRM device\n");
         goto error4;
     }
 
@@ -209,9 +158,9 @@ struct wld_drm_context * wld_drm_create_context(struct wl_display * display,
     return NULL;
 }
 
-void wld_drm_destroy_context(struct wld_drm_context * drm)
+void wld_wayland_drm_destroy_context(struct wld_wayland_drm_context * drm)
 {
-    drm->interface->destroy_context(drm->context);
+    drm_finalize_context(&drm->context);
     close(drm->fd);
     wl_drm_destroy(drm->wl);
     wl_registry_destroy(drm->registry);
@@ -220,7 +169,8 @@ void wld_drm_destroy_context(struct wld_drm_context * drm)
     free(drm);
 }
 
-bool wld_drm_has_format(struct wld_drm_context * drm, uint32_t format)
+bool wld_wayland_drm_has_format(struct wld_wayland_drm_context * drm,
+                                uint32_t format)
 {
     uint32_t * supported_format;
 
@@ -233,23 +183,24 @@ bool wld_drm_has_format(struct wld_drm_context * drm, uint32_t format)
     return false;
 }
 
-int wld_drm_get_fd(struct wld_drm_context * drm)
+int wld_wayland_drm_get_fd(struct wld_wayland_drm_context * drm)
 {
     return drm->authenticated ? drm->fd : -1;
 }
 
-struct wld_drawable * wld_drm_create_drawable(struct wld_drm_context * drm,
-                                              uint32_t width, uint32_t height,
-                                              enum wld_format format,
-                                              struct wl_buffer ** buffer)
+struct wld_drawable * wld_wayland_drm_create_drawable
+    (struct wld_wayland_drm_context * drm, uint32_t width, uint32_t height,
+     enum wld_format format, struct wl_buffer ** buffer)
 {
     struct drm_drawable * drawable;
 
-    if (buffer && !wld_drm_has_format(drm, format))
+    if (buffer && !wld_wayland_drm_has_format(drm, format))
         return NULL;
 
-    drawable = (void *) drm->interface->create_drawable(drm->context,
-                                                        width, height, format);
+    drawable = (void *) wld_drm_create_drawable(&drm->context, width, height, format);
+
+    if (!drawable)
+        return NULL;
 
     if (buffer)
     {
@@ -261,7 +212,7 @@ struct wld_drawable * wld_drm_create_drawable(struct wld_drm_context * drm,
     return &drawable->base;
 }
 
-int wld_drm_get_prime_fd(struct wld_drawable * drawable)
+int wld_wayland_drm_get_prime_fd(struct wld_drawable * drawable)
 {
     return ((struct drm_drawable *)(void *) drawable)->fd;
 }
@@ -269,7 +220,7 @@ int wld_drm_get_prime_fd(struct wld_drawable * drawable)
 void registry_global(void * data, struct wl_registry * registry, uint32_t name,
                      const char * interface, uint32_t version)
 {
-    struct wld_drm_context * drm = data;
+    struct wld_wayland_drm_context * drm = data;
 
     if (strcmp(interface, "wl_drm") == 0 && version >= 2)
         drm->wl = wl_registry_bind(registry, name, &wl_drm_interface, 2);
@@ -277,7 +228,7 @@ void registry_global(void * data, struct wl_registry * registry, uint32_t name,
 
 void drm_device(void * data, struct wl_drm * wl, const char * name)
 {
-    struct wld_drm_context * drm = data;
+    struct wld_wayland_drm_context * drm = data;
     drm_magic_t magic;
 
     drm->fd = open(name, O_RDWR);
@@ -294,21 +245,21 @@ void drm_device(void * data, struct wl_drm * wl, const char * name)
 
 void drm_format(void * data, struct wl_drm * wl, uint32_t format)
 {
-    struct wld_drm_context * drm = data;
+    struct wld_wayland_drm_context * drm = data;
 
     *((uint32_t *) wl_array_add(&drm->formats, sizeof format)) = format;
 }
 
 void drm_authenticated(void * data, struct wl_drm * wl)
 {
-    struct wld_drm_context * drm = data;
+    struct wld_wayland_drm_context * drm = data;
 
     drm->authenticated = true;
 }
 
 void drm_capabilities(void * data, struct wl_drm * wl, uint32_t capabilities)
 {
-    struct wld_drm_context * drm = data;
+    struct wld_wayland_drm_context * drm = data;
 
     drm->capabilities = capabilities;
 }

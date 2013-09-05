@@ -30,7 +30,7 @@ typedef bool (* drm_device_supported_func_t)(uint32_t vendor_id,
                                              uint32_t device_id);
 typedef void * (* drm_create_context_func_t)(int drm_fd);
 typedef void (* drm_destroy_context_func_t)(void * context);
-typedef struct wld_drawable * (* drm_create_drawable_func_t)
+typedef struct drm_drawable * (* drm_create_drawable_func_t)
     (void * context, uint32_t width, uint32_t height, uint32_t format);
 
 struct wld_drm_interface
@@ -41,11 +41,16 @@ struct wld_drm_interface
     drm_create_drawable_func_t create_drawable;
 };
 
+struct wld_drm_context
+{
+    const struct wld_drm_interface * interface;
+    void * context;
+};
+
 struct drm_drawable
 {
     struct wld_drawable base;
-
-    unsigned long pitch;
+    struct wld_drm_context * drm;
     int fd;
 };
 
@@ -55,6 +60,9 @@ _Static_assert(offsetof(struct drm_drawable, base) == 0,
 #if ENABLE_INTEL
 extern const struct wld_drm_interface intel_drm;
 #endif
+
+bool drm_initialize_context(struct wld_drm_context * context, int fd);
+void drm_finalize_context(struct wld_drm_context * context);
 
 #endif
 

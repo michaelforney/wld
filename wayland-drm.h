@@ -27,7 +27,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-struct wld_context;
+struct wld_wayland_drm_context;
 struct wld_drawable;
 enum wld_format;
 
@@ -39,41 +39,40 @@ struct wl_buffer;
  * Create a new drawable context which creates Wayland buffers through the
  * wl_drm interface, backed by hardware specific drawable implementations.
  */
-struct wld_drm_context * wld_drm_create_context(struct wl_display * display,
-                                                struct wl_event_queue * queue);
+struct wld_wayland_drm_context * wld_wayland_drm_create_context
+    (struct wl_display * display, struct wl_event_queue * queue);
 
 /**
- * Destroy a DRM context.
+ * Destroy a Wayland DRM context.
  */
-void wld_drm_destroy_context(struct wld_drm_context * context);
+void wld_wayland_drm_destroy_context(struct wld_wayland_drm_context * context);
 
 /**
  * Check if the wl_drm global has the specified pixel format.
  *
  * @see enum wld_format
  */
-bool wld_drm_has_format(struct wld_drm_context * context,
-                        enum wld_format format);
+bool wld_wayland_drm_has_format(struct wld_wayland_drm_context * context,
+                                enum wld_format format);
 
 /**
  * Get the opened file descriptor for the DRM device.
  */
-int wld_drm_get_fd(struct wld_drm_context * context);
+int wld_wayland_drm_get_fd(struct wld_wayland_drm_context * context);
 
 /**
  * Create a new DRM drawable with the specified dimensions.
  */
-struct wld_drawable * wld_drm_create_drawable(struct wld_drm_context * context,
-                                              uint32_t width, uint32_t height,
-                                              enum wld_format format,
-                                              struct wl_buffer ** buffer);
+struct wld_drawable * wld_wayland_drm_create_drawable
+    (struct wld_wayland_drm_context * context, uint32_t width, uint32_t height,
+     enum wld_format format, struct wl_buffer ** buffer);
 
 /**
  * Get a PRIME file descriptor for this DRM drawable.
  *
  * @note The drawable must have been created with wld_drm_create_drawable
  */
-int wld_drm_get_prime_fd(struct wld_drawable * drawable);
+int wld_wayland_drm_get_prime_fd(struct wld_drawable * drawable);
 
 #endif
 

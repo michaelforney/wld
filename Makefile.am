@@ -19,6 +19,11 @@ if WITH_WAYLAND
     pkginclude_HEADERS += wayland.h
 endif
 
+if ENABLE_DRM
+    libwld_la_SOURCES += drm.c
+    pkginclude_HEADERS += drm.h
+endif
+
 if ENABLE_WAYLAND_DRM
     AM_CPPFLAGS = -I$(top_builddir)/protocol
     libwld_la_SOURCES += wayland-drm.c protocol/wayland-drm-protocol.c

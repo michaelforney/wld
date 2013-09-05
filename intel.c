@@ -69,7 +69,7 @@ static void intel_destroy(struct wld_drawable * drawable);
 static struct wld_intel_context * intel_create_context(int drm_fd);
 static void intel_destroy_context(struct wld_intel_context * context);
 static bool intel_device_supported(uint32_t vendor_id, uint32_t device_id);
-static struct wld_drawable * intel_create_drawable
+static struct drm_drawable * intel_create_drawable
     (struct wld_intel_context * context, uint32_t width, uint32_t height,
      uint32_t format);
 
@@ -116,7 +116,7 @@ void intel_destroy_context(struct wld_intel_context * context)
     free(context);
 }
 
-struct wld_drawable * intel_create_drawable
+struct drm_drawable * intel_create_drawable
     (struct wld_intel_context * context, uint32_t width, uint32_t height,
      uint32_t format)
 {
@@ -138,7 +138,7 @@ struct wld_drawable * intel_create_drawable
                                          &tiling_mode, &intel->drm.base.pitch, 0);
     drm_intel_bo_gem_export_to_prime(intel->bo, &intel->drm.fd);
 
-    return &intel->drm.base;
+    return &intel->drm;
 }
 
 static void intel_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
