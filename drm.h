@@ -47,6 +47,25 @@ struct wld_drawable * wld_drm_create_drawable(struct wld_drm_context * drm,
                                               uint32_t format);
 
 /**
+ * Create a new DRM drawable by importing a PRIME file descriptor.
+ */
+struct wld_drawable * wld_drm_import(struct wld_drm_context * context,
+                                     uint32_t width, uint32_t height,
+                                     uint32_t format,
+                                     int prime_fd, unsigned long pitch);
+
+/**
+ * Create a new DRM drawable by importing a GEM name.
+ *
+ * This is provided for compatibility with clients that don't support PRIME.
+ * You should use wld_drm_import_drawable and PRIME if possible.
+ */
+struct wld_drawable * wld_drm_import_gem(struct wld_drm_context * context,
+                                         uint32_t width, uint32_t height,
+                                         uint32_t format, uint32_t gem_name,
+                                         unsigned long pitch);
+
+/**
  * Export a DRM drawable to a PRIME file descriptor.
  *
  * @return A PRIME file descriptor for this drawable

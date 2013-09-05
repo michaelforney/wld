@@ -32,6 +32,12 @@ typedef void * (* drm_create_context_func_t)(int drm_fd);
 typedef void (* drm_destroy_context_func_t)(void * context);
 typedef struct drm_drawable * (* drm_create_drawable_func_t)
     (void * context, uint32_t width, uint32_t height, uint32_t format);
+typedef struct drm_drawable * (* drm_import_func_t)
+    (void * context, uint32_t width, uint32_t height, uint32_t format,
+     int prime_fd, unsigned long pitch);
+typedef struct drm_drawable * (* drm_import_gem_func_t)
+    (void * context, uint32_t width, uint32_t height, uint32_t format,
+     uint32_t gem_name, unsigned long pitch);
 typedef int (* drm_export_func_t)(struct drm_drawable * drawable);
 
 struct wld_drm_interface
@@ -40,6 +46,8 @@ struct wld_drm_interface
     drm_create_context_func_t create_context;
     drm_destroy_context_func_t destroy_context;
     drm_create_drawable_func_t create_drawable;
+    drm_import_func_t import;
+    drm_import_gem_func_t import_gem;
     drm_export_func_t export;
 };
 

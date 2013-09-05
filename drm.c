@@ -130,6 +130,32 @@ struct wld_drawable * wld_drm_create_drawable(struct wld_drm_context * drm,
     return finish_drawable(drm, drawable);
 }
 
+struct wld_drawable * wld_drm_import(struct wld_drm_context * drm,
+                                     uint32_t width, uint32_t height,
+                                     uint32_t format,
+                                     int prime_fd, unsigned long pitch)
+{
+    struct drm_drawable * drawable;
+
+    drawable = drm->interface->import(drm->context, width, height, format,
+                                      prime_fd, pitch);
+
+    return finish_drawable(drm, drawable);
+}
+
+struct wld_drawable * wld_drm_import_gem(struct wld_drm_context * drm,
+                                         uint32_t width, uint32_t height,
+                                         uint32_t format,
+                                         uint32_t gem_name, unsigned long pitch)
+{
+    struct drm_drawable * drawable;
+
+    drawable = drm->interface->import_gem(drm->context, width, height, format,
+                                          gem_name, pitch);
+
+    return finish_drawable(drm, drawable);
+}
+
 int wld_drm_export(struct wld_drawable * drawable)
 {
     struct drm_drawable * drm_drawable = (void *) drawable;

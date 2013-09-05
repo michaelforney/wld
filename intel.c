@@ -72,6 +72,12 @@ static bool intel_device_supported(uint32_t vendor_id, uint32_t device_id);
 static struct drm_drawable * intel_create_drawable
     (struct wld_intel_context * context, uint32_t width, uint32_t height,
      uint32_t format);
+static struct drm_drawable * intel_import
+    (struct wld_intel_context * context, uint32_t width, uint32_t height,
+     uint32_t format, int prime_fd, unsigned long pitch);
+static struct drm_drawable * intel_import_gem
+    (struct wld_intel_context * context, uint32_t width, uint32_t height,
+     uint32_t format, uint32_t gem_name, unsigned long pitch);
 static int intel_export(struct drm_drawable * drawable);
 
 const static struct wld_draw_interface intel_draw = {
@@ -89,6 +95,8 @@ const struct wld_drm_interface intel_drm = {
     .create_context = (drm_create_context_func_t) &intel_create_context,
     .destroy_context = (drm_destroy_context_func_t) &intel_destroy_context,
     .create_drawable = (drm_create_drawable_func_t) &intel_create_drawable,
+    .import = (drm_import_func_t) &intel_import,
+    .import_gem = (drm_import_gem_func_t) &intel_import_gem,
     .export = (drm_export_func_t) &intel_export,
 };
 
@@ -118,26 +126,70 @@ void intel_destroy_context(struct wld_intel_context * context)
     free(context);
 }
 
-struct drm_drawable * intel_create_drawable
-    (struct wld_intel_context * context, uint32_t width, uint32_t height,
-     uint32_t format)
+static struct intel_drawable * new_drawable(struct wld_intel_context * context,
+                                            uint32_t width, uint32_t height)
 {
     struct intel_drawable * intel;
-    uint32_t tiling_mode = I915_TILING_X, pitch;
 
-    intel = malloc(sizeof *intel);
-
-    if (!intel)
+    if (!(intel = malloc(sizeof *intel)))
         return NULL;
 
     intel->drm.base.interface = &intel_draw;
     intel->drm.base.width = width;
     intel->drm.base.height = height;
-
     intel->context = context;
+
+    return intel;
+}
+
+struct drm_drawable * intel_create_drawable
+    (struct wld_intel_context * context, uint32_t width, uint32_t height,
+     uint32_t format)
+{
+    struct intel_drawable * intel;
+    uint32_t tiling_mode = I915_TILING_X;
+
+    if (!(intel = new_drawable(context, width, height)))
+        return NULL;
+
     intel->bo = drm_intel_bo_alloc_tiled(context->bufmgr, "drawable",
-                                         width, height, 4,
-                                         &tiling_mode, &intel->drm.base.pitch, 0);
+                                         width, height, 4, &tiling_mode,
+                                         &intel->drm.base.pitch, 0);
+
+    return &intel->drm;
+}
+
+struct drm_drawable * intel_import(struct wld_intel_context * context,
+                                   uint32_t width, uint32_t height,
+                                   uint32_t format,
+                                   int prime_fd, unsigned long pitch)
+{
+    struct intel_drawable * intel;
+    uint32_t size = width * height * 4;
+
+    if (!(intel = new_drawable(context, width, height)))
+        return NULL;
+
+    intel->drm.base.pitch = pitch;
+    intel->bo = drm_intel_bo_gem_create_from_prime(context->bufmgr,
+                                                   prime_fd, size);
+
+    return &intel->drm;
+}
+
+struct drm_drawable * intel_import_gem(struct wld_intel_context * context,
+                                       uint32_t width, uint32_t height,
+                                       uint32_t format,
+                                       uint32_t gem_name, unsigned long pitch)
+{
+    struct intel_drawable * intel;
+
+    if (!(intel = new_drawable(context, width, height)))
+        return NULL;
+
+    intel->drm.base.pitch = pitch;
+    intel->bo = drm_intel_bo_gem_create_from_name(context->bufmgr, "drawable",
+                                                  gem_name);
 
     return &intel->drm;
 }
