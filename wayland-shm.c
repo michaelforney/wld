@@ -46,6 +46,8 @@ struct wld_shm_context
 static void registry_global(void * data, struct wl_registry * registry,
                             uint32_t name, const char * interface,
                             uint32_t version);
+static void registry_global_remove(void * data, struct wl_registry * registry,
+                                   uint32_t name);
 
 static void shm_format(void * data, struct wl_shm * wl, uint32_t format);
 
@@ -57,7 +59,8 @@ const struct wld_wayland_interface wayland_shm_interface = {
 };
 
 const static struct wl_registry_listener registry_listener = {
-    .global = &registry_global
+    .global = &registry_global,
+    .global_remove = &registry_global_remove
 };
 
 const static struct wl_shm_listener shm_listener = {
@@ -204,6 +207,11 @@ void registry_global(void * data, struct wl_registry * registry, uint32_t name,
 
     if (strcmp(interface, "wl_shm") == 0)
         shm->wl = wl_registry_bind(registry, name, &wl_shm_interface, 1);
+}
+
+void registry_global_remove(void * data, struct wl_registry * registry,
+                            uint32_t name)
+{
 }
 
 void shm_format(void * data, struct wl_shm * wl, uint32_t format)

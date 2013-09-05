@@ -52,6 +52,8 @@ struct wld_wayland_drm_context
 static void registry_global(void * data, struct wl_registry * registry,
                             uint32_t name, const char * interface,
                             uint32_t version);
+static void registry_global_remove(void * data, struct wl_registry * registry,
+                                   uint32_t name);
 
 static void drm_device(void * data, struct wl_drm * wl, const char * name);
 static void drm_format(void * data, struct wl_drm * wl, uint32_t format);
@@ -69,7 +71,8 @@ const struct wld_wayland_interface wayland_drm_interface = {
 };
 
 const static struct wl_registry_listener registry_listener = {
-    .global = &registry_global
+    .global = &registry_global,
+    .global_remove = &registry_global_remove
 };
 
 const static struct wl_drm_listener drm_listener = {
@@ -223,6 +226,11 @@ void registry_global(void * data, struct wl_registry * registry, uint32_t name,
 
     if (strcmp(interface, "wl_drm") == 0 && version >= 2)
         drm->wl = wl_registry_bind(registry, name, &wl_drm_interface, 2);
+}
+
+void registry_global_remove(void * data, struct wl_registry * registry,
+                            uint32_t name)
+{
 }
 
 void drm_device(void * data, struct wl_drm * wl, const char * name)
