@@ -30,23 +30,6 @@ if test "x$enable_debug" = "xyes" ; then
     AC_DEFINE([ENABLE_DEBUG], [1], [Enable debug messages])
 fi
 
-# Wayland
-AC_ARG_WITH([wayland],
-            AS_HELP_STRING([--without-wayland],
-                           [disable Wayland support]),
-            with_wayland=$withval,
-            with_wayland=yes)
-if test "x$with_wayland" = "xyes" ; then
-    PKG_CHECK_MODULES([wayland_client], [wayland-client],,
-                      AC_MSG_ERROR([Wayland client libraries not found. Specify
-                                    --without-wayland to build without wayland
-                                    support]))
-    AC_DEFINE([WITH_WAYLAND], [1], [Build Wayland support])
-    PKGCONFIG_EXTRA_REQUIRES="wayland-client $PKGCONFIG_EXTRA_REQUIRES"
-
-fi
-AM_CONDITIONAL([WITH_WAYLAND], test "x$with_wayland" = "xyes")
-
 # DRM
 AC_ARG_ENABLE([drm],
               AS_HELP_STRING([--disable-drm],
@@ -55,65 +38,90 @@ AC_ARG_ENABLE([drm],
               enable_drm=yes)
 AM_CONDITIONAL([ENABLE_DRM], [test "x$enable_drm" = "xyes"])
 
-# Wayland DRM
-AC_ARG_ENABLE([wayland-drm],
-              AS_HELP_STRING([--disable-wayland-drm],
-                             [disable Wayland DRM support]),
-              enable_wayland_drm=$enableval,
-              enable_wayland_drm=$with_wayland)
-if test "x$enable_wayland_drm" = "xyes" ; then
-    if test "x$with_wayland" != "xyes" ; then
-        AC_MSG_ERROR([--enable-wayland-drm requires --with-wayland])
-    fi
-    AC_DEFINE([ENABLE_WAYLAND_DRM], [1], [Enable Wayland DRM support])
+# DRM drivers
+DEFAULT_DRM_DRIVERS=intel
+AC_ARG_WITH([drm-drivers],
+            AS_HELP_STRING([--with-drm-drivers=DRIVERS],
+                           [specify DRM drivers (comma separated)]),
+            with_drm_drivers=$withval,
+            with_drm_drivers=$DEFAULT_DRM_DRIVERS)
+case "x$with_drm_drivers" in
+    xyes)   with_drm_drivers=$DEFAULT_DRM_DRIVERS ;;
+    xno)    with_drm_drivers= ;;
+esac
+if test "x$drm_drivers" != "x" -a "x$enable_drm" != "xyes"; then
+    AC_MSG_ERROR([--with-drm-drivers requires --enable-drm])
 fi
-AM_CONDITIONAL([ENABLE_WAYLAND_DRM], test "x$enable_wayland_drm" = "xyes")
+drm_drivers=`IFS=','; echo $with_drm_drivers`
+for driver in $drm_drivers ; do
+    case "x$driver" in
+        xintel)
+            AC_DEFINE([WITH_DRM_INTEL], [1], [Build Intel DRM driver])
+            PKG_CHECK_MODULES([drm_intel], [libdrm_intel],,
+                AC_MSG_ERROR([Intel DRM driver requires libdrm_intel]))
+            PKG_CHECK_MODULES([intelbatch], [intelbatch],,
+                AC_MSG_ERROR([Intel DRM driver requires libintelbatch]))
+            PKGCONFIG_REQUIRES_PRIVATE="libdrm_intel intelbatch \
+$PKGCONFIG_REQUIRES_PRIVATE"
+            with_drm_intel=yes
+        ;;
+        *)
+            AC_MSG_ERROR([Unknown DRM driver: '$driver'])
+        ;;
+    esac
+done
+AM_CONDITIONAL([WITH_DRM_INTEL], [test "x$with_drm_intel" = "xyes"])
 
-# Wayland SHM
-AC_ARG_ENABLE([wayland-shm],
-              AS_HELP_STRING([--disable-wayland-shm],
-                             [disable Wayland SHM support]),
-              enable_shm=$enableval,
-              enable_shm=$with_wayland)
-if test "x$enable_wayland_shm" = "xyes" ; then
-    if test "x$with_wayland" != "xyes" ; then
-        AC_MSG_ERROR([--enable-wayland-shm requires --with-wayland])
-    fi
-    AC_DEFINE([ENABLE_WAYLAND_SHM], [1], [Enable Wayland SHM support])
+# Wayland
+AC_ARG_ENABLE([wayland],
+              AS_HELP_STRING([--disable-wayland],
+                             [disable Wayland support]),
+              enable_wayland=$enableval,
+              enable_wayland=yes)
+if test "x$enable_wayland" = "xyes" ; then
+    PKG_CHECK_MODULES([wayland_client], [wayland-client],,
+        AC_MSG_ERROR([Wayland client libraries not found. Specify \
+--disable-wayland to build without wayland support]))
+    PKGCONFIG_REQUIRES_PRIVATE="wayland-client $PKGCONFIG_REQUIRES_PRIVATE"
 fi
-AM_CONDITIONAL([ENABLE_WAYLAND_SHM], test "x$enable_wayland_shm" = "xyes")
+AM_CONDITIONAL([ENABLE_WAYLAND], [test "x$enable_wayland" = "xyes"])
 
-# Intel
-AC_ARG_ENABLE([intel],
-              AS_HELP_STRING([--disable-intel],
-                             [disable Intel drawable support]),
-              enable_intel=$enableval,
-              enable_intel=auto)
-if test "x$enable_intel" = "xyes" -o "x$enable_intel" = "xauto" ; then
-    PKG_CHECK_MODULES([drm_intel], [libdrm_intel], have_drm_intel=yes,
-        if test "x$enable_intel" = "xyes" ; then
-            AC_MSG_ERROR([--enable-intel requires libdrm_intel])
-        fi
-    )
-    PKG_CHECK_MODULES([intelbatch], [intelbatch], have_intelbatch=yes,
-        if test "x$enable_intel" = "xyes" ; then
-            AC_MSG_ERROR([--enable-intel requires libintelbatch])
-        fi
-    )
-
-    if test "x$enable_intel" = "xauto" \
-         -a "x$have_drm_intel" = "xyes" -a "x$have_intelbatch" = "xyes"
-    then
-        enable_intel=yes
-    fi
-
-    if test "x$enable_intel" = "xyes" ; then
-        AC_DEFINE([ENABLE_INTEL], [1], [Enable Intel DRM support])
-        PKGCONFIG_REQUIRES_PRIVATE="libdrm_intel $PKGCONFIG_REQUIRES_PRIVATE"
-        PKGCONFIG_REQUIRES_PRIVATE="intelbatch $PKGCONFIG_REQUIRES_PRIVATE"
-    fi
+DEFAULT_WAYLAND_INTERFACES=drm,shm
+AC_ARG_WITH([wayland-interfaces],
+            AS_HELP_STRING([--with-wayland-interfaces=INTERFACES],
+                           [specify Wayland interfaces (comma separated)]),
+            with_wayland_interfaces=$withval,
+            with_wayland_interfaces=$DEFAULT_WAYLAND_INTERFACES)
+case "x$with_wayland_interfaces" in
+    xyes)   with_wayland_interfaces=$DEFAULT_WAYLAND_INTERFACES ;;
+    xno)    with_wayland_interfaces= ;;
+esac
+if test "x$wayland_interfaces" != "x" -a "x$enable_wayland" != "xyes"; then
+    AC_MSG_ERROR([--with-wayland-interfaces requires --enable-wayland])
 fi
-AM_CONDITIONAL([ENABLE_INTEL], test "x$enable_intel" = "xyes")
+wayland_interfaces=`IFS=','; echo $with_wayland_interfaces`
+for interface in $wayland_interfaces ; do
+    case "x$interface" in
+        xdrm)
+            PKG_CHECK_MODULES([libdrm], [libdrm],,
+                AC_MSG_ERROR([Wayland DRM support requires libdrm]))
+            PKGCONFIG_REQUIRES_PRIVATE="libdrm $PKGCONFIG_REQUIRES_PRIVATE"
+            AC_DEFINE([WITH_WAYLAND_DRM], [1],
+                      [Build support for wl_drm global])
+            with_wayland_drm=yes
+        ;;
+        xshm)
+            AC_DEFINE([WITH_WAYLAND_SHM], [1],
+                      [Build support for wl_shm global])
+            with_wayland_shm=yes
+        ;;
+        *)
+            AC_MSG_ERROR([Unknown Wayland interface: '$interface'])
+        ;;
+    esac
+done
+AM_CONDITIONAL([WITH_WAYLAND_DRM], [test "x$with_wayland_drm" = "xyes"])
+AM_CONDITIONAL([WITH_WAYLAND_SHM], [test "x$with_wayland_shm" = "xyes"])
 
 # Pixman
 AC_ARG_ENABLE([pixman],

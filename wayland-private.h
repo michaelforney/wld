@@ -46,11 +46,11 @@ struct wld_wayland_interface
     wayland_create_drawable_func_t create_drawable;
 };
 
-#if ENABLE_WAYLAND_DRM
+#if WITH_WAYLAND_DRM
 extern const struct wld_wayland_interface wayland_drm_interface;
 #endif
 
-#if ENABLE_WAYLAND_SHM
+#if WITH_WAYLAND_SHM
 extern const struct wld_wayland_interface wayland_shm_interface;
 #endif
 

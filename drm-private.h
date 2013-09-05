@@ -66,7 +66,7 @@ struct drm_drawable
 _Static_assert(offsetof(struct drm_drawable, base) == 0,
                "Non-zero offset of base field");
 
-#if ENABLE_INTEL
+#if WITH_DRM_INTEL
 extern const struct wld_drm_interface intel_drm;
 #endif
 

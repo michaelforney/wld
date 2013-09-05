@@ -25,7 +25,7 @@
 #include "drm-private.h"
 
 const static struct wld_drm_interface * drm_interfaces[] = {
-#if ENABLE_INTEL
+#if WITH_DRM_INTEL
     &intel_drm
 #endif
 };

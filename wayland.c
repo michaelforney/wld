@@ -105,11 +105,11 @@ const struct wld_draw_interface wayland_draw = {
 };
 
 const static struct wld_wayland_interface * interfaces[] = {
-#if ENABLE_WAYLAND_DRM
+#if WITH_WAYLAND_DRM
     [WLD_DRM] = &wayland_drm_interface,
 #endif
 
-#if ENABLE_WAYLAND_SHM
+#if WITH_WAYLAND_SHM
     [WLD_SHM] = &wayland_shm_interface
 #endif
 };
