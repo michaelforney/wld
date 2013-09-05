@@ -163,3 +163,10 @@ int wld_drm_export(struct wld_drawable * drawable)
     return drm_drawable->drm->interface->export(drm_drawable);
 }
 
+uint32_t wld_drm_drawable_get_handle(struct wld_drawable * drawable)
+{
+    struct drm_drawable * drm_drawable = (void *) drawable;
+
+    return drm_drawable->handle;
+}
+

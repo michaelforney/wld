@@ -72,5 +72,12 @@ struct wld_drawable * wld_drm_import_gem(struct wld_drm_context * context,
  */
 int wld_drm_export(struct wld_drawable * drawable);
 
+/**
+ * Get the handle of a DRM drawable.
+ *
+ * This can be used with various DRM ioctls.
+ */
+uint32_t wld_drm_drawable_get_handle(struct wld_drawable * drawable);
+
 #endif
 

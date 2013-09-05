@@ -66,9 +66,9 @@ static void intel_flush(struct wld_drawable * drawable);
 static void intel_destroy(struct wld_drawable * drawable);
 
 /* DRM implementation */
+static bool intel_device_supported(uint32_t vendor_id, uint32_t device_id);
 static struct wld_intel_context * intel_create_context(int drm_fd);
 static void intel_destroy_context(struct wld_intel_context * context);
-static bool intel_device_supported(uint32_t vendor_id, uint32_t device_id);
 static struct drm_drawable * intel_create_drawable
     (struct wld_intel_context * context, uint32_t width, uint32_t height,
      uint32_t format);
@@ -155,6 +155,7 @@ struct drm_drawable * intel_create_drawable
     intel->bo = drm_intel_bo_alloc_tiled(context->bufmgr, "drawable",
                                          width, height, 4, &tiling_mode,
                                          &intel->drm.base.pitch, 0);
+    intel->drm.handle = intel->bo->handle;
 
     return &intel->drm;
 }
@@ -170,9 +171,10 @@ struct drm_drawable * intel_import(struct wld_intel_context * context,
     if (!(intel = new_drawable(context, width, height)))
         return NULL;
 
-    intel->drm.base.pitch = pitch;
     intel->bo = drm_intel_bo_gem_create_from_prime(context->bufmgr,
                                                    prime_fd, size);
+    intel->drm.base.pitch = pitch;
+    intel->drm.handle = intel->bo->handle;
 
     return &intel->drm;
 }
@@ -187,9 +189,10 @@ struct drm_drawable * intel_import_gem(struct wld_intel_context * context,
     if (!(intel = new_drawable(context, width, height)))
         return NULL;
 
-    intel->drm.base.pitch = pitch;
     intel->bo = drm_intel_bo_gem_create_from_name(context->bufmgr, "drawable",
                                                   gem_name);
+    intel->drm.base.pitch = pitch;
+    intel->drm.handle = intel->bo->handle;
 
     return &intel->drm;
 }

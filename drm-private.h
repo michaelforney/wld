@@ -61,6 +61,7 @@ struct drm_drawable
 {
     struct wld_drawable base;
     struct wld_drm_context * drm;
+    uint32_t handle;
 };
 
 _Static_assert(offsetof(struct drm_drawable, base) == 0,
