@@ -115,6 +115,7 @@ static inline void wld_font_text_extents_utf8(struct wld_font * font,
 struct wld_drawable
 {
     uint32_t width, height;
+    unsigned long pitch;
 
     const struct wld_draw_interface * interface;
 };

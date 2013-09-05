@@ -125,6 +125,7 @@ struct wld_drawable * wld_pixman_create_drawable
     pixman->base.interface = &pixman_draw;
     pixman->base.width = width;
     pixman->base.height = height;
+    pixman->base.pitch = pitch;
 
     pixman->context = context;
     pixman->image = pixman_image_create_bits(pixman_format(format),

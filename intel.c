@@ -69,7 +69,7 @@ static void intel_destroy(struct wld_drawable * drawable);
 static struct wld_intel_context * intel_create_context(int drm_fd);
 static void intel_destroy_context(struct wld_intel_context * context);
 static bool intel_device_supported(uint32_t vendor_id, uint32_t device_id);
-static struct drm_drawable * intel_create_drawable
+static struct wld_drawable * intel_create_drawable
     (struct wld_intel_context * context, uint32_t width, uint32_t height,
      uint32_t format);
 
@@ -135,7 +135,7 @@ struct wld_drawable * intel_create_drawable
     intel->context = context;
     intel->bo = drm_intel_bo_alloc_tiled(context->bufmgr, "drawable",
                                          width, height, 4,
-                                         &tiling_mode, &intel->drm.pitch, 0);
+                                         &tiling_mode, &intel->drm.base.pitch, 0);
     drm_intel_bo_gem_export_to_prime(intel->bo, &intel->drm.fd);
 
     return &intel->drm.base;
@@ -147,7 +147,7 @@ static void intel_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
 {
     struct intel_drawable * intel = (void *) drawable;
 
-    xy_color_blt(&intel->context->batch, intel->bo, intel->drm.pitch,
+    xy_color_blt(&intel->context->batch, intel->bo, intel->drm.base.pitch,
                  x, y, x + width, y + height, color);
 }
 
@@ -160,8 +160,9 @@ static void intel_copy_rectangle(struct wld_drawable * src_drawable,
     struct intel_drawable * src = (void *) src_drawable;
     struct intel_drawable * dst = (void *) dst_drawable;
 
-    xy_src_copy_blt(&dst->context->batch, src->bo, src->drm.pitch, src_x, src_y,
-                    dst->bo, dst->drm.pitch, dst_x, dst_y, width, height);
+    xy_src_copy_blt(&dst->context->batch,
+                    src->bo, src->drm.base.pitch, src_x, src_y,
+                    dst->bo, dst->drm.base.pitch, dst_x, dst_y, width, height);
 }
 
 static void intel_draw_text_utf8(struct wld_drawable * drawable,
@@ -182,7 +183,7 @@ static void intel_draw_text_utf8(struct wld_drawable * drawable,
     int32_t origin_x = x;
 
     xy_setup_blt(&intel->context->batch, true, INTEL_BLT_RASTER_OPERATION_SRC,
-                 0, color, intel->bo, intel->drm.pitch);
+                 0, color, intel->bo, intel->drm.base.pitch);
 
     while ((ret = FcUtf8ToUcs4((FcChar8 *) text, &c, length)) > 0 && c != '\0')
     {
@@ -221,7 +222,7 @@ static void intel_draw_text_utf8(struct wld_drawable * drawable,
             intel_batch_flush(&intel->context->batch);
             xy_setup_blt(&intel->context->batch, true,
                          INTEL_BLT_RASTER_OPERATION_SRC, 0, color,
-                         intel->bo, intel->drm.pitch);
+                         intel->bo, intel->drm.base.pitch);
             goto retry;
         }
 

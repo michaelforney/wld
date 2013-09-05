@@ -255,7 +255,7 @@ struct wld_drawable * wld_drm_create_drawable(struct wld_drm_context * drm,
     {
         *buffer = wl_drm_create_prime_buffer(drm->wl, drawable->fd,
                                              width, height, format,
-                                             0, drawable->pitch, 0, 0, 0, 0);
+                                             0, drawable->base.pitch, 0, 0, 0, 0);
     }
 
     return &drawable->base;
