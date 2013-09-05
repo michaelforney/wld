@@ -190,7 +190,7 @@ int wld_wayland_drm_get_fd(struct wld_wayland_drm_context * drm)
 
 struct wld_drawable * wld_wayland_drm_create_drawable
     (struct wld_wayland_drm_context * drm, uint32_t width, uint32_t height,
-     enum wld_format format, struct wl_buffer ** buffer)
+     uint32_t format, struct wl_buffer ** buffer)
 {
     struct wld_drawable * drawable;
 

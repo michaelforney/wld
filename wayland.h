@@ -31,7 +31,6 @@ struct wl_surface;
 struct wl_buffer;
 
 struct wld_wayland_context;
-enum wld_format;
 
 enum wld_wayland_interface_id
 {
@@ -97,8 +96,7 @@ void wld_wayland_destroy_context(struct wld_wayland_context * context);
  */
 struct wld_drawable * wld_wayland_create_drawable
     (struct wld_wayland_context * context, struct wl_surface * surface,
-     uint32_t width, uint32_t height, enum wld_format format,
-     uint32_t damage_flags);
+     uint32_t width, uint32_t height, uint32_t format, uint32_t damage_flags);
 
 /**
  * Enable or disable damage tracking on the specified Wayland drawable.

@@ -196,8 +196,7 @@ void wld_wayland_destroy_context(struct wld_wayland_context * wayland)
 
 struct wld_drawable * wld_wayland_create_drawable
     (struct wld_wayland_context * context, struct wl_surface * surface,
-     uint32_t width, uint32_t height, enum wld_format format,
-     uint32_t damage_flags)
+     uint32_t width, uint32_t height, uint32_t format, uint32_t damage_flags)
 {
     struct wayland_drawable * wayland;
 

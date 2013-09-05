@@ -29,7 +29,6 @@
 
 struct wld_shm_context;
 struct wld_drawable;
-enum wld_format;
 
 struct wl_display;
 struct wl_event_queue;
@@ -52,15 +51,14 @@ void wld_shm_destroy_context(struct wld_shm_context * context);
  *
  * @see enum wld_format
  */
-bool wld_shm_has_format(struct wld_shm_context * context,
-                        enum wld_format format);
+bool wld_shm_has_format(struct wld_shm_context * context, uint32_t format);
 
 /**
  * Create a new SHM drawable with the specified dimensions.
  */
 struct wld_drawable * wld_shm_create_drawable(struct wld_shm_context * context,
                                               uint32_t width, uint32_t height,
-                                              enum wld_format format,
+                                              uint32_t format,
                                               struct wl_buffer ** buffer);
 
 #endif

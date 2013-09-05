@@ -113,7 +113,7 @@ void wld_pixman_destroy_context(struct wld_pixman_context * context)
 
 struct wld_drawable * wld_pixman_create_drawable
     (struct wld_pixman_context * context, uint32_t width, uint32_t height,
-     void * data, uint32_t pitch, enum wld_format format)
+     void * data, uint32_t pitch, uint32_t format)
 {
     struct pixman_drawable * pixman;
 

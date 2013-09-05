@@ -29,7 +29,6 @@
 
 struct wld_wayland_drm_context;
 struct wld_drawable;
-enum wld_format;
 
 struct wl_display;
 struct wl_event_queue;
@@ -53,7 +52,7 @@ void wld_wayland_drm_destroy_context(struct wld_wayland_drm_context * context);
  * @see enum wld_format
  */
 bool wld_wayland_drm_has_format(struct wld_wayland_drm_context * context,
-                                enum wld_format format);
+                                uint32_t format);
 
 /**
  * Get the opened file descriptor for the DRM device.
@@ -65,7 +64,7 @@ int wld_wayland_drm_get_fd(struct wld_wayland_drm_context * context);
  */
 struct wld_drawable * wld_wayland_drm_create_drawable
     (struct wld_wayland_drm_context * context, uint32_t width, uint32_t height,
-     enum wld_format format, struct wl_buffer ** buffer);
+     uint32_t format, struct wl_buffer ** buffer);
 
 #endif
 

@@ -64,7 +64,7 @@ const static struct wl_shm_listener shm_listener = {
     .format = &shm_format,
 };
 
-static inline uint32_t wayland_format(enum wld_format format)
+static inline uint32_t wayland_format(uint32_t format)
 {
     switch (format)
     {
@@ -153,7 +153,7 @@ bool wld_shm_has_format(struct wld_shm_context * shm, uint32_t format)
 
 struct wld_drawable * wld_shm_create_drawable(struct wld_shm_context * shm,
                                               uint32_t width, uint32_t height,
-                                              enum wld_format format,
+                                              uint32_t format,
                                               struct wl_buffer ** buffer)
 {
     char name[] = "/tmp/wld-XXXXXX";
