@@ -34,7 +34,6 @@ if ENABLE_INTEL
     AM_CFLAGS += $(drm_intel_CFLAGS) $(intelbatch_CFLAGS)
     libwld_la_SOURCES += intel.c
     libwld_la_LIBADD += $(drm_intel_LIBS) $(intelbatch_LIBS)
-    pkginclude_HEADERS += intel.h
 endif
 
 if ENABLE_PIXMAN

@@ -21,7 +21,6 @@
  * SOFTWARE.
  */
 
-#include "intel.h"
 #include "drm-private.h"
 #include "wld-private.h"
 
@@ -49,6 +48,7 @@ struct intel_drawable
 _Static_assert(offsetof(struct intel_drawable, drm) == 0,
                "Non-zero offset of base field");
 
+/* Drawable implementation */
 static void intel_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
                                  int32_t x, int32_t y,
                                  uint32_t width, uint32_t height);
@@ -65,6 +65,14 @@ static void intel_draw_text_utf8(struct wld_drawable * drawable,
 static void intel_flush(struct wld_drawable * drawable);
 static void intel_destroy(struct wld_drawable * drawable);
 
+/* DRM implementation */
+static struct wld_intel_context * intel_create_context(int drm_fd);
+static void intel_destroy_context(struct wld_intel_context * context);
+static bool intel_device_supported(uint32_t vendor_id, uint32_t device_id);
+static struct drm_drawable * intel_create_drawable
+    (struct wld_intel_context * context, uint32_t width, uint32_t height,
+     uint32_t format);
+
 const static struct wld_draw_interface intel_draw = {
     .fill_rectangle = &intel_fill_rectangle,
     .fill_region = &default_fill_region,
@@ -76,18 +84,18 @@ const static struct wld_draw_interface intel_draw = {
 };
 
 const struct wld_drm_interface intel_drm = {
-    .device_supported = &wld_intel_device_supported,
-    .create_context = (drm_create_context_func_t) &wld_intel_create_context,
-    .destroy_context = (drm_destroy_context_func_t) &wld_intel_destroy_context,
-    .create_drawable = (drm_create_drawable_func_t) &wld_intel_create_drawable,
+    .device_supported = &intel_device_supported,
+    .create_context = (drm_create_context_func_t) &intel_create_context,
+    .destroy_context = (drm_destroy_context_func_t) &intel_destroy_context,
+    .create_drawable = (drm_create_drawable_func_t) &intel_create_drawable,
 };
 
-bool wld_intel_device_supported(uint32_t vendor_id, uint32_t device_id)
+bool intel_device_supported(uint32_t vendor_id, uint32_t device_id)
 {
     return vendor_id == 0x8086;
 }
 
-struct wld_intel_context * wld_intel_create_context(int drm_fd)
+struct wld_intel_context * intel_create_context(int drm_fd)
 {
     struct wld_intel_context * context;
 
@@ -102,13 +110,13 @@ struct wld_intel_context * wld_intel_create_context(int drm_fd)
     return context;
 }
 
-void wld_intel_destroy_context(struct wld_intel_context * context)
+void intel_destroy_context(struct wld_intel_context * context)
 {
     drm_intel_bufmgr_destroy(context->bufmgr);
     free(context);
 }
 
-struct wld_drawable * wld_intel_create_drawable
+struct wld_drawable * intel_create_drawable
     (struct wld_intel_context * context, uint32_t width, uint32_t height,
      uint32_t format)
 {
