@@ -23,7 +23,7 @@ dnl Options {{{
 # Debugging
 AC_ARG_ENABLE([debug],
               AS_HELP_STRING([--enable-debug],
-                             [Enable debugging messages]),
+                             [enable debugging messages]),
               enable_debug=$enableval,
               enable_debug=no)
 if test "x$enable_debug" = "xyes" ; then
@@ -33,7 +33,7 @@ fi
 # Wayland
 AC_ARG_WITH([wayland],
             AS_HELP_STRING([--without-wayland],
-                           [Disable Wayland support]),
+                           [disable Wayland support]),
             with_wayland=$withval,
             with_wayland=yes)
 if test "x$with_wayland" = "xyes" ; then
@@ -50,7 +50,7 @@ AM_CONDITIONAL([WITH_WAYLAND], test "x$with_wayland" = "xyes")
 # Wayland DRM
 AC_ARG_ENABLE([drm],
               AS_HELP_STRING([--disable-drm],
-                             [Disable Wayland DRM support]),
+                             [disable Wayland DRM support]),
               enable_drm=$enableval,
               enable_drm=$with_wayland)
 if test "x$enable_drm" = "xyes" ; then
@@ -64,7 +64,7 @@ AM_CONDITIONAL([ENABLE_WAYLAND_DRM], test "x$enable_drm" = "xyes")
 # Wayland SHM
 AC_ARG_ENABLE([shm],
               AS_HELP_STRING([--disable-shm],
-                             [Disable Wayland SHM support]),
+                             [disable Wayland SHM support]),
               enable_shm=$enableval,
               enable_shm=$with_wayland)
 if test "x$enable_shm" = "xyes" ; then
@@ -78,7 +78,7 @@ AM_CONDITIONAL([ENABLE_WAYLAND_SHM], test "x$enable_shm" = "xyes")
 # Intel
 AC_ARG_ENABLE([intel],
               AS_HELP_STRING([--disable-intel],
-                             [Disable Intel drawable support]),
+                             [disable Intel drawable support]),
               enable_intel=$enableval,
               enable_intel=auto)
 if test "x$enable_intel" = "xyes" -o "x$enable_intel" = "xauto" ; then
@@ -110,7 +110,7 @@ AM_CONDITIONAL([ENABLE_INTEL], test "x$enable_intel" = "xyes")
 # Pixman
 AC_ARG_ENABLE([pixman],
               AS_HELP_STRING([--disable-pixman],
-                             [Disable pixman drawable support]),
+                             [disable pixman drawable support]),
               enable_pixman=$enableval,
               enable_pixman=yes)
 if test "x$enable_pixman" = "xyes" ; then
