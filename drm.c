@@ -130,3 +130,10 @@ struct wld_drawable * wld_drm_create_drawable(struct wld_drm_context * drm,
     return finish_drawable(drm, drawable);
 }
 
+int wld_drm_export(struct wld_drawable * drawable)
+{
+    struct drm_drawable * drm_drawable = (void *) drawable;
+
+    return drm_drawable->drm->interface->export(drm_drawable);
+}
+

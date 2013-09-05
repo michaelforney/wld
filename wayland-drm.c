@@ -192,29 +192,28 @@ struct wld_drawable * wld_wayland_drm_create_drawable
     (struct wld_wayland_drm_context * drm, uint32_t width, uint32_t height,
      enum wld_format format, struct wl_buffer ** buffer)
 {
-    struct drm_drawable * drawable;
+    struct wld_drawable * drawable;
 
     if (buffer && !wld_wayland_drm_has_format(drm, format))
         return NULL;
 
-    drawable = (void *) wld_drm_create_drawable(&drm->context, width, height, format);
+    drawable = wld_drm_create_drawable(&drm->context, width, height, format);
 
     if (!drawable)
         return NULL;
 
     if (buffer)
     {
-        *buffer = wl_drm_create_prime_buffer(drm->wl, drawable->fd,
+        int prime_fd;
+
+        prime_fd = wld_drm_export(drawable);
+        *buffer = wl_drm_create_prime_buffer(drm->wl, prime_fd,
                                              width, height, format,
-                                             0, drawable->base.pitch, 0, 0, 0, 0);
+                                             0, drawable->pitch, 0, 0, 0, 0);
+        close(prime_fd);
     }
 
-    return &drawable->base;
-}
-
-int wld_wayland_drm_get_prime_fd(struct wld_drawable * drawable)
-{
-    return ((struct drm_drawable *)(void *) drawable)->fd;
+    return drawable;
 }
 
 void registry_global(void * data, struct wl_registry * registry, uint32_t name,

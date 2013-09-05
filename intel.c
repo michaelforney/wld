@@ -72,6 +72,7 @@ static bool intel_device_supported(uint32_t vendor_id, uint32_t device_id);
 static struct drm_drawable * intel_create_drawable
     (struct wld_intel_context * context, uint32_t width, uint32_t height,
      uint32_t format);
+static int intel_export(struct drm_drawable * drawable);
 
 const static struct wld_draw_interface intel_draw = {
     .fill_rectangle = &intel_fill_rectangle,
@@ -88,6 +89,7 @@ const struct wld_drm_interface intel_drm = {
     .create_context = (drm_create_context_func_t) &intel_create_context,
     .destroy_context = (drm_destroy_context_func_t) &intel_destroy_context,
     .create_drawable = (drm_create_drawable_func_t) &intel_create_drawable,
+    .export = (drm_export_func_t) &intel_export,
 };
 
 bool intel_device_supported(uint32_t vendor_id, uint32_t device_id)
@@ -136,9 +138,18 @@ struct drm_drawable * intel_create_drawable
     intel->bo = drm_intel_bo_alloc_tiled(context->bufmgr, "drawable",
                                          width, height, 4,
                                          &tiling_mode, &intel->drm.base.pitch, 0);
-    drm_intel_bo_gem_export_to_prime(intel->bo, &intel->drm.fd);
 
     return &intel->drm;
+}
+
+int intel_export(struct drm_drawable * drawable)
+{
+    struct intel_drawable * intel = (void *) drawable;
+    int prime_fd;
+
+    drm_intel_bo_gem_export_to_prime(intel->bo, &prime_fd);
+
+    return prime_fd;
 }
 
 static void intel_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
@@ -245,7 +256,6 @@ static void intel_destroy(struct wld_drawable * drawable)
 {
     struct intel_drawable * intel = (void *) drawable;
     drm_intel_bo_unreference(intel->bo);
-    close(intel->drm.fd);
     free(intel);
 }
 

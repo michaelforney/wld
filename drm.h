@@ -46,5 +46,12 @@ struct wld_drawable * wld_drm_create_drawable(struct wld_drm_context * drm,
                                               uint32_t width, uint32_t height,
                                               uint32_t format);
 
+/**
+ * Export a DRM drawable to a PRIME file descriptor.
+ *
+ * @return A PRIME file descriptor for this drawable
+ */
+int wld_drm_export(struct wld_drawable * drawable);
+
 #endif
 
