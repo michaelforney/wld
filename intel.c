@@ -150,7 +150,7 @@ struct drm_drawable * intel_create_drawable
      uint32_t format)
 {
     struct intel_drawable * intel;
-    uint32_t tiling_mode = I915_TILING_X;
+    uint32_t tiling_mode = width >= 128 ? I915_TILING_X : I915_TILING_NONE;
 
     if (!(intel = new_drawable(context, width, height)))
         return NULL;
