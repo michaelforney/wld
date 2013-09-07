@@ -65,6 +65,8 @@ static void pixman_draw_text_utf8(struct wld_drawable * drawable,
                                   int32_t x, int32_t y,
                                   const char * text, int32_t length,
                                   struct wld_extents * extents);
+static void pixman_write(struct wld_drawable * drawable,
+                         const void * data, size_t size);
 static void pixman_flush(struct wld_drawable * drawable);
 static void pixman_destroy(struct wld_drawable * drawable);
 
@@ -74,6 +76,7 @@ const static struct wld_draw_interface pixman_draw = {
     .copy_rectangle = &pixman_copy_rectangle,
     .copy_region = &pixman_copy_region,
     .draw_text_utf8 = &pixman_draw_text_utf8,
+    .write = &pixman_write,
     .flush = &pixman_flush,
     .destroy = &pixman_destroy
 };
@@ -299,6 +302,14 @@ static void pixman_draw_text_utf8(struct wld_drawable * drawable,
 
     if (extents)
         extents->advance = origin_x;
+}
+
+static void pixman_write(struct wld_drawable * drawable,
+                         const void * data, size_t size)
+{
+    struct pixman_drawable * pixman = (void *) drawable;
+
+    memcpy(pixman_image_get_data(pixman->image), data, size);
 }
 
 static void pixman_flush(struct wld_drawable * drawable)

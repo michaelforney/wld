@@ -96,6 +96,8 @@ struct wld_draw_interface
                             int32_t x, int32_t y,
                             const char * text, int32_t length,
                             struct wld_extents * extents);
+    void (* write)(struct wld_drawable * drawable,
+                   const void * data, size_t size);
     void (* flush)(struct wld_drawable * drawable);
     void (* destroy)(struct wld_drawable * drawable);
 };

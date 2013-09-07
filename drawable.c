@@ -106,6 +106,11 @@ void wld_destroy_drawable(struct wld_drawable * drawable)
     drawable->interface->destroy(drawable);
 }
 
+void wld_write(struct wld_drawable * drawable, const void * data, size_t size)
+{
+    drawable->interface->write(drawable, data, size);
+}
+
 void wld_flush(struct wld_drawable * drawable)
 {
     drawable->interface->flush(drawable);

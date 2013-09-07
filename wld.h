@@ -161,6 +161,8 @@ static inline void wld_draw_text_utf8(struct wld_drawable * drawable,
     wld_draw_text_utf8_n(drawable, font, color, x, y, text, INT32_MAX, extents);
 }
 
+void wld_write(struct wld_drawable * drawable, const void * data, size_t size);
+
 void wld_flush(struct wld_drawable * drawable);
 
 #endif

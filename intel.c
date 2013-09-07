@@ -62,6 +62,8 @@ static void intel_draw_text_utf8(struct wld_drawable * drawable,
                                  int32_t x, int32_t y,
                                  const char * text, int32_t length,
                                  struct wld_extents * extents);
+static void intel_write(struct wld_drawable * drawable,
+                        const void * data, size_t size);
 static void intel_flush(struct wld_drawable * drawable);
 static void intel_destroy(struct wld_drawable * drawable);
 
@@ -86,6 +88,7 @@ const static struct wld_draw_interface intel_draw = {
     .copy_rectangle = &intel_copy_rectangle,
     .copy_region = &default_copy_region,
     .draw_text_utf8 = &intel_draw_text_utf8,
+    .write = &intel_write,
     .flush = &intel_flush,
     .destroy = &intel_destroy
 };
@@ -298,6 +301,14 @@ static void intel_draw_text_utf8(struct wld_drawable * drawable,
 
     if (extents)
         extents->advance = origin_x - x;
+}
+
+static void intel_write(struct wld_drawable * drawable,
+                        const void * data, size_t size)
+{
+    struct intel_drawable * intel = (void *) drawable;
+
+    drm_intel_bo_subdata(intel->bo, 0, size, data);
 }
 
 static void intel_flush(struct wld_drawable * drawable)
