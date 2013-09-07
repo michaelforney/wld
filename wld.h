@@ -153,10 +153,10 @@ void wld_draw_text_utf8_n(struct wld_drawable * drawable,
                           struct wld_extents * extents);
 
 static inline void wld_draw_text_utf8(struct wld_drawable * drawable,
-                        struct wld_font * font, uint32_t color,
-                        int32_t x, int32_t y,
-                        const char * text,
-                        struct wld_extents * extents)
+                                      struct wld_font * font, uint32_t color,
+                                      int32_t x, int32_t y,
+                                      const char * text,
+                                      struct wld_extents * extents)
 {
     wld_draw_text_utf8_n(drawable, font, color, x, y, text, INT32_MAX, extents);
 }
