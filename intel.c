@@ -43,6 +43,7 @@ struct intel_drawable
 
     struct wld_intel_context * context;
     drm_intel_bo * bo;
+    pixman_image_t * virtual;
 };
 
 _Static_assert(offsetof(struct intel_drawable, drm) == 0,
@@ -64,6 +65,7 @@ static void intel_draw_text_utf8(struct wld_drawable * drawable,
                                  struct wld_extents * extents);
 static void intel_write(struct wld_drawable * drawable,
                         const void * data, size_t size);
+static pixman_image_t * intel_map(struct wld_drawable * drawable);
 static void intel_flush(struct wld_drawable * drawable);
 static void intel_destroy(struct wld_drawable * drawable);
 
@@ -89,6 +91,7 @@ const static struct wld_draw_interface intel_draw = {
     .copy_region = &default_copy_region,
     .draw_text_utf8 = &intel_draw_text_utf8,
     .write = &intel_write,
+    .map = &intel_map,
     .flush = &intel_flush,
     .destroy = &intel_destroy
 };
@@ -130,7 +133,8 @@ void intel_destroy_context(struct wld_intel_context * context)
 }
 
 static struct intel_drawable * new_drawable(struct wld_intel_context * context,
-                                            uint32_t width, uint32_t height)
+                                            uint32_t width, uint32_t height,
+                                            uint32_t format)
 {
     struct intel_drawable * intel;
 
@@ -140,7 +144,9 @@ static struct intel_drawable * new_drawable(struct wld_intel_context * context,
     intel->drm.base.interface = &intel_draw;
     intel->drm.base.width = width;
     intel->drm.base.height = height;
+    intel->drm.base.format = format;
     intel->context = context;
+    intel->virtual = NULL;
 
     return intel;
 }
@@ -152,7 +158,7 @@ struct drm_drawable * intel_create_drawable
     struct intel_drawable * intel;
     uint32_t tiling_mode = width >= 128 ? I915_TILING_X : I915_TILING_NONE;
 
-    if (!(intel = new_drawable(context, width, height)))
+    if (!(intel = new_drawable(context, width, height, format)))
         return NULL;
 
     intel->bo = drm_intel_bo_alloc_tiled(context->bufmgr, "drawable",
@@ -171,7 +177,7 @@ struct drm_drawable * intel_import(struct wld_intel_context * context,
     struct intel_drawable * intel;
     uint32_t size = width * height * 4;
 
-    if (!(intel = new_drawable(context, width, height)))
+    if (!(intel = new_drawable(context, width, height, format)))
         return NULL;
 
     intel->bo = drm_intel_bo_gem_create_from_prime(context->bufmgr,
@@ -189,7 +195,7 @@ struct drm_drawable * intel_import_gem(struct wld_intel_context * context,
 {
     struct intel_drawable * intel;
 
-    if (!(intel = new_drawable(context, width, height)))
+    if (!(intel = new_drawable(context, width, height, format)))
         return NULL;
 
     intel->bo = drm_intel_bo_gem_create_from_name(context->bufmgr, "drawable",
@@ -309,6 +315,33 @@ static void intel_write(struct wld_drawable * drawable,
     struct intel_drawable * intel = (void *) drawable;
 
     drm_intel_bo_subdata(intel->bo, 0, size, data);
+}
+
+static void destroy_virtual(pixman_image_t * image, void * data)
+{
+    struct intel_drawable * intel = data;
+
+    drm_intel_gem_bo_unmap_gtt(intel->bo);
+    intel->virtual = NULL;
+}
+
+pixman_image_t * intel_map(struct wld_drawable * drawable)
+{
+    struct intel_drawable * intel = (void *) drawable;
+
+    if (!intel->virtual)
+    {
+        drm_intel_gem_bo_map_gtt(intel->bo);
+        intel->virtual = pixman_image_create_bits_no_clear
+            (pixman_format(drawable->format), drawable->width, drawable->height,
+             intel->bo->virtual, drawable->pitch);
+        pixman_image_set_destroy_function(intel->virtual, &destroy_virtual,
+                                          intel);
+    }
+    else
+        pixman_image_ref(intel->virtual);
+
+    return intel->virtual;
 }
 
 static void intel_flush(struct wld_drawable * drawable)

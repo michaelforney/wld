@@ -116,6 +116,7 @@ struct wld_drawable
 {
     uint32_t width, height;
     unsigned long pitch;
+    enum wld_format format;
 
     const struct wld_draw_interface * interface;
 };
@@ -162,6 +163,8 @@ static inline void wld_draw_text_utf8(struct wld_drawable * drawable,
 }
 
 void wld_write(struct wld_drawable * drawable, const void * data, size_t size);
+
+pixman_image_t * wld_map(struct wld_drawable * drawable);
 
 void wld_flush(struct wld_drawable * drawable);
 

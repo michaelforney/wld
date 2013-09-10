@@ -98,6 +98,7 @@ struct wld_draw_interface
                             struct wld_extents * extents);
     void (* write)(struct wld_drawable * drawable,
                    const void * data, size_t size);
+    pixman_image_t * (* map)(struct wld_drawable * drawable);
     void (* flush)(struct wld_drawable * drawable);
     void (* destroy)(struct wld_drawable * drawable);
 };
@@ -115,6 +116,19 @@ static inline uint8_t format_bytes_per_pixel(enum wld_format format)
         case WLD_FORMAT_ARGB8888:
         case WLD_FORMAT_XRGB8888:
             return 4;
+        default:
+            return 0;
+    }
+}
+
+static inline pixman_format_code_t pixman_format(uint32_t format)
+{
+    switch (format)
+    {
+        case WLD_FORMAT_ARGB8888:
+            return PIXMAN_a8r8g8b8;
+        case WLD_FORMAT_XRGB8888:
+            return PIXMAN_x8r8g8b8;
         default:
             return 0;
     }

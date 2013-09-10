@@ -111,6 +111,11 @@ void wld_write(struct wld_drawable * drawable, const void * data, size_t size)
     drawable->interface->write(drawable, data, size);
 }
 
+pixman_image_t * wld_map(struct wld_drawable * drawable)
+{
+    return drawable->interface->map(drawable);
+}
+
 void wld_flush(struct wld_drawable * drawable)
 {
     drawable->interface->flush(drawable);

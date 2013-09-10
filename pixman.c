@@ -67,6 +67,7 @@ static void pixman_draw_text_utf8(struct wld_drawable * drawable,
                                   struct wld_extents * extents);
 static void pixman_write(struct wld_drawable * drawable,
                          const void * data, size_t size);
+static pixman_image_t * pixman_map(struct wld_drawable * drawable);
 static void pixman_flush(struct wld_drawable * drawable);
 static void pixman_destroy(struct wld_drawable * drawable);
 
@@ -77,22 +78,10 @@ const static struct wld_draw_interface pixman_draw = {
     .copy_region = &pixman_copy_region,
     .draw_text_utf8 = &pixman_draw_text_utf8,
     .write = &pixman_write,
+    .map = &pixman_map,
     .flush = &pixman_flush,
     .destroy = &pixman_destroy
 };
-
-static inline pixman_format_code_t pixman_format(uint32_t format)
-{
-    switch (format)
-    {
-        case WLD_FORMAT_ARGB8888:
-            return PIXMAN_a8r8g8b8;
-        case WLD_FORMAT_XRGB8888:
-            return PIXMAN_x8r8g8b8;
-        default:
-            return 0;
-    }
-}
 
 struct wld_pixman_context * wld_pixman_create_context()
 {
@@ -128,6 +117,7 @@ struct wld_drawable * wld_pixman_create_drawable
     pixman->base.interface = &pixman_draw;
     pixman->base.width = width;
     pixman->base.height = height;
+    pixman->base.format = format;
     pixman->base.pitch = pitch;
 
     pixman->context = context;
@@ -310,6 +300,13 @@ static void pixman_write(struct wld_drawable * drawable,
     struct pixman_drawable * pixman = (void *) drawable;
 
     memcpy(pixman_image_get_data(pixman->image), data, size);
+}
+
+pixman_image_t * pixman_map(struct wld_drawable * drawable)
+{
+    struct pixman_drawable * pixman = (void *) drawable;
+
+    return pixman_image_ref(pixman->image);
 }
 
 static void pixman_flush(struct wld_drawable * drawable)
