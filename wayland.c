@@ -324,9 +324,9 @@ static void begin(struct wayland_drawable * wayland)
     }
 }
 
-static void wayland_fill_rectangle(struct wld_drawable * drawable,
-                                   uint32_t color, int32_t x, int32_t y,
-                                   uint32_t width, uint32_t height)
+void wayland_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
+                            int32_t x, int32_t y,
+                            uint32_t width, uint32_t height)
 {
     struct wayland_drawable * wayland = (void *) drawable;
 
@@ -341,8 +341,8 @@ static void wayland_fill_rectangle(struct wld_drawable * drawable,
     }
 }
 
-static void wayland_fill_region(struct wld_drawable * drawable, uint32_t color,
-                                pixman_region32_t * region)
+void wayland_fill_region(struct wld_drawable * drawable, uint32_t color,
+                         pixman_region32_t * region)
 {
     struct wayland_drawable * wayland = (void *) drawable;
 
@@ -356,28 +356,28 @@ static void wayland_fill_region(struct wld_drawable * drawable, uint32_t color,
     }
 }
 
-static void wayland_copy_rectangle(struct wld_drawable * src_drawable,
-                                   struct wld_drawable * dst_drawable,
-                                   int32_t src_x, int32_t src_y,
-                                   int32_t dst_x, int32_t dst_y,
-                                   uint32_t width, uint32_t height)
+void wayland_copy_rectangle(struct wld_drawable * src_drawable,
+                            struct wld_drawable * dst_drawable,
+                            int32_t src_x, int32_t src_y,
+                            int32_t dst_x, int32_t dst_y,
+                            uint32_t width, uint32_t height)
 {
     fprintf(stderr, "wayland: Copy rectangle is not implemented\n");
 }
 
-static void wayland_copy_region(struct wld_drawable * src_drawable,
-                                struct wld_drawable * dst_drawable,
-                                pixman_region32_t * region,
-                                int32_t dst_x, int32_t dst_y)
+void wayland_copy_region(struct wld_drawable * src_drawable,
+                         struct wld_drawable * dst_drawable,
+                         pixman_region32_t * region,
+                         int32_t dst_x, int32_t dst_y)
 {
     fprintf(stderr, "wayland: Copy region is not implemented\n");
 }
 
-static void wayland_draw_text_utf8(struct wld_drawable * drawable,
-                                   struct font * font, uint32_t color,
-                                   int32_t x, int32_t y,
-                                   const char * text, int32_t length,
-                                   struct wld_extents * extents)
+void wayland_draw_text_utf8(struct wld_drawable * drawable,
+                            struct font * font, uint32_t color,
+                            int32_t x, int32_t y,
+                            const char * text, int32_t length,
+                            struct wld_extents * extents)
 {
     struct wld_extents extents0;
     struct wayland_drawable * wayland = (void *) drawable;
@@ -398,7 +398,7 @@ static void wayland_draw_text_utf8(struct wld_drawable * drawable,
     }
 }
 
-static void wayland_flush(struct wld_drawable * drawable)
+void wayland_flush(struct wld_drawable * drawable)
 {
     struct wayland_drawable * wayland = (void *) drawable;
     pixman_region32_t damage;
@@ -430,7 +430,7 @@ static void wayland_flush(struct wld_drawable * drawable)
     wayland->front_buffer ^= 1;
 }
 
-static void wayland_destroy(struct wld_drawable * drawable)
+void wayland_destroy(struct wld_drawable * drawable)
 {
     struct wayland_drawable * wayland = (void *) drawable;
 
