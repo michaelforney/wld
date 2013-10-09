@@ -3,7 +3,7 @@ dnl wld: configure.ac
 AC_PREREQ([2.59])
 
 AC_INIT([wld], [0.0.1], [mforney@mforney.org])
-AM_INIT_AUTOMAKE([foreign nostdinc -Wall -Werror])
+AM_INIT_AUTOMAKE([foreign nostdinc subdir-objects -Wall -Werror])
 AC_LANG([C])
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
