@@ -73,9 +73,6 @@ struct font
     struct glyph ** glyphs;
 };
 
-_Static_assert(offsetof(struct font, base) == 0,
-               "Non-zero offset of base field");
-
 struct wld_draw_interface
 {
     void (* fill_rectangle)(struct wld_drawable * drawable, uint32_t color,

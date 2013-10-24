@@ -43,9 +43,6 @@ struct pixman_drawable
     struct wld_pixman_context * context;
 };
 
-_Static_assert(offsetof(struct pixman_drawable, base) == 0,
-               "Non-zero offset of base field");
-
 static void pixman_fill_rectangle(struct wld_drawable * drawable,
                                   uint32_t color, int32_t x, int32_t y,
                                   uint32_t width, uint32_t height);

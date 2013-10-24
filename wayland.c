@@ -56,9 +56,6 @@ struct wayland_drawable
     uint32_t damage_tracking;
 };
 
-_Static_assert(offsetof(struct wayland_drawable, base) == 0,
-               "Non-zero offset of base field");
-
 static void sync_done(void * data, struct wl_callback * callback,
                       uint32_t msecs);
 

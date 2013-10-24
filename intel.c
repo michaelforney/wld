@@ -46,9 +46,6 @@ struct intel_drawable
     pixman_image_t * virtual;
 };
 
-_Static_assert(offsetof(struct intel_drawable, drm) == 0,
-               "Non-zero offset of base field");
-
 /* Drawable implementation */
 static void intel_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
                                  int32_t x, int32_t y,
