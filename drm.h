@@ -77,7 +77,7 @@ int wld_drm_export(struct wld_drawable * drawable);
  *
  * This can be used with various DRM ioctls.
  */
-uint32_t wld_drm_drawable_get_handle(struct wld_drawable * drawable);
+uint32_t wld_drm_get_handle(struct wld_drawable * drawable);
 
 #endif
 

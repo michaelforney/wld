@@ -107,27 +107,11 @@ void wld_drm_destroy_context(struct wld_drm_context * drm)
     free(drm);
 }
 
-static struct wld_drawable * finish_drawable(struct wld_drm_context * drm,
-                                             struct drm_drawable * drawable)
-{
-    if (!drawable)
-        return NULL;
-
-    drawable->drm = drm;
-
-    return &drawable->base;
-}
-
 struct wld_drawable * wld_drm_create_drawable(struct wld_drm_context * drm,
                                               uint32_t width, uint32_t height,
                                               uint32_t format)
 {
-    struct drm_drawable * drawable;
-
-    drawable = drm->interface->create_drawable(drm->context,
-                                               width, height, format);
-
-    return finish_drawable(drm, drawable);
+    return drm->interface->create_drawable(drm->context, width, height, format);
 }
 
 struct wld_drawable * wld_drm_import(struct wld_drm_context * drm,
@@ -135,12 +119,8 @@ struct wld_drawable * wld_drm_import(struct wld_drm_context * drm,
                                      uint32_t format,
                                      int prime_fd, unsigned long pitch)
 {
-    struct drm_drawable * drawable;
-
-    drawable = drm->interface->import(drm->context, width, height, format,
-                                      prime_fd, pitch);
-
-    return finish_drawable(drm, drawable);
+    return drm->interface->import(drm->context, width, height, format,
+                                  prime_fd, pitch);
 }
 
 struct wld_drawable * wld_drm_import_gem(struct wld_drm_context * drm,
@@ -148,25 +128,17 @@ struct wld_drawable * wld_drm_import_gem(struct wld_drm_context * drm,
                                          uint32_t format,
                                          uint32_t gem_name, unsigned long pitch)
 {
-    struct drm_drawable * drawable;
-
-    drawable = drm->interface->import_gem(drm->context, width, height, format,
-                                          gem_name, pitch);
-
-    return finish_drawable(drm, drawable);
+    return drm->interface->import_gem(drm->context, width, height, format,
+                                      gem_name, pitch);
 }
 
 int wld_drm_export(struct wld_drawable * drawable)
 {
-    struct drm_drawable * drm_drawable = (void *) drawable;
-
-    return drm_drawable->drm->interface->export(drm_drawable);
+    return ((struct drm_draw_interface *) drawable->interface)->export(drawable);
 }
 
-uint32_t wld_drm_drawable_get_handle(struct wld_drawable * drawable)
+uint32_t wld_drm_get_handle(struct wld_drawable * drawable)
 {
-    struct drm_drawable * drm_drawable = (void *) drawable;
-
-    return drm_drawable->handle;
+    return ((struct drm_draw_interface *) drawable->interface)->get_handle(drawable);
 }
 

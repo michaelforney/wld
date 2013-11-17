@@ -39,7 +39,7 @@ struct wld_intel_context
 
 struct intel_drawable
 {
-    struct drm_drawable drm;
+    struct wld_drawable base;
 
     struct wld_intel_context * context;
     drm_intel_bo * bo;
@@ -66,31 +66,37 @@ static pixman_image_t * intel_map(struct wld_drawable * drawable);
 static void intel_flush(struct wld_drawable * drawable);
 static void intel_destroy(struct wld_drawable * drawable);
 
+static int intel_export(struct wld_drawable * drawable);
+static uint32_t intel_get_handle(struct wld_drawable * drawable);
+
 /* DRM implementation */
 static bool intel_device_supported(uint32_t vendor_id, uint32_t device_id);
 static struct wld_intel_context * intel_create_context(int drm_fd);
 static void intel_destroy_context(struct wld_intel_context * context);
-static struct drm_drawable * intel_create_drawable
+static struct wld_drawable * intel_create_drawable
     (struct wld_intel_context * context, uint32_t width, uint32_t height,
      uint32_t format);
-static struct drm_drawable * intel_import
+static struct wld_drawable * intel_import
     (struct wld_intel_context * context, uint32_t width, uint32_t height,
      uint32_t format, int prime_fd, unsigned long pitch);
-static struct drm_drawable * intel_import_gem
+static struct wld_drawable * intel_import_gem
     (struct wld_intel_context * context, uint32_t width, uint32_t height,
      uint32_t format, uint32_t gem_name, unsigned long pitch);
-static int intel_export(struct drm_drawable * drawable);
 
-const static struct wld_draw_interface intel_draw = {
-    .fill_rectangle = &intel_fill_rectangle,
-    .fill_region = &default_fill_region,
-    .copy_rectangle = &intel_copy_rectangle,
-    .copy_region = &default_copy_region,
-    .draw_text_utf8 = &intel_draw_text_utf8,
-    .write = &intel_write,
-    .map = &intel_map,
-    .flush = &intel_flush,
-    .destroy = &intel_destroy
+const static struct drm_draw_interface intel_draw = {
+    .base = {
+        .fill_rectangle = &intel_fill_rectangle,
+        .fill_region = &default_fill_region,
+        .copy_rectangle = &intel_copy_rectangle,
+        .copy_region = &default_copy_region,
+        .draw_text_utf8 = &intel_draw_text_utf8,
+        .write = &intel_write,
+        .map = &intel_map,
+        .flush = &intel_flush,
+        .destroy = &intel_destroy
+    },
+    .export = &intel_export,
+    .get_handle = &intel_get_handle
 };
 
 const struct wld_drm_interface intel_drm = {
@@ -100,7 +106,6 @@ const struct wld_drm_interface intel_drm = {
     .create_drawable = (drm_create_drawable_func_t) &intel_create_drawable,
     .import = (drm_import_func_t) &intel_import,
     .import_gem = (drm_import_gem_func_t) &intel_import_gem,
-    .export = (drm_export_func_t) &intel_export,
 };
 
 bool intel_device_supported(uint32_t vendor_id, uint32_t device_id)
@@ -138,17 +143,17 @@ static struct intel_drawable * new_drawable(struct wld_intel_context * context,
     if (!(intel = malloc(sizeof *intel)))
         return NULL;
 
-    intel->drm.base.interface = &intel_draw;
-    intel->drm.base.width = width;
-    intel->drm.base.height = height;
-    intel->drm.base.format = format;
+    intel->base.interface = (struct wld_draw_interface *) &intel_draw;
+    intel->base.width = width;
+    intel->base.height = height;
+    intel->base.format = format;
     intel->context = context;
     intel->virtual = NULL;
 
     return intel;
 }
 
-struct drm_drawable * intel_create_drawable
+struct wld_drawable * intel_create_drawable
     (struct wld_intel_context * context, uint32_t width, uint32_t height,
      uint32_t format)
 {
@@ -160,13 +165,12 @@ struct drm_drawable * intel_create_drawable
 
     intel->bo = drm_intel_bo_alloc_tiled(context->bufmgr, "drawable",
                                          width, height, 4, &tiling_mode,
-                                         &intel->drm.base.pitch, 0);
-    intel->drm.handle = intel->bo->handle;
+                                         &intel->base.pitch, 0);
 
-    return &intel->drm;
+    return &intel->base;
 }
 
-struct drm_drawable * intel_import(struct wld_intel_context * context,
+struct wld_drawable * intel_import(struct wld_intel_context * context,
                                    uint32_t width, uint32_t height,
                                    uint32_t format,
                                    int prime_fd, unsigned long pitch)
@@ -179,13 +183,12 @@ struct drm_drawable * intel_import(struct wld_intel_context * context,
 
     intel->bo = drm_intel_bo_gem_create_from_prime(context->bufmgr,
                                                    prime_fd, size);
-    intel->drm.base.pitch = pitch;
-    intel->drm.handle = intel->bo->handle;
+    intel->base.pitch = pitch;
 
-    return &intel->drm;
+    return &intel->base;
 }
 
-struct drm_drawable * intel_import_gem(struct wld_intel_context * context,
+struct wld_drawable * intel_import_gem(struct wld_intel_context * context,
                                        uint32_t width, uint32_t height,
                                        uint32_t format,
                                        uint32_t gem_name, unsigned long pitch)
@@ -197,20 +200,9 @@ struct drm_drawable * intel_import_gem(struct wld_intel_context * context,
 
     intel->bo = drm_intel_bo_gem_create_from_name(context->bufmgr, "drawable",
                                                   gem_name);
-    intel->drm.base.pitch = pitch;
-    intel->drm.handle = intel->bo->handle;
+    intel->base.pitch = pitch;
 
-    return &intel->drm;
-}
-
-int intel_export(struct drm_drawable * drawable)
-{
-    struct intel_drawable * intel = (void *) drawable;
-    int prime_fd;
-
-    drm_intel_bo_gem_export_to_prime(intel->bo, &prime_fd);
-
-    return prime_fd;
+    return &intel->base;
 }
 
 void intel_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
@@ -218,7 +210,7 @@ void intel_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
 {
     struct intel_drawable * intel = (void *) drawable;
 
-    xy_color_blt(&intel->context->batch, intel->bo, intel->drm.base.pitch,
+    xy_color_blt(&intel->context->batch, intel->bo, intel->base.pitch,
                  x, y, x + width, y + height, color);
 }
 
@@ -232,8 +224,8 @@ void intel_copy_rectangle(struct wld_drawable * src_drawable,
     struct intel_drawable * dst = (void *) dst_drawable;
 
     xy_src_copy_blt(&dst->context->batch,
-                    src->bo, src->drm.base.pitch, src_x, src_y,
-                    dst->bo, dst->drm.base.pitch, dst_x, dst_y, width, height);
+                    src->bo, src->base.pitch, src_x, src_y,
+                    dst->bo, dst->base.pitch, dst_x, dst_y, width, height);
 }
 
 void intel_draw_text_utf8(struct wld_drawable * drawable,
@@ -254,7 +246,7 @@ void intel_draw_text_utf8(struct wld_drawable * drawable,
     int32_t origin_x = x;
 
     xy_setup_blt(&intel->context->batch, true, INTEL_BLT_RASTER_OPERATION_SRC,
-                 0, color, intel->bo, intel->drm.base.pitch);
+                 0, color, intel->bo, intel->base.pitch);
 
     while ((ret = FcUtf8ToUcs4((FcChar8 *) text, &c, length)) > 0 && c != '\0')
     {
@@ -293,7 +285,7 @@ void intel_draw_text_utf8(struct wld_drawable * drawable,
             intel_batch_flush(&intel->context->batch);
             xy_setup_blt(&intel->context->batch, true,
                          INTEL_BLT_RASTER_OPERATION_SRC, 0, color,
-                         intel->bo, intel->drm.base.pitch);
+                         intel->bo, intel->base.pitch);
             goto retry;
         }
 
@@ -351,5 +343,22 @@ void intel_destroy(struct wld_drawable * drawable)
     struct intel_drawable * intel = (void *) drawable;
     drm_intel_bo_unreference(intel->bo);
     free(intel);
+}
+
+int intel_export(struct wld_drawable * drawable)
+{
+    struct intel_drawable * intel = (void *) drawable;
+    int prime_fd;
+
+    drm_intel_bo_gem_export_to_prime(intel->bo, &prime_fd);
+
+    return prime_fd;
+}
+
+uint32_t intel_get_handle(struct wld_drawable * drawable)
+{
+    struct intel_drawable * intel = (void *) drawable;
+
+    return intel->bo->handle;
 }
 
