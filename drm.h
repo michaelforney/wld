@@ -24,6 +24,7 @@
 #ifndef WLD_DRM_H
 #define WLD_DRM_H 1
 
+#include <stdbool.h>
 #include <stdint.h>
 
 struct wld_drm_context;
@@ -38,6 +39,8 @@ struct wld_drm_context * wld_drm_create_context(int fd);
  * Destroy a DRM context.
  */
 void wld_drm_destroy_context(struct wld_drm_context * drm);
+
+bool wld_drm_is_dumb(struct wld_drm_context * drm);
 
 /**
  * Create a new DRM drawable.

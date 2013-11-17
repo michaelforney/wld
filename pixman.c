@@ -22,6 +22,7 @@
  */
 
 #include "pixman.h"
+#include "pixman-private.h"
 #include "wld-private.h"
 
 #define PIXMAN_COLOR(c) {                   \
@@ -34,13 +35,6 @@
 struct wld_pixman_context
 {
     pixman_glyph_cache_t * glyph_cache;
-};
-
-struct pixman_drawable
-{
-    struct wld_drawable base;
-    pixman_image_t * image;
-    struct wld_pixman_context * context;
 };
 
 static void pixman_fill_rectangle(struct wld_drawable * drawable,
@@ -68,7 +62,7 @@ static pixman_image_t * pixman_map(struct wld_drawable * drawable);
 static void pixman_flush(struct wld_drawable * drawable);
 static void pixman_destroy(struct wld_drawable * drawable);
 
-const static struct wld_draw_interface pixman_draw = {
+const struct wld_draw_interface pixman_draw = {
     .fill_rectangle = &pixman_fill_rectangle,
     .fill_region = &pixman_fill_region,
     .copy_rectangle = &pixman_copy_rectangle,
@@ -100,6 +94,25 @@ void wld_pixman_destroy_context(struct wld_pixman_context * context)
     free(context);
 }
 
+bool pixman_initialize_drawable
+    (struct wld_pixman_context * context, struct pixman_drawable * drawable,
+     uint32_t width, uint32_t height,
+     void * data, uint32_t pitch, uint32_t format)
+{
+    drawable->base.interface = &pixman_draw;
+    drawable->base.width = width;
+    drawable->base.height = height;
+    drawable->base.format = format;
+    drawable->base.pitch = pitch;
+
+    drawable->context = context;
+    drawable->image = pixman_image_create_bits(pixman_format(format),
+                                               width, height,
+                                               (uint32_t *) data, pitch);
+
+    return drawable->image != NULL;
+}
+
 struct wld_drawable * wld_pixman_create_drawable
     (struct wld_pixman_context * context, uint32_t width, uint32_t height,
      void * data, uint32_t pitch, uint32_t format)
@@ -111,19 +124,11 @@ struct wld_drawable * wld_pixman_create_drawable
     if (!pixman)
         goto error0;
 
-    pixman->base.interface = &pixman_draw;
-    pixman->base.width = width;
-    pixman->base.height = height;
-    pixman->base.format = format;
-    pixman->base.pitch = pitch;
-
-    pixman->context = context;
-    pixman->image = pixman_image_create_bits(pixman_format(format),
-                                             width, height,
-                                             (uint32_t *) data, pitch);
-
-    if (!pixman->image)
+    if (!pixman_initialize_drawable(context, pixman, width, height,
+                                    data, pitch, format))
+    {
         goto error1;
+    }
 
     return &pixman->base;
 

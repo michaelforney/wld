@@ -68,6 +68,7 @@ struct wld_drm_context
 #if WITH_DRM_INTEL
 extern const struct wld_drm_interface intel_drm;
 #endif
+extern const struct wld_drm_interface dumb_drm;
 
 bool drm_initialize_context(struct wld_drm_context * context, int fd);
 void drm_finalize_context(struct wld_drm_context * context);

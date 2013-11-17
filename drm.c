@@ -26,8 +26,9 @@
 
 const static struct wld_drm_interface * drm_interfaces[] = {
 #if WITH_DRM_INTEL
-    &intel_drm
+    &intel_drm,
 #endif
+    &dumb_drm
 };
 
 static const struct wld_drm_interface * find_drm_interface(int fd)
@@ -105,6 +106,11 @@ void wld_drm_destroy_context(struct wld_drm_context * drm)
 {
     drm_finalize_context(drm);
     free(drm);
+}
+
+bool wld_drm_is_dumb(struct wld_drm_context * drm)
+{
+    return drm->interface == &dumb_drm;
 }
 
 struct wld_drawable * wld_drm_create_drawable(struct wld_drm_context * drm,
