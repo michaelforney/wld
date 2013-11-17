@@ -60,8 +60,7 @@ for driver in $drm_drivers ; do
                 AC_MSG_ERROR([Intel DRM driver requires libdrm_intel]))
             PKG_CHECK_MODULES([intelbatch], [intelbatch],,
                 AC_MSG_ERROR([Intel DRM driver requires libintelbatch]))
-            PKGCONFIG_REQUIRES_PRIVATE="libdrm_intel intelbatch \
-$PKGCONFIG_REQUIRES_PRIVATE"
+            PKGCONFIG_REQUIRES_PRIVATE+=" libdrm_intel intelbatch"
             with_drm_intel=yes
         ;;
         *)
@@ -81,7 +80,7 @@ if test "x$enable_wayland" = "xyes" ; then
     PKG_CHECK_MODULES([wayland_client], [wayland-client],,
         AC_MSG_ERROR([Wayland client libraries not found. Specify \
 --disable-wayland to build without wayland support]))
-    PKGCONFIG_REQUIRES_PRIVATE="wayland-client $PKGCONFIG_REQUIRES_PRIVATE"
+    PKGCONFIG_REQUIRES_PRIVATE+=" wayland-client"
 fi
 AM_CONDITIONAL([ENABLE_WAYLAND], [test "x$enable_wayland" = "xyes"])
 
@@ -104,7 +103,7 @@ for interface in $wayland_interfaces ; do
         xdrm)
             PKG_CHECK_MODULES([libdrm], [libdrm],,
                 AC_MSG_ERROR([Wayland DRM support requires libdrm]))
-            PKGCONFIG_REQUIRES_PRIVATE="libdrm $PKGCONFIG_REQUIRES_PRIVATE"
+            PKGCONFIG_REQUIRES_PRIVATE+=" libdrm"
             AC_DEFINE([WITH_WAYLAND_DRM], [1],
                       [Build support for wl_drm global])
             with_wayland_drm=yes
