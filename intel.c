@@ -31,7 +31,7 @@
 #include <intel_bufmgr.h>
 #include <i915_drm.h>
 
-struct wld_intel_context
+struct intel_context
 {
     drm_intel_bufmgr * bufmgr;
     struct intel_batch batch;
@@ -41,7 +41,7 @@ struct intel_drawable
 {
     struct wld_drawable base;
 
-    struct wld_intel_context * context;
+    struct intel_context * context;
     drm_intel_bo * bo;
     pixman_image_t * virtual;
 };
@@ -71,16 +71,16 @@ static uint32_t intel_get_handle(struct wld_drawable * drawable);
 
 /* DRM implementation */
 static bool intel_device_supported(uint32_t vendor_id, uint32_t device_id);
-static struct wld_intel_context * intel_create_context(int drm_fd);
-static void intel_destroy_context(struct wld_intel_context * context);
+static struct intel_context * intel_create_context(int drm_fd);
+static void intel_destroy_context(struct intel_context * context);
 static struct wld_drawable * intel_create_drawable
-    (struct wld_intel_context * context, uint32_t width, uint32_t height,
+    (struct intel_context * context, uint32_t width, uint32_t height,
      uint32_t format);
 static struct wld_drawable * intel_import
-    (struct wld_intel_context * context, uint32_t width, uint32_t height,
+    (struct intel_context * context, uint32_t width, uint32_t height,
      uint32_t format, int prime_fd, unsigned long pitch);
 static struct wld_drawable * intel_import_gem
-    (struct wld_intel_context * context, uint32_t width, uint32_t height,
+    (struct intel_context * context, uint32_t width, uint32_t height,
      uint32_t format, uint32_t gem_name, unsigned long pitch);
 
 const static struct drm_draw_interface intel_draw = {
@@ -113,9 +113,9 @@ bool intel_device_supported(uint32_t vendor_id, uint32_t device_id)
     return vendor_id == 0x8086;
 }
 
-struct wld_intel_context * intel_create_context(int drm_fd)
+struct intel_context * intel_create_context(int drm_fd)
 {
-    struct wld_intel_context * context;
+    struct intel_context * context;
 
     context = malloc(sizeof *context);
 
@@ -128,13 +128,13 @@ struct wld_intel_context * intel_create_context(int drm_fd)
     return context;
 }
 
-void intel_destroy_context(struct wld_intel_context * context)
+void intel_destroy_context(struct intel_context * context)
 {
     drm_intel_bufmgr_destroy(context->bufmgr);
     free(context);
 }
 
-static struct intel_drawable * new_drawable(struct wld_intel_context * context,
+static struct intel_drawable * new_drawable(struct intel_context * context,
                                             uint32_t width, uint32_t height,
                                             uint32_t format)
 {
@@ -154,7 +154,7 @@ static struct intel_drawable * new_drawable(struct wld_intel_context * context,
 }
 
 struct wld_drawable * intel_create_drawable
-    (struct wld_intel_context * context, uint32_t width, uint32_t height,
+    (struct intel_context * context, uint32_t width, uint32_t height,
      uint32_t format)
 {
     struct intel_drawable * intel;
@@ -170,7 +170,7 @@ struct wld_drawable * intel_create_drawable
     return &intel->base;
 }
 
-struct wld_drawable * intel_import(struct wld_intel_context * context,
+struct wld_drawable * intel_import(struct intel_context * context,
                                    uint32_t width, uint32_t height,
                                    uint32_t format,
                                    int prime_fd, unsigned long pitch)
@@ -188,7 +188,7 @@ struct wld_drawable * intel_import(struct wld_intel_context * context,
     return &intel->base;
 }
 
-struct wld_drawable * intel_import_gem(struct wld_intel_context * context,
+struct wld_drawable * intel_import_gem(struct intel_context * context,
                                        uint32_t width, uint32_t height,
                                        uint32_t format,
                                        uint32_t gem_name, unsigned long pitch)
