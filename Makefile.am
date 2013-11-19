@@ -13,6 +13,7 @@ libwld_la_SOURCES = color.c drawable.c font.c
 libwld_la_LIBADD = $(fontconfig_LIBS) $(freetype_LIBS) $(pixman_LIBS)
 
 if ENABLE_DRM
+    AM_CFLAGS += $(libdrm_CFLAGS)
     libwld_la_SOURCES += drm.c dumb.c
     pkginclude_HEADERS += drm.h
 endif
