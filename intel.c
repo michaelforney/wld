@@ -25,16 +25,14 @@
 #include "wld-private.h"
 
 #include <unistd.h>
-#include <intelbatch/batch.h>
-#include <intelbatch/blt.h>
-#include <intelbatch/mi.h>
+#include <intelbatch.h>
 #include <intel_bufmgr.h>
 #include <i915_drm.h>
 
 struct intel_context
 {
     drm_intel_bufmgr * bufmgr;
-    struct intel_batch batch;
+    struct intel_batch * batch;
 };
 
 struct intel_drawable
@@ -120,16 +118,31 @@ struct intel_context * intel_create_context(int drm_fd)
     context = malloc(sizeof *context);
 
     if (!context)
-        return NULL;
+        goto error0;
 
     context->bufmgr = drm_intel_bufmgr_gem_init(drm_fd, INTEL_BATCH_SIZE);
-    intel_batch_initialize(&context->batch, context->bufmgr);
+
+    if (!context->bufmgr)
+        goto error1;
+
+    context->batch = intel_batch_new(context->bufmgr);
+
+    if (!context->batch)
+        goto error2;
 
     return context;
+
+  error2:
+    drm_intel_bufmgr_destroy(context->bufmgr);
+  error1:
+    free(context);
+  error0:
+    return NULL;
 }
 
 void intel_destroy_context(struct intel_context * context)
 {
+    intel_batch_destroy(context->batch);
     drm_intel_bufmgr_destroy(context->bufmgr);
     free(context);
 }
@@ -210,7 +223,7 @@ void intel_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
 {
     struct intel_drawable * intel = (void *) drawable;
 
-    xy_color_blt(&intel->context->batch, intel->bo, intel->base.pitch,
+    xy_color_blt(intel->context->batch, intel->bo, intel->base.pitch,
                  x, y, x + width, y + height, color);
 }
 
@@ -223,7 +236,7 @@ void intel_copy_rectangle(struct wld_drawable * src_drawable,
     struct intel_drawable * src = (void *) src_drawable;
     struct intel_drawable * dst = (void *) dst_drawable;
 
-    xy_src_copy_blt(&dst->context->batch,
+    xy_src_copy_blt(dst->context->batch,
                     src->bo, src->base.pitch, src_x, src_y,
                     dst->bo, dst->base.pitch, dst_x, dst_y, width, height);
 }
@@ -245,7 +258,7 @@ void intel_draw_text_utf8(struct wld_drawable * drawable,
     uint8_t byte_index;
     int32_t origin_x = x;
 
-    xy_setup_blt(&intel->context->batch, true, INTEL_BLT_RASTER_OPERATION_SRC,
+    xy_setup_blt(intel->context->batch, true, INTEL_BLT_RASTER_OPERATION_SRC,
                  0, color, intel->bo, intel->base.pitch);
 
     while ((ret = FcUtf8ToUcs4((FcChar8 *) text, &c, length)) > 0 && c != '\0')
@@ -273,7 +286,7 @@ void intel_draw_text_utf8(struct wld_drawable * drawable,
         }
 
       retry:
-        ret = xy_text_immediate_blt(&intel->context->batch, intel->bo,
+        ret = xy_text_immediate_blt(intel->context->batch, intel->bo,
                                     origin_x + glyph->x, y + glyph->y,
                                     origin_x + glyph->x + glyph->bitmap.width,
                                     y + glyph->y + glyph->bitmap.rows,
@@ -282,8 +295,8 @@ void intel_draw_text_utf8(struct wld_drawable * drawable,
 
         if (ret == INTEL_BATCH_NO_SPACE)
         {
-            intel_batch_flush(&intel->context->batch);
-            xy_setup_blt(&intel->context->batch, true,
+            intel_batch_flush(intel->context->batch);
+            xy_setup_blt(intel->context->batch, true,
                          INTEL_BLT_RASTER_OPERATION_SRC, 0, color,
                          intel->bo, intel->base.pitch);
             goto retry;
@@ -335,7 +348,7 @@ void intel_flush(struct wld_drawable * drawable)
 {
     struct intel_drawable * intel = (void *) drawable;
 
-    intel_batch_flush(&intel->context->batch);
+    intel_batch_flush(intel->context->batch);
 }
 
 void intel_destroy(struct wld_drawable * drawable)
