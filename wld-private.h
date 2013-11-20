@@ -100,7 +100,6 @@ struct wld_draw_interface
     void (* destroy)(struct wld_drawable * drawable);
 };
 
-
 bool font_ensure_glyph(struct font * font, FT_UInt glyph_index);
 
 /**
