@@ -1,14 +1,13 @@
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-libdir=@libdir@
-includedir=@includedir@
+prefix=@PREFIX@
+libdir=@LIBDIR@
+includedir=@INCLUDEDIR@
 
 Name: wld
 Description: A primitive drawing library library targeted at Wayland
-Version: @PACKAGE_VERSION@
+Version: @VERSION@
 Cflags: -I${includedir}
 Libs: -L${libdir} -lwld
 
-Requires: fontconfig pixman-1
-Requires.private: freetype2 @PKGCONFIG_REQUIRES_PRIVATE@
+Requires: @WLD_REQUIRES@
+Requires.private: @WLD_REQUIRES_PRIVATE@
 
