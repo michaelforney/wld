@@ -44,45 +44,25 @@ struct dumb_drawable
     uint32_t handle;
 };
 
-/* DRM implementation */
-static bool dumb_device_supported(uint32_t vendor_id, uint32_t device_id);
-static struct dumb_context * dumb_create_context(int drm_fd);
-static void dumb_destroy_context(struct dumb_context * context);
-static struct wld_drawable * dumb_create_drawable
-    (struct dumb_context * context, uint32_t width, uint32_t height,
-     uint32_t format);
-static struct wld_drawable * dumb_import
-    (struct dumb_context * context, uint32_t width, uint32_t height,
-     uint32_t format, int prime_fd, unsigned long pitch);
-static struct wld_drawable * dumb_import_gem
-    (struct dumb_context * context, uint32_t width, uint32_t height,
-     uint32_t format, uint32_t gem_name, unsigned long pitch);
+#define DRM_DRIVER_NAME dumb
+#include "interface/drm.h"
 
 /* DRM drawable */
-static int dumb_export(struct wld_drawable * drawable);
-static uint32_t dumb_get_handle(struct wld_drawable * drawable);
+static int drawable_export(struct wld_drawable * drawable);
+static uint32_t drawable_get_handle(struct wld_drawable * drawable);
 
-static struct drm_draw_interface dumb_draw = {
-    .export = &dumb_export,
-    .get_handle = &dumb_get_handle
+static struct drm_draw_interface draw_interface = {
+    .export = &drawable_export,
+    .get_handle = &drawable_get_handle
 };
-static bool dumb_draw_initialized;
+static bool draw_initialized;
 
-const struct wld_drm_interface dumb_drm = {
-    .device_supported = &dumb_device_supported,
-    .create_context = (drm_create_context_func_t) &dumb_create_context,
-    .destroy_context = (drm_destroy_context_func_t) &dumb_destroy_context,
-    .create_drawable = (drm_create_drawable_func_t) &dumb_create_drawable,
-    .import = (drm_import_func_t) &dumb_import,
-    .import_gem = (drm_import_gem_func_t) &dumb_import_gem,
-};
-
-bool dumb_device_supported(uint32_t vendor_id, uint32_t device_id)
+bool drm_device_supported(uint32_t vendor_id, uint32_t device_id)
 {
     return true;
 }
 
-struct dumb_context * dumb_create_context(int drm_fd)
+void * drm_create_context(int drm_fd)
 {
     struct dumb_context * context;
 
@@ -94,10 +74,10 @@ struct dumb_context * dumb_create_context(int drm_fd)
 
     context->fd = drm_fd;
 
-    if (!dumb_draw_initialized)
+    if (!draw_initialized)
     {
-        dumb_draw.base = pixman_draw;
-        dumb_draw_initialized = true;
+        draw_interface.base = *pixman_draw;
+        draw_initialized = true;
     }
 
     return context;
@@ -108,8 +88,10 @@ struct dumb_context * dumb_create_context(int drm_fd)
     return NULL;
 }
 
-void dumb_destroy_context(struct dumb_context * context)
+void drm_destroy_context(void * base)
 {
+    struct dumb_context * context = base;
+
     wld_pixman_destroy_context(context->pixman);
     free(context);
 }
@@ -145,7 +127,7 @@ static struct wld_drawable * new_drawable(struct dumb_context * context,
         goto error2;
     }
 
-    drawable->pixman.base.interface = (struct wld_draw_interface *) &dumb_draw;
+    drawable->pixman.base.interface = &draw_interface.base;
     drawable->context = context;
     drawable->handle = handle;
 
@@ -159,10 +141,11 @@ static struct wld_drawable * new_drawable(struct dumb_context * context,
     return NULL;
 }
 
-struct wld_drawable * dumb_create_drawable
-    (struct dumb_context * context, uint32_t width, uint32_t height,
-     uint32_t format)
+struct wld_drawable * drm_create_drawable(void * base,
+                                          uint32_t width, uint32_t height,
+                                          uint32_t format)
 {
+    struct dumb_context * context = base;
     struct wld_drawable * drawable;
     struct drm_mode_create_dumb create_dumb_arg = {
         .height = height, .width = width,
@@ -195,11 +178,11 @@ struct wld_drawable * dumb_create_drawable
     return NULL;
 }
 
-struct wld_drawable * dumb_import(struct dumb_context * context,
-                                  uint32_t width, uint32_t height,
-                                  uint32_t format,
-                                  int prime_fd, unsigned long pitch)
+struct wld_drawable * drm_import(void * base, uint32_t width, uint32_t height,
+                                 uint32_t format, int prime_fd,
+                                 unsigned long pitch)
 {
+    struct dumb_context * context = base;
     int ret;
     uint32_t handle;
 
@@ -214,17 +197,17 @@ struct wld_drawable * dumb_import(struct dumb_context * context,
     return NULL;
 }
 
-struct wld_drawable * dumb_import_gem(struct dumb_context * context,
-                                      uint32_t width, uint32_t height,
-                                      uint32_t format,
-                                      uint32_t gem_name, unsigned long pitch)
+struct wld_drawable * drm_import_gem(void * context,
+                                     uint32_t width, uint32_t height,
+                                     uint32_t format,
+                                     uint32_t gem_name, unsigned long pitch)
 {
     DEBUG("dumb: import_gem is not supported\n");
 
     return NULL;
 }
 
-static int dumb_export(struct wld_drawable * drawable)
+static int drawable_export(struct wld_drawable * drawable)
 {
     struct dumb_drawable * dumb = (void *) drawable;
     int prime_fd, ret;
@@ -238,7 +221,7 @@ static int dumb_export(struct wld_drawable * drawable)
     return prime_fd;
 }
 
-static uint32_t dumb_get_handle(struct wld_drawable * drawable)
+static uint32_t drawable_get_handle(struct wld_drawable * drawable)
 {
     struct dumb_drawable * dumb = (void *) drawable;
 

@@ -61,27 +61,8 @@ static void sync_done(void * data, struct wl_callback * callback,
 
 static void buffer_release(void * data, struct wl_buffer * buffer);
 
-static void wayland_fill_rectangle(struct wld_drawable * drawable,
-                                   uint32_t color, int32_t x, int32_t y,
-                                   uint32_t width, uint32_t height);
-static void wayland_fill_region(struct wld_drawable * drawable, uint32_t color,
-                                pixman_region32_t * region);
-static void wayland_copy_rectangle(struct wld_drawable * src,
-                                   struct wld_drawable * dst,
-                                   int32_t src_x, int32_t src_y,
-                                   int32_t dst_x, int32_t dst_y,
-                                   uint32_t width, uint32_t height);
-static void wayland_copy_region(struct wld_drawable * src,
-                                struct wld_drawable * dst,
-                                pixman_region32_t * region,
-                                int32_t dst_x, int32_t dst_y);
-static void wayland_draw_text_utf8(struct wld_drawable * drawable,
-                                   struct font * font, uint32_t color,
-                                   int32_t x, int32_t y,
-                                   const char * text, int32_t length,
-                                   struct wld_extents * extents);
-static void wayland_flush(struct wld_drawable * drawable);
-static void wayland_destroy(struct wld_drawable * drawable);
+#define DRAWABLE_IMPLEMENTS_REGION
+#include "interface/drawable.h"
 
 const struct wl_callback_listener sync_listener = {
     .done = &sync_done
@@ -89,16 +70,6 @@ const struct wl_callback_listener sync_listener = {
 
 const struct wl_buffer_listener buffer_listener = {
     .release = &buffer_release
-};
-
-const struct wld_draw_interface wayland_draw = {
-    .fill_rectangle = &wayland_fill_rectangle,
-    .fill_region = &wayland_fill_region,
-    .copy_rectangle = &wayland_copy_rectangle,
-    .copy_region = &wayland_copy_region,
-    .draw_text_utf8 = &wayland_draw_text_utf8,
-    .flush = &wayland_flush,
-    .destroy = &wayland_destroy
 };
 
 const static struct wld_wayland_interface * interfaces[] = {
@@ -228,7 +199,7 @@ struct wld_drawable * wld_wayland_create_drawable
     wayland->surface = surface;
     wayland->damage_tracking = damage_flags;
 
-    wayland->base.interface = &wayland_draw;
+    wayland->base.interface = &draw_interface;
     wayland->base.width = width;
     wayland->base.height = height;
 
@@ -326,9 +297,9 @@ static void begin(struct wayland_drawable * wayland)
     }
 }
 
-void wayland_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
-                            int32_t x, int32_t y,
-                            uint32_t width, uint32_t height)
+void drawable_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
+                             int32_t x, int32_t y,
+                             uint32_t width, uint32_t height)
 {
     struct wayland_drawable * wayland = (void *) drawable;
 
@@ -343,8 +314,8 @@ void wayland_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
     }
 }
 
-void wayland_fill_region(struct wld_drawable * drawable, uint32_t color,
-                         pixman_region32_t * region)
+void drawable_fill_region(struct wld_drawable * drawable, uint32_t color,
+                          pixman_region32_t * region)
 {
     struct wayland_drawable * wayland = (void *) drawable;
 
@@ -358,28 +329,28 @@ void wayland_fill_region(struct wld_drawable * drawable, uint32_t color,
     }
 }
 
-void wayland_copy_rectangle(struct wld_drawable * src_drawable,
-                            struct wld_drawable * dst_drawable,
-                            int32_t src_x, int32_t src_y,
-                            int32_t dst_x, int32_t dst_y,
-                            uint32_t width, uint32_t height)
+void drawable_copy_rectangle(struct wld_drawable * src_drawable,
+                             struct wld_drawable * dst_drawable,
+                             int32_t src_x, int32_t src_y,
+                             int32_t dst_x, int32_t dst_y,
+                             uint32_t width, uint32_t height)
 {
     fprintf(stderr, "wayland: Copy rectangle is not implemented\n");
 }
 
-void wayland_copy_region(struct wld_drawable * src_drawable,
-                         struct wld_drawable * dst_drawable,
-                         pixman_region32_t * region,
-                         int32_t dst_x, int32_t dst_y)
+void drawable_copy_region(struct wld_drawable * src_drawable,
+                          struct wld_drawable * dst_drawable,
+                          pixman_region32_t * region,
+                          int32_t dst_x, int32_t dst_y)
 {
     fprintf(stderr, "wayland: Copy region is not implemented\n");
 }
 
-void wayland_draw_text_utf8(struct wld_drawable * drawable,
-                            struct font * font, uint32_t color,
-                            int32_t x, int32_t y,
-                            const char * text, int32_t length,
-                            struct wld_extents * extents)
+void drawable_draw_text_utf8(struct wld_drawable * drawable,
+                             struct font * font, uint32_t color,
+                             int32_t x, int32_t y,
+                             const char * text, int32_t length,
+                             struct wld_extents * extents)
 {
     struct wld_extents extents0;
     struct wayland_drawable * wayland = (void *) drawable;
@@ -400,7 +371,20 @@ void wayland_draw_text_utf8(struct wld_drawable * drawable,
     }
 }
 
-void wayland_flush(struct wld_drawable * drawable)
+void drawable_write(struct wld_drawable * drawable,
+                    const void * data, size_t size)
+{
+    fprintf(stderr, "wayland: Write is not implemented\n");
+}
+
+pixman_image_t * drawable_map(struct wld_drawable * drawable)
+{
+    fprintf(stderr, "wayland: Map is not implemented\n");
+
+    return NULL;
+}
+
+void drawable_flush(struct wld_drawable * drawable)
 {
     struct wayland_drawable * wayland = (void *) drawable;
 
@@ -431,7 +415,7 @@ void wayland_flush(struct wld_drawable * drawable)
     wayland->front_buffer ^= 1;
 }
 
-void wayland_destroy(struct wld_drawable * drawable)
+void drawable_destroy(struct wld_drawable * drawable)
 {
     struct wayland_drawable * wayland = (void *) drawable;
 

@@ -35,7 +35,7 @@ struct pixman_drawable
     struct wld_pixman_context * context;
 };
 
-extern const struct wld_draw_interface pixman_draw;
+extern const struct wld_draw_interface * const pixman_draw;
 
 bool pixman_initialize_drawable
     (struct wld_pixman_context * context, struct pixman_drawable * drawable,

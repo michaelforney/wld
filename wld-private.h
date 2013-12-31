@@ -26,6 +26,7 @@
 
 #include "wld.h"
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <ft2build.h>
@@ -45,6 +46,13 @@
 #endif
 
 #define EXPORT __attribute__((visibility("default")))
+#define IMPL(name, type)                                                    \
+    static inline struct name ## _ ## type * name ## _ ## type              \
+        (struct wld_ ## type * type)                                        \
+    {                                                                       \
+        assert(type->impl == &type ## _impl);                               \
+        return (struct name ## _ ## type *) type;                           \
+    }
 
 struct wld_font_context
 {

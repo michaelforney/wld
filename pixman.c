@@ -37,42 +37,10 @@ struct wld_pixman_context
     pixman_glyph_cache_t * glyph_cache;
 };
 
-static void pixman_fill_rectangle(struct wld_drawable * drawable,
-                                  uint32_t color, int32_t x, int32_t y,
-                                  uint32_t width, uint32_t height);
-static void pixman_fill_region(struct wld_drawable * drawable, uint32_t color,
-                               pixman_region32_t * region);
-static void pixman_copy_rectangle(struct wld_drawable * src,
-                                  struct wld_drawable * dst,
-                                  int32_t src_x, int32_t src_y,
-                                  int32_t dst_x, int32_t dst_y,
-                                  uint32_t width, uint32_t height);
-static void pixman_copy_region(struct wld_drawable * src,
-                               struct wld_drawable * dst,
-                               pixman_region32_t * region,
-                               int32_t dst_x, int32_t dst_y);
-static void pixman_draw_text_utf8(struct wld_drawable * drawable,
-                                  struct font * font, uint32_t color,
-                                  int32_t x, int32_t y,
-                                  const char * text, int32_t length,
-                                  struct wld_extents * extents);
-static void pixman_write(struct wld_drawable * drawable,
-                         const void * data, size_t size);
-static pixman_image_t * pixman_map(struct wld_drawable * drawable);
-static void pixman_flush(struct wld_drawable * drawable);
-static void pixman_destroy(struct wld_drawable * drawable);
+#define DRAWABLE_IMPLEMENTS_REGION
+#include "interface/drawable.h"
 
-const struct wld_draw_interface pixman_draw = {
-    .fill_rectangle = &pixman_fill_rectangle,
-    .fill_region = &pixman_fill_region,
-    .copy_rectangle = &pixman_copy_rectangle,
-    .copy_region = &pixman_copy_region,
-    .draw_text_utf8 = &pixman_draw_text_utf8,
-    .write = &pixman_write,
-    .map = &pixman_map,
-    .flush = &pixman_flush,
-    .destroy = &pixman_destroy
-};
+const struct wld_draw_interface * const pixman_draw = &draw_interface;
 
 EXPORT
 struct wld_pixman_context * wld_pixman_create_context()
@@ -105,7 +73,7 @@ bool pixman_initialize_drawable
      uint32_t width, uint32_t height,
      void * data, uint32_t pitch, uint32_t format)
 {
-    drawable->base.interface = &pixman_draw;
+    drawable->base.interface = &draw_interface;
     drawable->base.width = width;
     drawable->base.height = height;
     drawable->base.format = format;
@@ -145,9 +113,9 @@ struct wld_drawable * wld_pixman_create_drawable
     return NULL;
 }
 
-void pixman_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
-                           int32_t x, int32_t y,
-                           uint32_t width, uint32_t height)
+void drawable_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
+                             int32_t x, int32_t y,
+                             uint32_t width, uint32_t height)
 {
     struct pixman_drawable * pixman = (void *) drawable;
     pixman_color_t pixman_color = PIXMAN_COLOR(color);
@@ -157,8 +125,8 @@ void pixman_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
                             1, &box);
 }
 
-void pixman_fill_region(struct wld_drawable * drawable, uint32_t color,
-                        pixman_region32_t * region)
+void drawable_fill_region(struct wld_drawable * drawable, uint32_t color,
+                          pixman_region32_t * region)
 {
     struct pixman_drawable * pixman = (void *) drawable;
     pixman_color_t pixman_color = PIXMAN_COLOR(color);
@@ -170,11 +138,11 @@ void pixman_fill_region(struct wld_drawable * drawable, uint32_t color,
                             num_boxes, boxes);
 }
 
-void pixman_copy_rectangle(struct wld_drawable * src_drawable,
-                           struct wld_drawable * dst_drawable,
-                           int32_t src_x, int32_t src_y,
-                           int32_t dst_x, int32_t dst_y,
-                           uint32_t width, uint32_t height)
+void drawable_copy_rectangle(struct wld_drawable * src_drawable,
+                             struct wld_drawable * dst_drawable,
+                             int32_t src_x, int32_t src_y,
+                             int32_t dst_x, int32_t dst_y,
+                             uint32_t width, uint32_t height)
 {
     struct pixman_drawable * src = (void *) src_drawable;
     struct pixman_drawable * dst = (void *) dst_drawable;
@@ -183,10 +151,10 @@ void pixman_copy_rectangle(struct wld_drawable * src_drawable,
                              src_x, src_y, 0, 0, dst_x, dst_y, width, height);
 }
 
-void pixman_copy_region(struct wld_drawable * src_drawable,
-                        struct wld_drawable * dst_drawable,
-                        pixman_region32_t * region,
-                        int32_t dst_x, int32_t dst_y)
+void drawable_copy_region(struct wld_drawable * src_drawable,
+                          struct wld_drawable * dst_drawable,
+                          pixman_region32_t * region,
+                          int32_t dst_x, int32_t dst_y)
 {
     struct pixman_drawable * src = (void *) src_drawable;
     struct pixman_drawable * dst = (void *) dst_drawable;
@@ -210,11 +178,11 @@ static inline uint8_t reverse(uint8_t byte)
     return byte;
 }
 
-void pixman_draw_text_utf8(struct wld_drawable * drawable,
-                           struct font * font, uint32_t color,
-                           int32_t x, int32_t y,
-                           const char * text, int32_t length,
-                           struct wld_extents * extents)
+void drawable_draw_text_utf8(struct wld_drawable * drawable,
+                             struct font * font, uint32_t color,
+                             int32_t x, int32_t y,
+                             const char * text, int32_t length,
+                             struct wld_extents * extents)
 {
     struct pixman_drawable * pixman = (void *) drawable;
     int ret;
@@ -303,26 +271,26 @@ void pixman_draw_text_utf8(struct wld_drawable * drawable,
         extents->advance = origin_x;
 }
 
-void pixman_write(struct wld_drawable * drawable,
-                  const void * data, size_t size)
+void drawable_write(struct wld_drawable * drawable,
+                    const void * data, size_t size)
 {
     struct pixman_drawable * pixman = (void *) drawable;
 
     memcpy(pixman_image_get_data(pixman->image), data, size);
 }
 
-pixman_image_t * pixman_map(struct wld_drawable * drawable)
+pixman_image_t * drawable_map(struct wld_drawable * drawable)
 {
     struct pixman_drawable * pixman = (void *) drawable;
 
     return pixman_image_ref(pixman->image);
 }
 
-void pixman_flush(struct wld_drawable * drawable)
+void drawable_flush(struct wld_drawable * drawable)
 {
 }
 
-void pixman_destroy(struct wld_drawable * drawable)
+void drawable_destroy(struct wld_drawable * drawable)
 {
     struct pixman_drawable * pixman = (void *) drawable;
 
