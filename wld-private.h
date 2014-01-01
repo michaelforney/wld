@@ -22,7 +22,7 @@
  */
 
 #ifndef WLD_PRIVATE_H
-#define WLD_PRIVATE_H 1
+#define WLD_PRIVATE_H
 
 #include "wld.h"
 

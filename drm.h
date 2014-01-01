@@ -22,7 +22,7 @@
  */
 
 #ifndef WLD_DRM_H
-#define WLD_DRM_H 1
+#define WLD_DRM_H
 
 #include <stdbool.h>
 #include <stdint.h>

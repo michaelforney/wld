@@ -22,7 +22,7 @@
  */
 
 #ifndef WLD_DRM_PRIVATE_H
-#define WLD_DRM_PRIVATE_H 1
+#define WLD_DRM_PRIVATE_H
 
 #include "wld-private.h"
 

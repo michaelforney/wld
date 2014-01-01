@@ -22,7 +22,7 @@
  */
 
 #ifndef WLD_WAYLAND_H
-#define WLD_WAYLAND_H 1
+#define WLD_WAYLAND_H
 
 #include <stdint.h>
 

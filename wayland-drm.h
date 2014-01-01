@@ -22,7 +22,7 @@
  */
 
 #ifndef WLD_WAYLAND_DRM_H
-#define WLD_WAYLAND_DRM_H 1
+#define WLD_WAYLAND_DRM_H
 
 #include <stdbool.h>
 #include <stdint.h>

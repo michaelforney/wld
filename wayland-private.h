@@ -22,7 +22,7 @@
  */
 
 #ifndef WLD_WAYLAND_PRIVATE_H
-#define WLD_WAYLAND_PRIVATE_H 1
+#define WLD_WAYLAND_PRIVATE_H
 
 #include <stdint.h>
 

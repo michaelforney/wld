@@ -22,7 +22,7 @@
  */
 
 #ifndef WLD_PIXMAN_H
-#define WLD_PIXMAN_H 1
+#define WLD_PIXMAN_H
 
 #include <stdint.h>
 

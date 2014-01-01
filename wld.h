@@ -22,7 +22,7 @@
  */
 
 #ifndef WLD_H
-#define WLD_H 1
+#define WLD_H
 
 #include <stdbool.h>
 #include <stdint.h>
