@@ -255,7 +255,6 @@ void intel_draw_text_utf8(struct wld_drawable * drawable,
     uint32_t c;
     uint8_t immediate[512];
     uint8_t * byte;
-    uint8_t byte_index;
     int32_t origin_x = x;
 
     xy_setup_blt(intel->context->batch, true, INTEL_BLT_RASTER_OPERATION_SRC,

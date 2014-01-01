@@ -78,14 +78,18 @@ struct wld_pixman_context * wld_pixman_create_context()
 {
     struct wld_pixman_context * context;
 
-    context = malloc(sizeof *context);
+    if (!(context = malloc(sizeof *context)))
+        goto error0;
 
-    if (!context)
-        return NULL;
-
-    context->glyph_cache = pixman_glyph_cache_create();
+    if (!(context->glyph_cache = pixman_glyph_cache_create()))
+        goto error1;
 
     return context;
+
+  error1:
+    free(context);
+  error0:
+    return NULL;
 }
 
 void wld_pixman_destroy_context(struct wld_pixman_context * context)

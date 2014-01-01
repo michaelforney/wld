@@ -123,8 +123,10 @@ struct wld_wayland_context * wld_wayland_create_context
     if (!wayland)
         goto error0;
 
+    if (!(wayland->queue = wl_display_create_queue(display)))
+        goto error1;
+
     wayland->display = display;
-    wayland->queue = wl_display_create_queue(display);
     wayland->context = NULL;
     wayland->interface = NULL;
 
@@ -295,7 +297,7 @@ static void wait_for_backbuf(struct wayland_drawable * wayland)
 {
     if (BACKBUF(wayland).busy)
     {
-        int ret, count = 0;
+        int ret;
 
         do {
             ret = wl_display_dispatch_queue(wayland->context->display,
@@ -397,7 +399,6 @@ void wayland_draw_text_utf8(struct wld_drawable * drawable,
 void wayland_flush(struct wld_drawable * drawable)
 {
     struct wayland_drawable * wayland = (void *) drawable;
-    pixman_region32_t damage;
 
     wait_for_backbuf(wayland);
 

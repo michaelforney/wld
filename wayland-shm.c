@@ -21,6 +21,8 @@
  * SOFTWARE.
  */
 
+#define _GNU_SOURCE /* Required for mkostemp */
+
 #include "wayland-shm.h"
 #include "wayland.h"
 #include "wayland-private.h"
