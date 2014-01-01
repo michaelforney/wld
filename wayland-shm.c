@@ -82,6 +82,7 @@ static inline uint32_t wayland_format(uint32_t format)
     }
 }
 
+EXPORT
 struct wld_shm_context * wld_shm_create_context(struct wl_display * display,
                                                 struct wl_event_queue * queue)
 {
@@ -133,6 +134,7 @@ struct wld_shm_context * wld_shm_create_context(struct wl_display * display,
     return NULL;
 }
 
+EXPORT
 void wld_shm_destroy_context(struct wld_shm_context * shm)
 {
     wld_pixman_destroy_context(shm->pixman_context);
@@ -143,6 +145,7 @@ void wld_shm_destroy_context(struct wld_shm_context * shm)
     free(shm);
 }
 
+EXPORT
 bool wld_shm_has_format(struct wld_shm_context * shm, uint32_t format)
 {
     uint32_t * supported_format;
@@ -156,6 +159,7 @@ bool wld_shm_has_format(struct wld_shm_context * shm, uint32_t format)
     return false;
 }
 
+EXPORT
 struct wld_drawable * wld_shm_create_drawable(struct wld_shm_context * shm,
                                               uint32_t width, uint32_t height,
                                               uint32_t format,

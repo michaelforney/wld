@@ -60,18 +60,21 @@ void default_copy_region(struct wld_drawable * src, struct wld_drawable * dst,
     }
 }
 
+EXPORT
 void wld_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
                         int32_t x, int32_t y, uint32_t width, uint32_t height)
 {
     drawable->interface->fill_rectangle(drawable, color, x, y, width, height);
 }
 
+EXPORT
 void wld_fill_region(struct wld_drawable * drawable, uint32_t color,
                      pixman_region32_t * region)
 {
     drawable->interface->fill_region(drawable, color, region);
 }
 
+EXPORT
 void wld_copy_rectangle(struct wld_drawable * src, struct wld_drawable * dst,
                         int32_t src_x, int32_t src_y,
                         int32_t dst_x, int32_t dst_y,
@@ -82,6 +85,7 @@ void wld_copy_rectangle(struct wld_drawable * src, struct wld_drawable * dst,
                                    width, height);
 }
 
+EXPORT
 void wld_copy_region(struct wld_drawable * src, struct wld_drawable * dst,
                      pixman_region32_t * region, int32_t dst_x, int32_t dst_y)
 {
@@ -89,6 +93,7 @@ void wld_copy_region(struct wld_drawable * src, struct wld_drawable * dst,
     dst->interface->copy_region(src, dst, region, dst_x, dst_y);
 }
 
+EXPORT
 void wld_draw_text_utf8_n(struct wld_drawable * drawable,
                           struct wld_font * font_base, uint32_t color,
                           int32_t x, int32_t y,
@@ -101,21 +106,25 @@ void wld_draw_text_utf8_n(struct wld_drawable * drawable,
                                         text, length, extents);
 }
 
+EXPORT
 void wld_destroy_drawable(struct wld_drawable * drawable)
 {
     drawable->interface->destroy(drawable);
 }
 
+EXPORT
 void wld_write(struct wld_drawable * drawable, const void * data, size_t size)
 {
     drawable->interface->write(drawable, data, size);
 }
 
+EXPORT
 pixman_image_t * wld_map(struct wld_drawable * drawable)
 {
     return drawable->interface->map(drawable);
 }
 
+EXPORT
 void wld_flush(struct wld_drawable * drawable)
 {
     drawable->interface->flush(drawable);

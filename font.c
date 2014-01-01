@@ -25,6 +25,7 @@
 
 #include <fontconfig/fcfreetype.h>
 
+EXPORT
 struct wld_font_context * wld_font_create_context()
 {
     struct wld_font_context * context;
@@ -49,12 +50,14 @@ struct wld_font_context * wld_font_create_context()
     return NULL;
 }
 
+EXPORT
 void wld_font_destroy_context(struct wld_font_context * context)
 {
     FT_Done_FreeType(context->library);
     free(context);
 }
 
+EXPORT
 struct wld_font * wld_font_open_name(struct wld_font_context * context,
                                      const char * name)
 {
@@ -75,6 +78,7 @@ struct wld_font * wld_font_open_name(struct wld_font_context * context,
     return wld_font_open_pattern(context, match);
 }
 
+EXPORT
 struct wld_font * wld_font_open_pattern(struct wld_font_context * context,
                                         FcPattern * match)
 {
@@ -150,6 +154,7 @@ struct wld_font * wld_font_open_pattern(struct wld_font_context * context,
     return NULL;
 }
 
+EXPORT
 void wld_font_close(struct wld_font * font_base)
 {
     struct font * font = (void *) font_base;
@@ -192,6 +197,7 @@ bool font_ensure_glyph(struct font * font, FT_UInt glyph_index)
     return false;
 }
 
+EXPORT
 bool wld_font_ensure_char(struct wld_font * font_base, uint32_t character)
 {
     struct font * font = (void *) font_base;
@@ -202,6 +208,7 @@ bool wld_font_ensure_char(struct wld_font * font_base, uint32_t character)
     return font_ensure_glyph(font, glyph_index);
 }
 
+EXPORT
 void wld_font_text_extents_utf8_n(struct wld_font * font_base,
                                   const char * text, int32_t length,
                                   struct wld_extents * extents)

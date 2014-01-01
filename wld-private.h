@@ -44,6 +44,8 @@
 #   define DEBUG(format, ...)
 #endif
 
+#define EXPORT __attribute__((visibility("default")))
+
 struct wld_font_context
 {
     FT_Library library;

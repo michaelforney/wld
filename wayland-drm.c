@@ -82,6 +82,7 @@ const static struct wl_drm_listener drm_listener = {
     .capabilities = &drm_capabilities
 };
 
+EXPORT
 struct wld_wayland_drm_context * wld_wayland_drm_create_context
     (struct wl_display * display, struct wl_event_queue * queue)
 {
@@ -161,6 +162,7 @@ struct wld_wayland_drm_context * wld_wayland_drm_create_context
     return NULL;
 }
 
+EXPORT
 void wld_wayland_drm_destroy_context(struct wld_wayland_drm_context * drm)
 {
     drm_finalize_context(&drm->context);
@@ -172,6 +174,7 @@ void wld_wayland_drm_destroy_context(struct wld_wayland_drm_context * drm)
     free(drm);
 }
 
+EXPORT
 bool wld_wayland_drm_has_format(struct wld_wayland_drm_context * drm,
                                 uint32_t format)
 {
@@ -186,11 +189,13 @@ bool wld_wayland_drm_has_format(struct wld_wayland_drm_context * drm,
     return false;
 }
 
+EXPORT
 int wld_wayland_drm_get_fd(struct wld_wayland_drm_context * drm)
 {
     return drm->authenticated ? drm->fd : -1;
 }
 
+EXPORT
 struct wld_drawable * wld_wayland_drm_create_drawable
     (struct wld_wayland_drm_context * drm, uint32_t width, uint32_t height,
      uint32_t format, struct wl_buffer ** buffer)

@@ -111,6 +111,7 @@ const static struct wld_wayland_interface * interfaces[] = {
 #endif
 };
 
+EXPORT
 struct wld_wayland_context * wld_wayland_create_context
     (struct wl_display * display, enum wld_wayland_interface_id id, ...)
 {
@@ -187,12 +188,14 @@ struct wld_wayland_context * wld_wayland_create_context
     return NULL;
 }
 
+EXPORT
 void wld_wayland_destroy_context(struct wld_wayland_context * wayland)
 {
     wayland->interface->destroy_context(wayland->context);
     free(wayland);
 }
 
+EXPORT
 struct wld_drawable * wld_wayland_create_drawable
     (struct wld_wayland_context * context, struct wl_surface * surface,
      uint32_t width, uint32_t height, uint32_t format, uint32_t damage_flags)
@@ -244,6 +247,7 @@ struct wld_drawable * wld_wayland_create_drawable
     return NULL;
 }
 
+EXPORT
 void wld_wayland_drawable_set_damage_tracking(struct wld_drawable * drawable,
                                               uint32_t flags)
 {

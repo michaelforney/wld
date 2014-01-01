@@ -811,6 +811,7 @@ static const struct named_color named_colors[] = {
     { "YellowGreen",            0xff9acd32 }
 };
 
+EXPORT
 bool wld_lookup_named_color(const char * name, uint32_t * color)
 {
     char * end;

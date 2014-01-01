@@ -84,6 +84,7 @@ void drm_finalize_context(struct wld_drm_context * drm)
     drm->interface->destroy_context(drm->context);
 }
 
+EXPORT
 struct wld_drm_context * wld_drm_create_context(int fd)
 {
     struct wld_drm_context * drm;
@@ -102,17 +103,20 @@ struct wld_drm_context * wld_drm_create_context(int fd)
     return NULL;
 }
 
+EXPORT
 void wld_drm_destroy_context(struct wld_drm_context * drm)
 {
     drm_finalize_context(drm);
     free(drm);
 }
 
+EXPORT
 bool wld_drm_is_dumb(struct wld_drm_context * drm)
 {
     return drm->interface == &dumb_drm;
 }
 
+EXPORT
 struct wld_drawable * wld_drm_create_drawable(struct wld_drm_context * drm,
                                               uint32_t width, uint32_t height,
                                               uint32_t format)
@@ -120,6 +124,7 @@ struct wld_drawable * wld_drm_create_drawable(struct wld_drm_context * drm,
     return drm->interface->create_drawable(drm->context, width, height, format);
 }
 
+EXPORT
 struct wld_drawable * wld_drm_import(struct wld_drm_context * drm,
                                      uint32_t width, uint32_t height,
                                      uint32_t format,
@@ -129,6 +134,7 @@ struct wld_drawable * wld_drm_import(struct wld_drm_context * drm,
                                   prime_fd, pitch);
 }
 
+EXPORT
 struct wld_drawable * wld_drm_import_gem(struct wld_drm_context * drm,
                                          uint32_t width, uint32_t height,
                                          uint32_t format,
@@ -138,11 +144,13 @@ struct wld_drawable * wld_drm_import_gem(struct wld_drm_context * drm,
                                       gem_name, pitch);
 }
 
+EXPORT
 int wld_drm_export(struct wld_drawable * drawable)
 {
     return ((struct drm_draw_interface *) drawable->interface)->export(drawable);
 }
 
+EXPORT
 uint32_t wld_drm_get_handle(struct wld_drawable * drawable)
 {
     return ((struct drm_draw_interface *) drawable->interface)->get_handle(drawable);

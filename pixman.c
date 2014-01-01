@@ -74,6 +74,7 @@ const struct wld_draw_interface pixman_draw = {
     .destroy = &pixman_destroy
 };
 
+EXPORT
 struct wld_pixman_context * wld_pixman_create_context()
 {
     struct wld_pixman_context * context;
@@ -92,6 +93,7 @@ struct wld_pixman_context * wld_pixman_create_context()
     return NULL;
 }
 
+EXPORT
 void wld_pixman_destroy_context(struct wld_pixman_context * context)
 {
     pixman_glyph_cache_destroy(context->glyph_cache);
@@ -117,6 +119,7 @@ bool pixman_initialize_drawable
     return drawable->image != NULL;
 }
 
+EXPORT
 struct wld_drawable * wld_pixman_create_drawable
     (struct wld_pixman_context * context, uint32_t width, uint32_t height,
      void * data, uint32_t pitch, uint32_t format)
