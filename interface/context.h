@@ -1,4 +1,4 @@
-/* wld: interface/drm.h
+/* wld: interface/context.h
  *
  * Copyright (c) 2013 Michael Forney
  *
@@ -21,20 +21,17 @@
  * SOFTWARE.
  */
 
-#ifndef DRM_DRIVER_NAME
-#   error "You must define DRM_DRIVER_NAME before including interface/drm.h"
-#endif
+static struct wld_drawable * context_create_drawable
+    (struct wld_context * context,
+     uint32_t width, uint32_t height, uint32_t format);
+static struct wld_drawable * context_import
+    (struct wld_context * context, uint32_t type, union wld_object object,
+     uint32_t width, uint32_t height, uint32_t format, uint32_t pitch);
+static void context_destroy(struct wld_context * context);
 
-/* DRM implementation */
-static bool drm_device_supported(uint32_t vendor_id, uint32_t device_id);
-static struct wld_context * drm_create_context(int drm_fd);
-
-#define EXPAND(f, x) f(x)
-#define VAR(name) name ## _drm
-const struct wld_drm_interface EXPAND(VAR, DRM_DRIVER_NAME) = {
-    .device_supported = &drm_device_supported,
-    .create_context = &drm_create_context,
+static const struct wld_context_impl context_impl = {
+    .create_drawable = &context_create_drawable,
+    .import = &context_import,
+    .destroy = &context_destroy
 };
-#undef VAR
-#undef EXPAND
 

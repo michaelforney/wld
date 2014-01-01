@@ -22,6 +22,7 @@
  */
 
 #include "drm-private.h"
+#include "drm.h"
 #include "wld-private.h"
 
 #include <unistd.h>
@@ -31,6 +32,7 @@
 
 struct intel_context
 {
+    struct wld_context base;
     drm_intel_bufmgr * bufmgr;
     struct intel_batch * batch;
 };
@@ -44,16 +46,18 @@ struct intel_drawable
     pixman_image_t * virtual;
 };
 
+#include "interface/context.h"
 #define DRM_DRIVER_NAME intel
 #include "interface/drm.h"
 #include "interface/drm_drawable.h"
+IMPL(intel, context)
 
 bool drm_device_supported(uint32_t vendor_id, uint32_t device_id)
 {
     return vendor_id == 0x8086;
 }
 
-void * drm_create_context(int drm_fd)
+struct wld_context * drm_create_context(int drm_fd)
 {
     struct intel_context * context;
 
@@ -62,6 +66,7 @@ void * drm_create_context(int drm_fd)
     if (!context)
         goto error0;
 
+    context_initialize(&context->base, &context_impl);
     context->bufmgr = drm_intel_bufmgr_gem_init(drm_fd, INTEL_BATCH_SIZE);
 
     if (!context->bufmgr)
@@ -72,7 +77,7 @@ void * drm_create_context(int drm_fd)
     if (!context->batch)
         goto error2;
 
-    return context;
+    return &context->base;
 
   error2:
     drm_intel_bufmgr_destroy(context->bufmgr);
@@ -80,15 +85,6 @@ void * drm_create_context(int drm_fd)
     free(context);
   error0:
     return NULL;
-}
-
-void drm_destroy_context(void * base)
-{
-    struct intel_context * context = base;
-
-    intel_batch_destroy(context->batch);
-    drm_intel_bufmgr_destroy(context->bufmgr);
-    free(context);
 }
 
 static struct intel_drawable * new_drawable(struct intel_context * context,
@@ -110,11 +106,11 @@ static struct intel_drawable * new_drawable(struct intel_context * context,
     return intel;
 }
 
-struct wld_drawable * drm_create_drawable(void * base,
-                                          uint32_t width, uint32_t height,
-                                          uint32_t format)
+struct wld_drawable * context_create_drawable(struct wld_context * base,
+                                              uint32_t width, uint32_t height,
+                                              uint32_t format)
 {
-    struct intel_context * context = base;
+    struct intel_context * context = intel_context(base);
     struct intel_drawable * intel;
     uint32_t tiling_mode = width >= 128 ? I915_TILING_X : I915_TILING_NONE;
 
@@ -128,41 +124,55 @@ struct wld_drawable * drm_create_drawable(void * base,
     return &intel->base;
 }
 
-struct wld_drawable * drm_import(void * base,
-                                 uint32_t width, uint32_t height,
-                                 uint32_t format,
-                                 int prime_fd, unsigned long pitch)
+struct wld_drawable * context_import(struct wld_context * base,
+                                     uint32_t type, union wld_object object,
+                                     uint32_t width, uint32_t height,
+                                     uint32_t format, uint32_t pitch)
 {
-    struct intel_context * context = base;
+    struct intel_context * context = intel_context(base);
     struct intel_drawable * intel;
-    uint32_t size = width * height * 4;
+    drm_intel_bo * bo;
+
+    switch (type)
+    {
+        case WLD_DRM_OBJECT_PRIME_FD:
+        {
+            uint32_t size = width * height * format_bytes_per_pixel(format);
+            bo = drm_intel_bo_gem_create_from_prime(context->bufmgr,
+                                                    object.i, size);
+            break;
+        }
+        case WLD_DRM_OBJECT_GEM_NAME:
+            bo = drm_intel_bo_gem_create_from_name(context->bufmgr, "buffer",
+                                                   object.u32);
+            break;
+        default: bo = NULL;
+    };
+
+    if (!bo)
+        goto error0;
 
     if (!(intel = new_drawable(context, width, height, format)))
-        return NULL;
+        goto error1;
 
-    intel->bo = drm_intel_bo_gem_create_from_prime(context->bufmgr,
-                                                   prime_fd, size);
+    intel->bo = bo;
     intel->base.pitch = pitch;
 
     return &intel->base;
+
+  error1:
+    drm_intel_bo_unreference(bo);
+  error0:
+    return NULL;
 }
 
-struct wld_drawable * drm_import_gem(void * base,
-                                     uint32_t width, uint32_t height,
-                                     uint32_t format,
-                                     uint32_t gem_name, unsigned long pitch)
+void context_destroy(struct wld_context * base)
 {
-    struct intel_context * context = base;
-    struct intel_drawable * intel;
+    struct intel_context * context = intel_context(base);
 
-    if (!(intel = new_drawable(context, width, height, format)))
-        return NULL;
-
-    intel->bo = drm_intel_bo_gem_create_from_name(context->bufmgr, "drawable",
-                                                  gem_name);
-    intel->base.pitch = pitch;
-
-    return &intel->base;
+    intel_batch_destroy(context->batch);
+    drm_intel_bufmgr_destroy(context->bufmgr);
+    free(context);
 }
 
 void drawable_fill_rectangle(struct wld_drawable * drawable, uint32_t color,

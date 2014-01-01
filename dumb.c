@@ -24,6 +24,7 @@
 #include "pixman.h"
 #include "pixman-private.h"
 #include "drm-private.h"
+#include "drm.h"
 
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -33,7 +34,8 @@
 
 struct dumb_context
 {
-    struct wld_pixman_context * pixman;
+    struct wld_context base;
+    struct wld_context * pixman;
     int fd;
 };
 
@@ -45,7 +47,11 @@ struct dumb_drawable
 };
 
 #define DRM_DRIVER_NAME dumb
+#include "interface/context.h"
 #include "interface/drm.h"
+IMPL(dumb, context)
+
+const struct wld_context_impl * dumb_context_impl = &context_impl;
 
 /* DRM drawable */
 static int drawable_export(struct wld_drawable * drawable);
@@ -62,7 +68,7 @@ bool drm_device_supported(uint32_t vendor_id, uint32_t device_id)
     return true;
 }
 
-void * drm_create_context(int drm_fd)
+struct wld_context * drm_create_context(int drm_fd)
 {
     struct dumb_context * context;
 
@@ -72,6 +78,7 @@ void * drm_create_context(int drm_fd)
     if (!(context->pixman = wld_pixman_create_context()))
         goto error1;
 
+    context_initialize(&context->base, &context_impl);
     context->fd = drm_fd;
 
     if (!draw_initialized)
@@ -80,20 +87,12 @@ void * drm_create_context(int drm_fd)
         draw_initialized = true;
     }
 
-    return context;
+    return &context->base;
 
   error1:
     free(context);
   error0:
     return NULL;
-}
-
-void drm_destroy_context(void * base)
-{
-    struct dumb_context * context = base;
-
-    wld_pixman_destroy_context(context->pixman);
-    free(context);
 }
 
 static struct wld_drawable * new_drawable(struct dumb_context * context,
@@ -141,11 +140,11 @@ static struct wld_drawable * new_drawable(struct dumb_context * context,
     return NULL;
 }
 
-struct wld_drawable * drm_create_drawable(void * base,
-                                          uint32_t width, uint32_t height,
-                                          uint32_t format)
+struct wld_drawable * context_create_drawable(struct  wld_context * base,
+                                              uint32_t width, uint32_t height,
+                                              uint32_t format)
 {
-    struct dumb_context * context = base;
+    struct dumb_context * context = dumb_context(base);
     struct wld_drawable * drawable;
     struct drm_mode_create_dumb create_dumb_arg = {
         .height = height, .width = width,
@@ -178,33 +177,32 @@ struct wld_drawable * drm_create_drawable(void * base,
     return NULL;
 }
 
-struct wld_drawable * drm_import(void * base, uint32_t width, uint32_t height,
-                                 uint32_t format, int prime_fd,
-                                 unsigned long pitch)
+struct wld_drawable * context_import(struct wld_context * base,
+                                     uint32_t type, union wld_object object,
+                                     uint32_t width, uint32_t height,
+                                     uint32_t format, uint32_t pitch)
 {
-    struct dumb_context * context = base;
-    int ret;
+    struct dumb_context * context = dumb_context(base);
     uint32_t handle;
 
-    ret = drmPrimeFDToHandle(context->fd, prime_fd, &handle);
-
-    if (ret != 0)
-        goto error0;
+    switch (type)
+    {
+        case WLD_DRM_OBJECT_PRIME_FD:
+            if (drmPrimeFDToHandle(context->fd, object.i, &handle) != 0)
+                return NULL;
+            break;
+        default: return NULL;
+    }
 
     return new_drawable(context, width, height, format, handle, pitch);
-
-  error0:
-    return NULL;
 }
 
-struct wld_drawable * drm_import_gem(void * context,
-                                     uint32_t width, uint32_t height,
-                                     uint32_t format,
-                                     uint32_t gem_name, unsigned long pitch)
+void context_destroy(struct wld_context * base)
 {
-    DEBUG("dumb: import_gem is not supported\n");
+    struct dumb_context * context = dumb_context(base);
 
-    return NULL;
+    wld_destroy_context(context->pixman);
+    free(context);
 }
 
 static int drawable_export(struct wld_drawable * drawable)

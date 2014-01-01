@@ -39,8 +39,7 @@
 
 struct wld_wayland_drm_context
 {
-    struct wld_drm_context context;
-
+    struct wld_context * driver_context;
     struct wl_drm * wl;
     struct wl_registry * registry;
     struct wl_array formats;
@@ -141,7 +140,7 @@ struct wld_wayland_drm_context * wld_wayland_drm_create_context
         goto error4;
     }
 
-    if (!drm_initialize_context(&drm->context, drm->fd))
+    if (!(drm->driver_context = wld_drm_create_context(drm->fd)))
     {
         DEBUG("Couldn't initialize context for DRM device\n");
         goto error4;
@@ -165,7 +164,7 @@ struct wld_wayland_drm_context * wld_wayland_drm_create_context
 EXPORT
 void wld_wayland_drm_destroy_context(struct wld_wayland_drm_context * drm)
 {
-    drm_finalize_context(&drm->context);
+    wld_destroy_context(&drm->driver_context);
     close(drm->fd);
     wl_drm_destroy(drm->wl);
     wl_registry_destroy(drm->registry);
@@ -205,17 +204,17 @@ struct wld_drawable * wld_wayland_drm_create_drawable
     if (buffer && !wld_wayland_drm_has_format(drm, format))
         return NULL;
 
-    drawable = wld_drm_create_drawable(&drm->context, width, height, format);
+    drawable = wld_create_drawable(drm->driver_context, width, height, format);
 
     if (!drawable)
         return NULL;
 
     if (buffer)
     {
-        int prime_fd;
+        union wld_object object;
 
-        prime_fd = wld_drm_export(drawable);
-        *buffer = wl_drm_create_prime_buffer(drm->wl, prime_fd,
+        wld_export(drawable, WLD_DRM_OBJECT_PRIME_FD, &object);
+        *buffer = wl_drm_create_prime_buffer(drm->wl, object.i,
                                              width, height, format,
                                              0, drawable->pitch, 0, 0, 0, 0);
         close(prime_fd);

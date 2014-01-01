@@ -42,7 +42,7 @@ struct wld_shm_context
     struct wl_shm * wl;
     struct wl_array formats;
 
-    struct wld_pixman_context * pixman_context;
+    struct wld_context * pixman_context;
 };
 
 static void registry_global(void * data, struct wl_registry * registry,
@@ -137,7 +137,7 @@ struct wld_shm_context * wld_shm_create_context(struct wl_display * display,
 EXPORT
 void wld_shm_destroy_context(struct wld_shm_context * shm)
 {
-    wld_pixman_destroy_context(shm->pixman_context);
+    wld_destroy_context(shm->pixman_context);
     wl_shm_destroy(shm->wl);
     wl_registry_destroy(shm->registry);
     wl_array_release(&shm->formats);
@@ -173,6 +173,7 @@ struct wld_drawable * wld_shm_create_drawable(struct wld_shm_context * shm,
     struct wl_shm_pool * pool;
     struct wld_drawable * drawable;
     uint32_t shm_format = wayland_format(format);
+    union wld_object object;
 
     fd = mkostemp(name, O_CLOEXEC);
 
@@ -189,8 +190,9 @@ struct wld_drawable * wld_shm_create_drawable(struct wld_shm_context * shm,
     if (data == MAP_FAILED)
         goto error1;
 
-    drawable = wld_pixman_create_drawable(shm->pixman_context, width, height,
-                                          data, pitch, format);
+    object.ptr = data;
+    drawable = wld_import(shm->pixman_context, WLD_OBJECT_DATA, object,
+                          width, height, format, pitch);
 
     pool = wl_shm_create_pool(shm->wl, fd, size);
     *buffer = wl_shm_pool_create_buffer(pool, 0, width, height, pitch,

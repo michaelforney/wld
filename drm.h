@@ -27,46 +27,18 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-struct wld_drm_context;
-struct wld_drawable;
+enum wld_drm_object_type
+{
+    WLD_DRM_OBJECT_PRIME_FD = 0x00010000,
+    WLD_DRM_OBJECT_GEM_NAME = 0x00010001
+};
 
 /**
- * Create a new DRM context from an opened DRM device file descriptor.
+ * Create a new WLD context from an opened DRM device file descriptor.
  */
-struct wld_drm_context * wld_drm_create_context(int fd);
+struct wld_context * wld_drm_create_context(int fd);
 
-/**
- * Destroy a DRM context.
- */
-void wld_drm_destroy_context(struct wld_drm_context * drm);
-
-bool wld_drm_is_dumb(struct wld_drm_context * drm);
-
-/**
- * Create a new DRM drawable.
- */
-struct wld_drawable * wld_drm_create_drawable(struct wld_drm_context * drm,
-                                              uint32_t width, uint32_t height,
-                                              uint32_t format);
-
-/**
- * Create a new DRM drawable by importing a PRIME file descriptor.
- */
-struct wld_drawable * wld_drm_import(struct wld_drm_context * context,
-                                     uint32_t width, uint32_t height,
-                                     uint32_t format,
-                                     int prime_fd, unsigned long pitch);
-
-/**
- * Create a new DRM drawable by importing a GEM name.
- *
- * This is provided for compatibility with clients that don't support PRIME.
- * You should use wld_drm_import_drawable and PRIME if possible.
- */
-struct wld_drawable * wld_drm_import_gem(struct wld_drm_context * context,
-                                         uint32_t width, uint32_t height,
-                                         uint32_t format, uint32_t gem_name,
-                                         unsigned long pitch);
+bool wld_drm_is_dumb(struct wld_context * context);
 
 /**
  * Export a DRM drawable to a PRIME file descriptor.

@@ -32,20 +32,22 @@
     .blue   = ((c >>  0) & 0xff) * 0x101,   \
 }
 
-struct wld_pixman_context
+struct pixman_context
 {
+    struct wld_context base;
     pixman_glyph_cache_t * glyph_cache;
 };
 
+#include "interface/context.h"
 #define DRAWABLE_IMPLEMENTS_REGION
 #include "interface/drawable.h"
 
 const struct wld_draw_interface * const pixman_draw = &draw_interface;
 
 EXPORT
-struct wld_pixman_context * wld_pixman_create_context()
+struct wld_context * wld_pixman_create_context()
 {
-    struct wld_pixman_context * context;
+    struct pixman_context * context;
 
     if (!(context = malloc(sizeof *context)))
         goto error0;
@@ -53,7 +55,7 @@ struct wld_pixman_context * wld_pixman_create_context()
     if (!(context->glyph_cache = pixman_glyph_cache_create()))
         goto error1;
 
-    return context;
+    return &context->base;
 
   error1:
     free(context);
@@ -61,15 +63,8 @@ struct wld_pixman_context * wld_pixman_create_context()
     return NULL;
 }
 
-EXPORT
-void wld_pixman_destroy_context(struct wld_pixman_context * context)
-{
-    pixman_glyph_cache_destroy(context->glyph_cache);
-    free(context);
-}
-
 bool pixman_initialize_drawable
-    (struct wld_pixman_context * context, struct pixman_drawable * drawable,
+    (struct wld_context * context, struct pixman_drawable * drawable,
      uint32_t width, uint32_t height,
      void * data, uint32_t pitch, uint32_t format)
 {
@@ -79,7 +74,7 @@ bool pixman_initialize_drawable
     drawable->base.format = format;
     drawable->base.pitch = pitch;
 
-    drawable->context = context;
+    drawable->context = (void *) context;
     drawable->image = pixman_image_create_bits(format_wld_to_pixman(format),
                                                width, height,
                                                (uint32_t *) data, pitch);
@@ -87,30 +82,89 @@ bool pixman_initialize_drawable
     return drawable->image != NULL;
 }
 
-EXPORT
-struct wld_drawable * wld_pixman_create_drawable
-    (struct wld_pixman_context * context, uint32_t width, uint32_t height,
-     void * data, uint32_t pitch, uint32_t format)
+struct wld_drawable * new_drawable(struct pixman_context * context,
+                                   pixman_image_t * image)
 {
-    struct pixman_drawable * pixman;
+    struct pixman_drawable * drawable;
 
-    pixman = malloc(sizeof *pixman);
+    if (!(drawable = malloc(sizeof *drawable)))
+        return NULL;
 
-    if (!pixman)
+    drawable->base.interface = &draw_interface;
+    drawable->base.width = pixman_image_get_width(image);
+    drawable->base.height = pixman_image_get_height(image);
+    drawable->base.format = format_pixman_to_wld
+        (pixman_image_get_format(image));
+    drawable->base.pitch = pixman_image_get_stride(image);
+    drawable->context = context;
+    drawable->image = image;
+
+    return &drawable->base;
+}
+
+struct wld_drawable * context_create_drawable(struct wld_context * base,
+                                              uint32_t width, uint32_t height,
+                                              uint32_t format)
+{
+    struct pixman_context * context = (void *) base;
+    struct wld_drawable * drawable;
+    pixman_image_t * image;
+
+    image = pixman_image_create_bits(format_wld_to_pixman(format),
+                                     width, height, NULL, 0);
+
+    if (!image)
         goto error0;
 
-    if (!pixman_initialize_drawable(context, pixman, width, height,
-                                    data, pitch, format))
-    {
+    if (!(drawable = new_drawable(context, image)))
         goto error1;
-    }
 
-    return &pixman->base;
+    return drawable;
 
   error1:
-    free(pixman);
+    pixman_image_unref(image);
   error0:
     return NULL;
+}
+
+struct wld_drawable * context_import
+    (struct wld_context * base, uint32_t type, union wld_object object,
+     uint32_t width, uint32_t height, uint32_t format, uint32_t pitch)
+{
+    struct pixman_context * context = (void *) base;
+    struct wld_drawable * drawable;
+    pixman_image_t * image;
+
+    switch (type)
+    {
+        case WLD_OBJECT_DATA:
+            image = pixman_image_create_bits(format_wld_to_pixman(format),
+                                             width, height, object.ptr, pitch);
+            break;
+        default: image = NULL;
+    }
+
+    if (!image)
+        goto error0;
+
+    if (!(drawable = new_drawable(context, image)))
+        goto error1;
+
+    return drawable;
+
+  error1:
+    pixman_image_unref(image);
+  error0:
+    return NULL;
+
+}
+
+void context_destroy(struct wld_context * base)
+{
+    struct pixman_context * context = (void *) base;
+
+    pixman_glyph_cache_destroy(context->glyph_cache);
+    free(context);
 }
 
 void drawable_fill_rectangle(struct wld_drawable * drawable, uint32_t color,

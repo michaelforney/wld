@@ -47,6 +47,36 @@ enum wld_format
 
 bool wld_lookup_named_color(const char * name, uint32_t * color);
 
+/**** WLD Context ****/
+
+enum wld_object_type
+{
+    WLD_OBJECT_DATA = 0x0
+};
+
+union wld_object
+{
+    void * ptr;
+    uint32_t u32;
+    int i;
+};
+
+struct wld_context
+{
+    const struct wld_context_impl * const impl;
+};
+
+struct wld_drawable * wld_create_drawable(struct wld_context * context,
+                                          uint32_t width, uint32_t height,
+                                          uint32_t format);
+
+struct wld_drawable * wld_import(struct wld_context * context, uint32_t type,
+                                 union wld_object object,
+                                 uint32_t width, uint32_t height,
+                                 uint32_t format, uint32_t pitch);
+
+void wld_destroy_context(struct wld_context * context);
+
 /**** Font Handling ****/
 
 struct wld_extents

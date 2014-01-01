@@ -26,19 +26,19 @@
 
 #include "wld.h"
 
-struct wld_pixman_context;
+struct wld_context;
 
 struct pixman_drawable
 {
     struct wld_drawable base;
     pixman_image_t * image;
-    struct wld_pixman_context * context;
+    struct pixman_context * context;
 };
 
 extern const struct wld_draw_interface * const pixman_draw;
 
 bool pixman_initialize_drawable
-    (struct wld_pixman_context * context, struct pixman_drawable * drawable,
+    (struct wld_context * context, struct pixman_drawable * drawable,
      uint32_t width, uint32_t height,
      void * data, uint32_t pitch, uint32_t format);
 

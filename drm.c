@@ -68,80 +68,21 @@ static const struct wld_drm_interface * find_drm_interface(int fd)
     return NULL;
 }
 
-bool drm_initialize_context(struct wld_drm_context * drm, int fd)
+EXPORT
+struct wld_context * wld_drm_create_context(int fd)
 {
-    if (!(drm->interface = find_drm_interface(fd)))
-        return false;
+    const struct wld_drm_interface * interface;
 
-    if (!(drm->context = drm->interface->create_context(fd)))
-        return false;
+    if (!(interface = find_drm_interface(fd)))
+        return NULL;
 
-    return true;
-}
-
-void drm_finalize_context(struct wld_drm_context * drm)
-{
-    drm->interface->destroy_context(drm->context);
+    return interface->create_context(fd);
 }
 
 EXPORT
-struct wld_drm_context * wld_drm_create_context(int fd)
+bool wld_drm_is_dumb(struct wld_context * context)
 {
-    struct wld_drm_context * drm;
-
-    if (!(drm = malloc(sizeof *drm)))
-        goto error0;
-
-    if (!drm_initialize_context(drm, fd))
-        goto error1;
-
-    return drm;
-
-  error1:
-    free(drm);
-  error0:
-    return NULL;
-}
-
-EXPORT
-void wld_drm_destroy_context(struct wld_drm_context * drm)
-{
-    drm_finalize_context(drm);
-    free(drm);
-}
-
-EXPORT
-bool wld_drm_is_dumb(struct wld_drm_context * drm)
-{
-    return drm->interface == &dumb_drm;
-}
-
-EXPORT
-struct wld_drawable * wld_drm_create_drawable(struct wld_drm_context * drm,
-                                              uint32_t width, uint32_t height,
-                                              uint32_t format)
-{
-    return drm->interface->create_drawable(drm->context, width, height, format);
-}
-
-EXPORT
-struct wld_drawable * wld_drm_import(struct wld_drm_context * drm,
-                                     uint32_t width, uint32_t height,
-                                     uint32_t format,
-                                     int prime_fd, unsigned long pitch)
-{
-    return drm->interface->import(drm->context, width, height, format,
-                                  prime_fd, pitch);
-}
-
-EXPORT
-struct wld_drawable * wld_drm_import_gem(struct wld_drm_context * drm,
-                                         uint32_t width, uint32_t height,
-                                         uint32_t format,
-                                         uint32_t gem_name, unsigned long pitch)
-{
-    return drm->interface->import_gem(drm->context, width, height, format,
-                                      gem_name, pitch);
+    return context->impl == dumb_context_impl;
 }
 
 EXPORT

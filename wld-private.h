@@ -83,6 +83,18 @@ struct font
     struct glyph ** glyphs;
 };
 
+struct wld_context_impl
+{
+    struct wld_drawable * (* create_drawable)(struct wld_context * context,
+                                              uint32_t width, uint32_t height,
+                                              uint32_t format);
+    struct wld_drawable * (* import)(struct wld_context * context,
+                                     uint32_t type, union wld_object object,
+                                     uint32_t width, uint32_t height,
+                                     uint32_t format, uint32_t pitch);
+    void (* destroy)(struct wld_context * context);
+};
+
 struct wld_draw_interface
 {
     void (* fill_rectangle)(struct wld_drawable * drawable, uint32_t color,
@@ -140,6 +152,19 @@ static inline pixman_format_code_t format_wld_to_pixman(uint32_t format)
     }
 }
 
+static inline uint32_t format_pixman_to_wld(pixman_format_code_t format)
+{
+    switch (format)
+    {
+        case PIXMAN_a8r8g8b8:
+            return WLD_FORMAT_ARGB8888;
+        case PIXMAN_x8r8g8b8:
+            return WLD_FORMAT_XRGB8888;
+        default:
+            return 0;
+    }
+}
+
 /**
  * This default fill_region method is implemented in terms of fill_rectangle.
  */
@@ -152,6 +177,9 @@ void default_fill_region(struct wld_drawable * drawable, uint32_t color,
 void default_copy_region(struct wld_drawable * src, struct wld_drawable * dst,
                          pixman_region32_t * region,
                          int32_t dst_x, int32_t dst_y);
+
+void context_initialize(struct wld_context * context,
+                        const struct wld_context_impl * impl);
 
 #endif
 

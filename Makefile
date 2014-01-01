@@ -15,7 +15,7 @@ CLEAN_FILES     := $(TARGETS)
 
 WLD_REQUIRES = fontconfig pixman-1
 WLD_REQUIRES_PRIVATE = freetype2
-WLD_SOURCES = drawable.c color.c font.c
+WLD_SOURCES = context.c drawable.c color.c font.c
 WLD_HEADERS = wld.h
 
 ifeq ($(ENABLE_DEBUG),1)

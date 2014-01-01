@@ -26,28 +26,13 @@
 
 #include <stdint.h>
 
-struct wld_pixman_context;
-struct wld_drawable;
+struct wld_context;
 
 /**
  * Create a new drawing context which uses Pixman to do software rendering on
  * buffers in memory.
  */
-struct wld_pixman_context * wld_pixman_create_context();
-
-/**
- * Destroy a Pixman context.
- */
-void wld_pixman_destroy_context(struct wld_pixman_context * context);
-
-/**
- * Create a new Pixman drawable with the specified dimensions.
- *
- * If data is NULL, new backing memory will be allocated.
- */
-struct wld_drawable * wld_pixman_create_drawable
-    (struct wld_pixman_context * context, uint32_t width, uint32_t height,
-     void * data, uint32_t pitch, uint32_t format);
+struct wld_context * wld_pixman_create_context();
 
 #endif
 

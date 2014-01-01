@@ -26,30 +26,13 @@
 
 #include "wld-private.h"
 
-typedef bool (* drm_device_supported_func_t)(uint32_t vendor_id,
-                                             uint32_t device_id);
-typedef void * (* drm_create_context_func_t)(int drm_fd);
-typedef void (* drm_destroy_context_func_t)(void * context);
-typedef struct wld_drawable * (* drm_create_drawable_func_t)
-    (void * context, uint32_t width, uint32_t height, uint32_t format);
-typedef struct wld_drawable * (* drm_import_func_t)
-    (void * context, uint32_t width, uint32_t height, uint32_t format,
-     int prime_fd, unsigned long pitch);
-typedef struct wld_drawable * (* drm_import_gem_func_t)
-    (void * context, uint32_t width, uint32_t height, uint32_t format,
-     uint32_t gem_name, unsigned long pitch);
-
 typedef int (* drm_export_func_t)(struct wld_drawable * drawable);
 typedef uint32_t (* drm_get_handle_func_t)(struct wld_drawable * drawable);
 
 struct wld_drm_interface
 {
-    drm_device_supported_func_t device_supported;
-    drm_create_context_func_t create_context;
-    drm_destroy_context_func_t destroy_context;
-    drm_create_drawable_func_t create_drawable;
-    drm_import_func_t import;
-    drm_import_gem_func_t import_gem;
+    bool (* device_supported)(uint32_t vendor_id, uint32_t device_id);
+    struct wld_context * (* create_context)(int drm_fd);
 };
 
 struct drm_draw_interface
@@ -59,19 +42,11 @@ struct drm_draw_interface
     drm_get_handle_func_t get_handle;
 };
 
-struct wld_drm_context
-{
-    const struct wld_drm_interface * interface;
-    void * context;
-};
-
 #if WITH_DRM_INTEL
 extern const struct wld_drm_interface intel_drm;
 #endif
 extern const struct wld_drm_interface dumb_drm;
-
-bool drm_initialize_context(struct wld_drm_context * context, int fd);
-void drm_finalize_context(struct wld_drm_context * context);
+extern const struct wld_context_impl * dumb_context_impl;
 
 #endif
 

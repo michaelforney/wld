@@ -1,4 +1,4 @@
-/* wld: interface/drm.h
+/* wld: context.c
  *
  * Copyright (c) 2013 Michael Forney
  *
@@ -21,20 +21,35 @@
  * SOFTWARE.
  */
 
-#ifndef DRM_DRIVER_NAME
-#   error "You must define DRM_DRIVER_NAME before including interface/drm.h"
-#endif
+#include "wld-private.h"
 
-/* DRM implementation */
-static bool drm_device_supported(uint32_t vendor_id, uint32_t device_id);
-static struct wld_context * drm_create_context(int drm_fd);
+void context_initialize(struct wld_context * context,
+                        const struct wld_context_impl * impl)
+{
+    *((const struct wld_context_impl **) &context->impl) = impl;
+}
 
-#define EXPAND(f, x) f(x)
-#define VAR(name) name ## _drm
-const struct wld_drm_interface EXPAND(VAR, DRM_DRIVER_NAME) = {
-    .device_supported = &drm_device_supported,
-    .create_context = &drm_create_context,
-};
-#undef VAR
-#undef EXPAND
+EXPORT
+struct wld_drawable * wld_create_drawable(struct wld_context * context,
+                                          uint32_t width, uint32_t height,
+                                          uint32_t format)
+{
+    return context->impl->create_drawable(context, width, height, format);
+}
+
+EXPORT
+struct wld_drawable * wld_import(struct wld_context * context,
+                                 uint32_t type, union wld_object object,
+                                 uint32_t width, uint32_t height,
+                                 uint32_t format, uint32_t pitch)
+{
+    return context->impl->import(context, type, object,
+                                 width, height, format, pitch);
+}
+
+EXPORT
+void wld_destroy_context(struct wld_context * context)
+{
+    context->impl->destroy(context);
+}
 
