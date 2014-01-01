@@ -57,7 +57,7 @@ const struct wld_context_impl * dumb_context_impl = &context_impl;
 static int drawable_export(struct wld_drawable * drawable);
 static uint32_t drawable_get_handle(struct wld_drawable * drawable);
 
-static struct drm_draw_interface draw_interface = {
+static struct drm_drawable_impl drawable_impl = {
     .export = &drawable_export,
     .get_handle = &drawable_get_handle
 };
@@ -83,7 +83,7 @@ struct wld_context * drm_create_context(int drm_fd)
 
     if (!draw_initialized)
     {
-        draw_interface.base = *pixman_draw;
+        drawable_impl.base = *pixman_drawable_impl;
         draw_initialized = true;
     }
 
@@ -126,7 +126,7 @@ static struct wld_drawable * new_drawable(struct dumb_context * context,
         goto error2;
     }
 
-    drawable->pixman.base.interface = &draw_interface.base;
+    drawable->pixman.base.impl = &drawable_impl.base;
     drawable->context = context;
     drawable->handle = handle;
 

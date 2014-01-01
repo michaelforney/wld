@@ -51,7 +51,7 @@ static void drawable_destroy(struct wld_drawable * drawable);
 static int drawable_export(struct wld_drawable * drawable);
 static uint32_t drawable_get_handle(struct wld_drawable * drawable);
 
-static const struct drm_draw_interface draw_interface = {
+static const struct drm_drawable_impl drawable_impl = {
     .base = {
         .fill_rectangle = &drawable_fill_rectangle,
         .copy_rectangle = &drawable_copy_rectangle,

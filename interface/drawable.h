@@ -48,7 +48,7 @@ static pixman_image_t * drawable_map(struct wld_drawable * drawable);
 static void drawable_flush(struct wld_drawable * drawable);
 static void drawable_destroy(struct wld_drawable * drawable);
 
-static const struct wld_draw_interface draw_interface = {
+static const struct wld_drawable_impl drawable_impl = {
     .fill_rectangle = &drawable_fill_rectangle,
     .copy_rectangle = &drawable_copy_rectangle,
 #ifdef DRAWABLE_IMPLEMENTS_REGION

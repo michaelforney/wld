@@ -88,12 +88,12 @@ bool wld_drm_is_dumb(struct wld_context * context)
 EXPORT
 int wld_drm_export(struct wld_drawable * drawable)
 {
-    return ((struct drm_draw_interface *) drawable->interface)->export(drawable);
+    return ((struct drm_drawable_impl *) drawable->impl)->export(drawable);
 }
 
 EXPORT
 uint32_t wld_drm_get_handle(struct wld_drawable * drawable)
 {
-    return ((struct drm_draw_interface *) drawable->interface)->get_handle(drawable);
+    return ((struct drm_drawable_impl *) drawable->impl)->get_handle(drawable);
 }
 

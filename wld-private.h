@@ -95,7 +95,7 @@ struct wld_context_impl
     void (* destroy)(struct wld_context * context);
 };
 
-struct wld_draw_interface
+struct wld_drawable_impl
 {
     void (* fill_rectangle)(struct wld_drawable * drawable, uint32_t color,
                             int32_t x, int32_t y,

@@ -150,7 +150,7 @@ struct wld_drawable
     unsigned long pitch;
     enum wld_format format;
 
-    const struct wld_draw_interface * interface;
+    const struct wld_drawable_impl * impl;
 };
 
 /**

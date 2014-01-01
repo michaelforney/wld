@@ -199,7 +199,7 @@ struct wld_drawable * wld_wayland_create_drawable
     wayland->surface = surface;
     wayland->damage_tracking = damage_flags;
 
-    wayland->base.interface = &draw_interface;
+    wayland->base.impl = &drawable_impl;
     wayland->base.width = width;
     wayland->base.height = height;
 

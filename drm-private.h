@@ -35,9 +35,9 @@ struct wld_drm_interface
     struct wld_context * (* create_context)(int drm_fd);
 };
 
-struct drm_draw_interface
+struct drm_drawable_impl
 {
-    struct wld_draw_interface base;
+    struct wld_drawable_impl base;
     drm_export_func_t export;
     drm_get_handle_func_t get_handle;
 };

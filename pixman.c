@@ -42,7 +42,7 @@ struct pixman_context
 #define DRAWABLE_IMPLEMENTS_REGION
 #include "interface/drawable.h"
 
-const struct wld_draw_interface * const pixman_draw = &draw_interface;
+const struct wld_drawable_impl * const pixman_drawable_impl = &drawable_impl;
 
 EXPORT
 struct wld_context * wld_pixman_create_context()
@@ -68,7 +68,7 @@ bool pixman_initialize_drawable
      uint32_t width, uint32_t height,
      void * data, uint32_t pitch, uint32_t format)
 {
-    drawable->base.interface = &draw_interface;
+    drawable->base.impl = &drawable_impl;
     drawable->base.width = width;
     drawable->base.height = height;
     drawable->base.format = format;
@@ -90,7 +90,7 @@ struct wld_drawable * new_drawable(struct pixman_context * context,
     if (!(drawable = malloc(sizeof *drawable)))
         return NULL;
 
-    drawable->base.interface = &draw_interface;
+    drawable->base.impl = &drawable_impl;
     drawable->base.width = pixman_image_get_width(image);
     drawable->base.height = pixman_image_get_height(image);
     drawable->base.format = format_pixman_to_wld
