@@ -47,7 +47,8 @@ enum wld_format
 
 bool wld_lookup_named_color(const char * name, uint32_t * color);
 
-/* Font Handling */
+/**** Font Handling ****/
+
 struct wld_extents
 {
     uint32_t advance;
@@ -111,7 +112,8 @@ static inline void wld_font_text_extents_utf8(struct wld_font * font,
     wld_font_text_extents_utf8_n(font, text, INT32_MAX, extents);
 }
 
-/* Drawables */
+/**** Drawables ****/
+
 struct wld_drawable
 {
     uint32_t width, height;
