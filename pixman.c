@@ -112,7 +112,7 @@ bool pixman_initialize_drawable
     drawable->base.pitch = pitch;
 
     drawable->context = context;
-    drawable->image = pixman_image_create_bits(pixman_format(format),
+    drawable->image = pixman_image_create_bits(format_wld_to_pixman(format),
                                                width, height,
                                                (uint32_t *) data, pitch);
 

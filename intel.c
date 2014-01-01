@@ -332,7 +332,8 @@ pixman_image_t * intel_map(struct wld_drawable * drawable)
     {
         drm_intel_gem_bo_map_gtt(intel->bo);
         intel->virtual = pixman_image_create_bits_no_clear
-            (pixman_format(drawable->format), drawable->width, drawable->height,
+            (format_wld_to_pixman(drawable->format),
+             drawable->width, drawable->height,
              intel->bo->virtual, drawable->pitch);
         pixman_image_set_destroy_function(intel->virtual, &destroy_virtual,
                                           intel);

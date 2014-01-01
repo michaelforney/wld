@@ -119,7 +119,7 @@ static inline uint8_t format_bytes_per_pixel(enum wld_format format)
     }
 }
 
-static inline pixman_format_code_t pixman_format(uint32_t format)
+static inline pixman_format_code_t format_wld_to_pixman(uint32_t format)
 {
     switch (format)
     {
