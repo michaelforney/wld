@@ -26,21 +26,11 @@
 
 #include "wld-private.h"
 
-typedef int (* drm_export_func_t)(struct wld_drawable * drawable);
-typedef uint32_t (* drm_get_handle_func_t)(struct wld_drawable * drawable);
-
 struct drm_driver
 {
     const char * name;
     bool (* device_supported)(uint32_t vendor_id, uint32_t device_id);
     struct wld_context * (* create_context)(int drm_fd);
-};
-
-struct drm_drawable_impl
-{
-    struct wld_drawable_impl base;
-    drm_export_func_t export;
-    drm_get_handle_func_t get_handle;
 };
 
 #if WITH_DRM_INTEL

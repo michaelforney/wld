@@ -88,15 +88,3 @@ bool wld_drm_is_dumb(struct wld_context * context)
     return context->impl == dumb_context_impl;
 }
 
-EXPORT
-int wld_drm_export(struct wld_drawable * drawable)
-{
-    return ((struct drm_drawable_impl *) drawable->impl)->export(drawable);
-}
-
-EXPORT
-uint32_t wld_drm_get_handle(struct wld_drawable * drawable)
-{
-    return ((struct drm_drawable_impl *) drawable->impl)->get_handle(drawable);
-}
-

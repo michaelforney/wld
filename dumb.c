@@ -42,26 +42,18 @@ struct dumb_context
 struct dumb_drawable
 {
     struct pixman_drawable pixman;
+    struct wld_exporter exporter;
     struct dumb_context * context;
     uint32_t handle;
 };
 
 #define DRM_DRIVER_NAME dumb
 #include "interface/context.h"
+#include "interface/exporter.h"
 #include "interface/drm.h"
 IMPL(dumb, context)
 
 const struct wld_context_impl * dumb_context_impl = &context_impl;
-
-/* DRM drawable */
-static int drawable_export(struct wld_drawable * drawable);
-static uint32_t drawable_get_handle(struct wld_drawable * drawable);
-
-static struct drm_drawable_impl drawable_impl = {
-    .export = &drawable_export,
-    .get_handle = &drawable_get_handle
-};
-static bool draw_initialized;
 
 bool driver_device_supported(uint32_t vendor_id, uint32_t device_id)
 {
@@ -80,12 +72,6 @@ struct wld_context * driver_create_context(int drm_fd)
 
     context_initialize(&context->base, &context_impl);
     context->fd = drm_fd;
-
-    if (!draw_initialized)
-    {
-        drawable_impl.base = *pixman_drawable_impl;
-        draw_initialized = true;
-    }
 
     return &context->base;
 
@@ -126,9 +112,10 @@ static struct wld_drawable * new_drawable(struct dumb_context * context,
         goto error2;
     }
 
-    drawable->pixman.base.impl = &drawable_impl.base;
     drawable->context = context;
     drawable->handle = handle;
+    exporter_initialize(&drawable->exporter, &exporter_impl);
+    drawable_add_exporter(&drawable->pixman.base, &drawable->exporter);
 
     return &drawable->pixman.base;
 
@@ -215,24 +202,45 @@ void context_destroy(struct wld_context * base)
     free(context);
 }
 
-static int drawable_export(struct wld_drawable * drawable)
+/**** Exporter ****/
+
+bool exporter_export(struct wld_exporter * exporter, struct wld_drawable * base,
+                     uint32_t type, union wld_object * object)
 {
-    struct dumb_drawable * dumb = (void *) drawable;
-    int prime_fd, ret;
+    struct dumb_drawable * drawable = (void *) base;
 
-    ret = drmPrimeHandleToFD(dumb->context->fd, dumb->handle,
-                             DRM_CLOEXEC, &prime_fd);
+    switch (type)
+    {
+        case WLD_DRM_OBJECT_HANDLE:
+            object->u32 = drawable->handle;
+            return true;
+        case WLD_DRM_OBJECT_PRIME_FD:
+            if (drmPrimeHandleToFD(drawable->context->fd, drawable->handle,
+                                   DRM_CLOEXEC, &object->i) != 0)
+            {
+                return false;
+            }
 
-    if (ret != 0)
-        return -1;
+            return true;
+        case WLD_DRM_OBJECT_GEM_NAME:
+        {
+            struct drm_gem_flink flink = { .handle = drawable->handle };
 
-    return prime_fd;
+            if (drmIoctl(drawable->context->fd, DRM_IOCTL_GEM_FLINK,
+                         &flink) != 0)
+            {
+                return false;
+            }
+
+            object->u32 = flink.name;
+            return true;
+        }
+        default:
+            return false;
+    }
 }
 
-static uint32_t drawable_get_handle(struct wld_drawable * drawable)
+void exporter_destroy(struct wld_exporter * exporter)
 {
-    struct dumb_drawable * dumb = (void *) drawable;
-
-    return dumb->handle;
 }
 

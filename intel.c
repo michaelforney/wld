@@ -40,6 +40,7 @@ struct intel_context
 struct intel_drawable
 {
     struct wld_drawable base;
+    struct wld_exporter exporter;
 
     struct intel_context * context;
     drm_intel_bo * bo;
@@ -47,10 +48,12 @@ struct intel_drawable
 };
 
 #include "interface/context.h"
+#include "interface/drawable.h"
+#include "interface/exporter.h"
 #define DRM_DRIVER_NAME intel
 #include "interface/drm.h"
-#include "interface/drm_drawable.h"
 IMPL(intel, context)
+IMPL(intel, drawable)
 
 bool driver_device_supported(uint32_t vendor_id, uint32_t device_id)
 {
@@ -96,10 +99,12 @@ static struct intel_drawable * new_drawable(struct intel_context * context,
     if (!(intel = malloc(sizeof *intel)))
         return NULL;
 
-    drawable_initialize(&intel->base, &drawable_impl.base,
+    drawable_initialize(&intel->base, &drawable_impl,
                         width, height, format, 0);
     intel->context = context;
     intel->virtual = NULL;
+    exporter_initialize(&intel->exporter, &exporter_impl);
+    drawable_add_exporter(&intel->base, &intel->exporter);
 
     return intel;
 }
@@ -313,20 +318,31 @@ void drawable_destroy(struct wld_drawable * drawable)
     free(intel);
 }
 
-int drawable_export(struct wld_drawable * drawable)
+/**** Exporter ****/
+bool exporter_export(struct wld_exporter * exporter, struct wld_drawable * base,
+                     uint32_t type, union wld_object * object)
 {
-    struct intel_drawable * intel = (void *) drawable;
-    int prime_fd;
+    struct intel_drawable * drawable = intel_drawable(base);
 
-    drm_intel_bo_gem_export_to_prime(intel->bo, &prime_fd);
-
-    return prime_fd;
+    switch (type)
+    {
+        case WLD_DRM_OBJECT_HANDLE:
+            object->u32 = drawable->bo->handle;
+            return true;
+        case WLD_DRM_OBJECT_PRIME_FD:
+            if (drm_intel_bo_gem_export_to_prime(drawable->bo, &object->i) != 0)
+                return false;
+            return true;
+        case WLD_DRM_OBJECT_GEM_NAME:
+            if (drm_intel_bo_flink(drawable->bo, &object->u32) != 0)
+                return false;
+            return true;
+        default:
+            return false;
+    }
 }
 
-uint32_t drawable_get_handle(struct wld_drawable * drawable)
+void exporter_destroy(struct wld_exporter * exporter)
 {
-    struct intel_drawable * intel = (void *) drawable;
-
-    return intel->bo->handle;
 }
 

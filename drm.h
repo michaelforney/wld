@@ -29,8 +29,9 @@
 
 enum wld_drm_object_type
 {
-    WLD_DRM_OBJECT_PRIME_FD = 0x00010000,
-    WLD_DRM_OBJECT_GEM_NAME = 0x00010001
+    WLD_DRM_OBJECT_HANDLE   = 0x00010000,
+    WLD_DRM_OBJECT_PRIME_FD = 0x00010001,
+    WLD_DRM_OBJECT_GEM_NAME = 0x00010002
 };
 
 /**
@@ -39,20 +40,6 @@ enum wld_drm_object_type
 struct wld_context * wld_drm_create_context(int fd);
 
 bool wld_drm_is_dumb(struct wld_context * context);
-
-/**
- * Export a DRM drawable to a PRIME file descriptor.
- *
- * @return A PRIME file descriptor for this drawable
- */
-int wld_drm_export(struct wld_drawable * drawable);
-
-/**
- * Get the handle of a DRM drawable.
- *
- * This can be used with various DRM ioctls.
- */
-uint32_t wld_drm_get_handle(struct wld_drawable * drawable);
 
 #endif
 
