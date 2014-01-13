@@ -29,7 +29,7 @@
 typedef int (* drm_export_func_t)(struct wld_drawable * drawable);
 typedef uint32_t (* drm_get_handle_func_t)(struct wld_drawable * drawable);
 
-struct wld_drm_interface
+struct drm_driver
 {
     bool (* device_supported)(uint32_t vendor_id, uint32_t device_id);
     struct wld_context * (* create_context)(int drm_fd);
@@ -43,9 +43,9 @@ struct drm_drawable_impl
 };
 
 #if WITH_DRM_INTEL
-extern const struct wld_drm_interface intel_drm;
+extern const struct drm_driver intel_drm_driver;
 #endif
-extern const struct wld_drm_interface dumb_drm;
+extern const struct drm_driver dumb_drm_driver;
 extern const struct wld_context_impl * dumb_context_impl;
 
 #endif

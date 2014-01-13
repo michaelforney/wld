@@ -52,12 +52,12 @@ struct intel_drawable
 #include "interface/drm_drawable.h"
 IMPL(intel, context)
 
-bool drm_device_supported(uint32_t vendor_id, uint32_t device_id)
+bool driver_device_supported(uint32_t vendor_id, uint32_t device_id)
 {
     return vendor_id == 0x8086;
 }
 
-struct wld_context * drm_create_context(int drm_fd)
+struct wld_context * driver_create_context(int drm_fd)
 {
     struct intel_context * context;
 

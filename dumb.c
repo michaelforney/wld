@@ -63,12 +63,12 @@ static struct drm_drawable_impl drawable_impl = {
 };
 static bool draw_initialized;
 
-bool drm_device_supported(uint32_t vendor_id, uint32_t device_id)
+bool driver_device_supported(uint32_t vendor_id, uint32_t device_id)
 {
     return true;
 }
 
-struct wld_context * drm_create_context(int drm_fd)
+struct wld_context * driver_create_context(int drm_fd)
 {
     struct dumb_context * context;
 

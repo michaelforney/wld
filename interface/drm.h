@@ -25,15 +25,15 @@
 #   error "You must define DRM_DRIVER_NAME before including interface/drm.h"
 #endif
 
-/* DRM implementation */
-static bool drm_device_supported(uint32_t vendor_id, uint32_t device_id);
-static struct wld_context * drm_create_context(int drm_fd);
+/* DRM driver */
+static bool driver_device_supported(uint32_t vendor_id, uint32_t device_id);
+static struct wld_context * driver_create_context(int drm_fd);
 
 #define EXPAND(f, x) f(x)
-#define VAR(name) name ## _drm
-const struct wld_drm_interface EXPAND(VAR, DRM_DRIVER_NAME) = {
-    .device_supported = &drm_device_supported,
-    .create_context = &drm_create_context,
+#define VAR(name) name ## _drm_driver
+const struct drm_driver EXPAND(VAR, DRM_DRIVER_NAME) = {
+    .device_supported = &driver_device_supported,
+    .create_context = &driver_create_context,
 };
 #undef VAR
 #undef EXPAND

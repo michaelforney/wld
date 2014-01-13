@@ -24,14 +24,14 @@
 #include "drm.h"
 #include "drm-private.h"
 
-const static struct wld_drm_interface * drm_interfaces[] = {
+const static struct drm_driver * drivers[] = {
 #if WITH_DRM_INTEL
-    &intel_drm,
+    &intel_drm_driver,
 #endif
-    &dumb_drm
+    &dumb_drm_driver
 };
 
-static const struct wld_drm_interface * find_drm_interface(int fd)
+static const struct drm_driver * find_driver(int fd)
 {
     char path[64], id[32];
     uint32_t vendor_id, device_id;
@@ -59,10 +59,10 @@ static const struct wld_drm_interface * find_drm_interface(int fd)
     fclose(file);
     device_id = strtoul(id, NULL, 0);
 
-    for (index = 0; index < ARRAY_LENGTH(drm_interfaces); ++index)
+    for (index = 0; index < ARRAY_LENGTH(drivers); ++index)
     {
-        if (drm_interfaces[index]->device_supported(vendor_id, device_id))
-            return drm_interfaces[index];
+        if (drivers[index]->device_supported(vendor_id, device_id))
+            return drivers[index];
     }
 
     return NULL;
@@ -71,12 +71,12 @@ static const struct wld_drm_interface * find_drm_interface(int fd)
 EXPORT
 struct wld_context * wld_drm_create_context(int fd)
 {
-    const struct wld_drm_interface * interface;
+    const struct drm_driver * driver;
 
-    if (!(interface = find_drm_interface(fd)))
+    if (!(driver = find_driver(fd)))
         return NULL;
 
-    return interface->create_context(fd);
+    return driver->create_context(fd);
 }
 
 EXPORT
