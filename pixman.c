@@ -232,11 +232,10 @@ static inline uint8_t reverse(uint8_t byte)
     return byte;
 }
 
-void drawable_draw_text_utf8(struct wld_drawable * drawable,
-                             struct font * font, uint32_t color,
-                             int32_t x, int32_t y,
-                             const char * text, int32_t length,
-                             struct wld_extents * extents)
+void drawable_draw_text(struct wld_drawable * drawable,
+                        struct font * font, uint32_t color,
+                        int32_t x, int32_t y, const char * text, int32_t length,
+                        struct wld_extents * extents)
 {
     struct pixman_drawable * pixman = (void *) drawable;
     int ret;

@@ -131,15 +131,15 @@ bool wld_font_ensure_char(struct wld_font * font, uint32_t character);
  *
  * @param length The maximum number of bytes in the string to process
  */
-void wld_font_text_extents_utf8_n(struct wld_font * font,
-                                  const char * text, int32_t length,
-                                  struct wld_extents * extents);
+void wld_font_text_extents_n(struct wld_font * font,
+                             const char * text, int32_t length,
+                             struct wld_extents * extents);
 
-static inline void wld_font_text_extents_utf8(struct wld_font * font,
-                                              const char * text,
-                                              struct wld_extents * extents)
+static inline void wld_font_text_extents(struct wld_font * font,
+                                         const char * text,
+                                         struct wld_extents * extents)
 {
-    wld_font_text_extents_utf8_n(font, text, INT32_MAX, extents);
+    wld_font_text_extents_n(font, text, INT32_MAX, extents);
 }
 
 /**** Drawables ****/
@@ -179,19 +179,17 @@ void wld_copy_region(struct wld_drawable * src, struct wld_drawable * dst,
  * @param extents   If not NULL, will be initialized to the extents of the
  *                  drawn text
  */
-void wld_draw_text_utf8_n(struct wld_drawable * drawable,
-                          struct wld_font * font, uint32_t color,
-                          int32_t x, int32_t y,
-                          const char * text, int32_t length,
-                          struct wld_extents * extents);
+void wld_draw_text_n(struct wld_drawable * drawable,
+                     struct wld_font * font, uint32_t color,
+                     int32_t x, int32_t y, const char * text, int32_t length,
+                     struct wld_extents * extents);
 
-static inline void wld_draw_text_utf8(struct wld_drawable * drawable,
-                                      struct wld_font * font, uint32_t color,
-                                      int32_t x, int32_t y,
-                                      const char * text,
-                                      struct wld_extents * extents)
+static inline void wld_draw_text(struct wld_drawable * drawable,
+                                 struct wld_font * font, uint32_t color,
+                                 int32_t x, int32_t y, const char * text,
+                                 struct wld_extents * extents)
 {
-    wld_draw_text_utf8_n(drawable, font, color, x, y, text, INT32_MAX, extents);
+    wld_draw_text_n(drawable, font, color, x, y, text, INT32_MAX, extents);
 }
 
 void wld_write(struct wld_drawable * drawable, const void * data, size_t size);

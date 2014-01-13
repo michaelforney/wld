@@ -209,9 +209,9 @@ bool wld_font_ensure_char(struct wld_font * font_base, uint32_t character)
 }
 
 EXPORT
-void wld_font_text_extents_utf8_n(struct wld_font * font_base,
-                                  const char * text, int32_t length,
-                                  struct wld_extents * extents)
+void wld_font_text_extents_n(struct wld_font * font_base,
+                             const char * text, int32_t length,
+                             struct wld_extents * extents)
 {
     struct font * font = (void *) font_base;
     int ret;

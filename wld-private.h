@@ -110,11 +110,10 @@ struct wld_drawable_impl
     void (* copy_region)(struct wld_drawable * src, struct wld_drawable * dst,
                          pixman_region32_t * region,
                          int32_t dst_x, int32_t dst_y);
-    void (* draw_text_utf8)(struct wld_drawable * drawable,
-                            struct font * font, uint32_t color,
-                            int32_t x, int32_t y,
-                            const char * text, int32_t length,
-                            struct wld_extents * extents);
+    void (* draw_text)(struct wld_drawable * drawable,
+                       struct font * font, uint32_t color,
+                       int32_t x, int32_t y, const char * text, int32_t length,
+                       struct wld_extents * extents);
     void (* write)(struct wld_drawable * drawable,
                    const void * data, size_t size);
     pixman_image_t * (* map)(struct wld_drawable * drawable);

@@ -37,11 +37,11 @@ static void drawable_copy_region(struct wld_drawable * src,
                                  pixman_region32_t * region,
                                  int32_t dst_x, int32_t dst_y);
 #endif
-static void drawable_draw_text_utf8(struct wld_drawable * drawable,
-                                    struct font * font, uint32_t color,
-                                    int32_t x, int32_t y,
-                                    const char * text, int32_t length,
-                                    struct wld_extents * extents);
+static void drawable_draw_text(struct wld_drawable * drawable,
+                               struct font * font, uint32_t color,
+                               int32_t x, int32_t y,
+                               const char * text, int32_t length,
+                               struct wld_extents * extents);
 static void drawable_write(struct wld_drawable * drawable,
                            const void * data, size_t size);
 static pixman_image_t * drawable_map(struct wld_drawable * drawable);
@@ -62,7 +62,7 @@ static const struct drm_drawable_impl drawable_impl = {
         .fill_region = &default_fill_region,
         .copy_region = &default_copy_region,
 #endif
-        .draw_text_utf8 = &drawable_draw_text_utf8,
+        .draw_text = &drawable_draw_text,
         .write = &drawable_write,
         .map = &drawable_map,
         .flush = &drawable_flush,

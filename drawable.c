@@ -94,7 +94,7 @@ void wld_copy_region(struct wld_drawable * src, struct wld_drawable * dst,
 }
 
 EXPORT
-void wld_draw_text_utf8_n(struct wld_drawable * drawable,
+void wld_draw_text_n(struct wld_drawable * drawable,
                           struct wld_font * font_base, uint32_t color,
                           int32_t x, int32_t y,
                           const char * text, int32_t length,
@@ -102,8 +102,8 @@ void wld_draw_text_utf8_n(struct wld_drawable * drawable,
 {
     struct font * font = (void *) font_base;
 
-    drawable->impl->draw_text_utf8(drawable, font, color, x, y,
-                                   text, length, extents);
+    drawable->impl->draw_text(drawable, font, color, x, y,
+                              text, length, extents);
 }
 
 EXPORT

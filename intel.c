@@ -199,11 +199,10 @@ void drawable_copy_rectangle(struct wld_drawable * src_drawable,
                     dst->bo, dst->base.pitch, dst_x, dst_y, width, height);
 }
 
-void drawable_draw_text_utf8(struct wld_drawable * drawable,
-                             struct font * font, uint32_t color,
-                             int32_t x, int32_t y,
-                             const char * text, int32_t length,
-                             struct wld_extents * extents)
+void drawable_draw_text(struct wld_drawable * drawable,
+                        struct font * font, uint32_t color,
+                        int32_t x, int32_t y, const char * text, int32_t length,
+                        struct wld_extents * extents)
 {
     struct intel_drawable * intel = (void *) drawable;
     int ret;

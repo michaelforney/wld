@@ -346,11 +346,11 @@ void drawable_copy_region(struct wld_drawable * src_drawable,
     fprintf(stderr, "wayland: Copy region is not implemented\n");
 }
 
-void drawable_draw_text_utf8(struct wld_drawable * drawable,
-                             struct font * font, uint32_t color,
-                             int32_t x, int32_t y,
-                             const char * text, int32_t length,
-                             struct wld_extents * extents)
+void drawable_draw_text(struct wld_drawable * drawable,
+                        struct font * font, uint32_t color,
+                        int32_t x, int32_t y,
+                        const char * text, int32_t length,
+                        struct wld_extents * extents)
 {
     struct wld_extents extents0;
     struct wayland_drawable * wayland = (void *) drawable;
@@ -359,8 +359,8 @@ void drawable_draw_text_utf8(struct wld_drawable * drawable,
         extents = &extents0;
 
     begin(wayland);
-    wld_draw_text_utf8_n(BACKBUF(wayland).drawable, &font->base, color,
-                         x, y, text, length, extents);
+    wld_draw_text_n(BACKBUF(wayland).drawable, &font->base, color,
+                    x, y, text, length, extents);
 
     if (wayland->damage_tracking)
     {
