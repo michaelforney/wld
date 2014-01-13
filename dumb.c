@@ -191,6 +191,16 @@ struct wld_drawable * context_import(struct wld_context * base,
             if (drmPrimeFDToHandle(context->fd, object.i, &handle) != 0)
                 return NULL;
             break;
+        case WLD_DRM_OBJECT_GEM_NAME:
+        {
+            struct drm_gem_open gem_open = { .name = object.u32 };
+
+            if (drmIoctl(context->fd, DRM_IOCTL_GEM_OPEN, &gem_open) != 0)
+                return NULL;
+
+            handle = gem_open.handle;
+            break;
+        }
         default: return NULL;
     }
 
