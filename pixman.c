@@ -68,12 +68,8 @@ bool pixman_initialize_drawable
      uint32_t width, uint32_t height,
      void * data, uint32_t pitch, uint32_t format)
 {
-    drawable->base.impl = &drawable_impl;
-    drawable->base.width = width;
-    drawable->base.height = height;
-    drawable->base.format = format;
-    drawable->base.pitch = pitch;
-
+    drawable_initialize(&drawable->base, &drawable_impl,
+                        width, height, format, pitch);
     drawable->context = (void *) context;
     drawable->image = pixman_image_create_bits(format_wld_to_pixman(format),
                                                width, height,
@@ -90,12 +86,11 @@ struct wld_drawable * new_drawable(struct pixman_context * context,
     if (!(drawable = malloc(sizeof *drawable)))
         return NULL;
 
-    drawable->base.impl = &drawable_impl;
-    drawable->base.width = pixman_image_get_width(image);
-    drawable->base.height = pixman_image_get_height(image);
-    drawable->base.format = format_pixman_to_wld
-        (pixman_image_get_format(image));
-    drawable->base.pitch = pixman_image_get_stride(image);
+    drawable_initialize(&drawable->base, &drawable_impl,
+                        pixman_image_get_width(image),
+                        pixman_image_get_height(image),
+                        format_pixman_to_wld(pixman_image_get_format(image)),
+                        pixman_image_get_stride(image));
     drawable->context = context;
     drawable->image = image;
 

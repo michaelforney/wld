@@ -180,5 +180,10 @@ void default_copy_region(struct wld_drawable * src, struct wld_drawable * dst,
 void context_initialize(struct wld_context * context,
                         const struct wld_context_impl * impl);
 
+void drawable_initialize(struct wld_drawable * drawable,
+                         const struct wld_drawable_impl * impl,
+                         uint32_t width, uint32_t height,
+                         uint32_t format, uint32_t pitch);
+
 #endif
 

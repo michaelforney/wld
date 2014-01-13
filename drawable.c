@@ -60,6 +60,18 @@ void default_copy_region(struct wld_drawable * src, struct wld_drawable * dst,
     }
 }
 
+void drawable_initialize(struct wld_drawable * drawable,
+                         const struct wld_drawable_impl * impl,
+                         uint32_t width, uint32_t height,
+                         uint32_t format, uint32_t pitch)
+{
+    *((const struct wld_drawable_impl **) &drawable->impl) = impl;
+    drawable->width = width;
+    drawable->height = height;
+    drawable->format = format;
+    drawable->pitch = pitch;
+}
+
 EXPORT
 void wld_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
                         int32_t x, int32_t y, uint32_t width, uint32_t height)

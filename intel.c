@@ -96,10 +96,8 @@ static struct intel_drawable * new_drawable(struct intel_context * context,
     if (!(intel = malloc(sizeof *intel)))
         return NULL;
 
-    intel->base.impl = &drawable_impl.base;
-    intel->base.width = width;
-    intel->base.height = height;
-    intel->base.format = format;
+    drawable_initialize(&intel->base, &drawable_impl.base,
+                        width, height, format, 0);
     intel->context = context;
     intel->virtual = NULL;
 
