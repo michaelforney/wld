@@ -48,6 +48,11 @@ enum wld_wayland_interface_id
     WLD_SHM
 };
 
+enum wld_wayland_object_type
+{
+    WLD_WAYLAND_OBJECT_BUFFER   = 0x00020000
+};
+
 enum wld_wayland_damage_flags
 {
     /**

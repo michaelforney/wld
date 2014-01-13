@@ -36,14 +36,19 @@
 #include <sys/mman.h>
 #include <wayland-client.h>
 
-struct wld_shm_context
+struct shm_context
 {
+    struct wld_context base;
+
     struct wl_registry * registry;
     struct wl_shm * wl;
     struct wl_array formats;
 
     struct wld_context * pixman_context;
 };
+
+#include "interface/context.h"
+IMPL(shm, context)
 
 static void registry_global(void * data, struct wl_registry * registry,
                             uint32_t name, const char * interface,
@@ -54,10 +59,7 @@ static void registry_global_remove(void * data, struct wl_registry * registry,
 static void shm_format(void * data, struct wl_shm * wl, uint32_t format);
 
 const struct wld_wayland_interface wayland_shm_interface = {
-    .create_context = (wayland_create_context_func_t) &wld_shm_create_context,
-    .destroy_context
-        = (wayland_destroy_context_func_t) &wld_shm_destroy_context,
-    .create_drawable = (wayland_create_drawable_func_t) &wld_shm_create_drawable
+    .create_context = &wld_shm_create_context,
 };
 
 const static struct wl_registry_listener registry_listener = {
@@ -83,74 +85,61 @@ static inline uint32_t wayland_format(uint32_t format)
 }
 
 EXPORT
-struct wld_shm_context * wld_shm_create_context(struct wl_display * display,
-                                                struct wl_event_queue * queue)
+struct wld_context * wld_shm_create_context(struct wl_display * display,
+                                            struct wl_event_queue * queue)
 {
-    struct wld_shm_context * shm;
+    struct shm_context * context;
 
-    shm = malloc(sizeof *shm);
-
-    if (!shm)
+    if (!(context = malloc(sizeof *context)))
         goto error0;
 
-    shm->wl = NULL;
-    wl_array_init(&shm->formats);
+    context_initialize(&context->base, &context_impl);
+    context->wl = NULL;
+    wl_array_init(&context->formats);
 
-    shm->registry = wl_display_get_registry(display);
-
-    if (!shm->registry)
+    if (!(context->registry = wl_display_get_registry(display)))
     {
         DEBUG("Couldn't get registry\n");
         goto error1;
     }
 
-    wl_registry_add_listener(shm->registry, &registry_listener, shm);
-    wl_proxy_set_queue((struct wl_proxy *) shm->registry, queue);
+    wl_registry_add_listener(context->registry, &registry_listener, context);
+    wl_proxy_set_queue((struct wl_proxy *) context->registry, queue);
 
-    shm->pixman_context = wld_pixman_create_context();
+    context->pixman_context = wld_pixman_create_context();
 
     /* Wait for wl_shm global. */
     wayland_roundtrip(display, queue);
 
-    if (!shm->wl)
+    if (!context->wl)
     {
         DEBUG("No wl_shm global\n");
         goto error2;
     }
 
-    wl_shm_add_listener(shm->wl, &shm_listener, shm);
+    wl_shm_add_listener(context->wl, &shm_listener, context);
 
     /* Wait for SHM formats. */
     wayland_roundtrip(display, queue);
 
-    return shm;
+    return &context->base;
 
   error2:
-    wl_registry_destroy(shm->registry);
+    wl_registry_destroy(context->registry);
   error1:
-    wl_array_release(&shm->formats);
-    free(shm);
+    wl_array_release(&context->formats);
+    free(context);
   error0:
     return NULL;
 }
 
 EXPORT
-void wld_shm_destroy_context(struct wld_shm_context * shm)
+bool wld_shm_has_format(struct wld_context * base, uint32_t format)
 {
-    wld_destroy_context(shm->pixman_context);
-    wl_shm_destroy(shm->wl);
-    wl_registry_destroy(shm->registry);
-    wl_array_release(&shm->formats);
-
-    free(shm);
-}
-
-EXPORT
-bool wld_shm_has_format(struct wld_shm_context * shm, uint32_t format)
-{
+    struct shm_context * context = shm_context(base);
     uint32_t * supported_format;
 
-    wl_array_for_each(supported_format, &shm->formats)
+    wl_array_for_each(supported_format, &context->formats)
     {
         if (*supported_format == format)
             return true;
@@ -159,21 +148,22 @@ bool wld_shm_has_format(struct wld_shm_context * shm, uint32_t format)
     return false;
 }
 
-EXPORT
-struct wld_drawable * wld_shm_create_drawable(struct wld_shm_context * shm,
+struct wld_drawable * context_create_drawable(struct wld_context * base,
                                               uint32_t width, uint32_t height,
-                                              uint32_t format,
-                                              struct wl_buffer ** buffer)
+                                              uint32_t format)
 {
+    struct shm_context * context = shm_context(base);
+    struct wld_drawable * drawable;
+    struct wld_exporter * exporter;
     char name[] = "/tmp/wld-XXXXXX";
     uint32_t pitch = width * format_bytes_per_pixel(format);
     uint32_t size = height * pitch;
     int fd;
     void * data;
-    struct wl_shm_pool * pool;
-    struct wld_drawable * drawable;
     uint32_t shm_format = wayland_format(format);
     union wld_object object;
+    struct wl_shm_pool * pool;
+    struct wl_buffer * wl;
 
     fd = mkostemp(name, O_CLOEXEC);
 
@@ -191,30 +181,67 @@ struct wld_drawable * wld_shm_create_drawable(struct wld_shm_context * shm,
         goto error1;
 
     object.ptr = data;
-    drawable = wld_import(shm->pixman_context, WLD_OBJECT_DATA, object,
+    drawable = wld_import(context->pixman_context, WLD_OBJECT_DATA, object,
                           width, height, format, pitch);
 
-    pool = wl_shm_create_pool(shm->wl, fd, size);
-    *buffer = wl_shm_pool_create_buffer(pool, 0, width, height, pitch,
-                                        shm_format);
+    if (!drawable)
+        goto error2;
+
+    if (!(pool = wl_shm_create_pool(context->wl, fd, size)))
+        goto error3;
+
+    wl = wl_shm_pool_create_buffer(pool, 0, width, height, pitch, shm_format);
     wl_shm_pool_destroy(pool);
+
+    if (!wl)
+        goto error3;
+
+    if (!(exporter = wayland_create_exporter(wl)))
+        goto error4;
+
+    drawable_add_exporter(drawable, exporter);
     close(fd);
 
     return drawable;
 
+  error4:
+    wl_buffer_destroy(wl);
+  error3:
+    wld_destroy_drawable(drawable);
+  error2:
+    munmap(object.ptr, size);
   error1:
     close(fd);
   error0:
     return NULL;
 }
 
+struct wld_drawable * context_import(struct wld_context * context,
+                                     uint32_t type, union wld_object object,
+                                     uint32_t width, uint32_t height,
+                                     uint32_t format, uint32_t pitch)
+{
+    return NULL;
+}
+
+void context_destroy(struct wld_context * base)
+{
+    struct shm_context * context = shm_context(base);
+
+    wld_destroy_context(context->pixman_context);
+    wl_shm_destroy(context->wl);
+    wl_registry_destroy(context->registry);
+    wl_array_release(&context->formats);
+    free(context);
+}
+
 void registry_global(void * data, struct wl_registry * registry, uint32_t name,
                      const char * interface, uint32_t version)
 {
-    struct wld_shm_context * shm = data;
+    struct shm_context * context = data;
 
     if (strcmp(interface, "wl_shm") == 0)
-        shm->wl = wl_registry_bind(registry, name, &wl_shm_interface, 1);
+        context->wl = wl_registry_bind(registry, name, &wl_shm_interface, 1);
 }
 
 void registry_global_remove(void * data, struct wl_registry * registry,
@@ -224,8 +251,8 @@ void registry_global_remove(void * data, struct wl_registry * registry,
 
 void shm_format(void * data, struct wl_shm * wl, uint32_t format)
 {
-    struct wld_shm_context * shm = data;
+    struct shm_context * context = data;
 
-    *((uint32_t *) wl_array_add(&shm->formats, sizeof format)) = format;
+    *((uint32_t *) wl_array_add(&context->formats, sizeof format)) = format;
 }
 

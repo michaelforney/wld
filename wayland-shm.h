@@ -27,39 +27,22 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-struct wld_shm_context;
-struct wld_drawable;
-
 struct wl_display;
 struct wl_event_queue;
-struct wl_buffer;
 
 /**
  * Create a new drawable context which creates Wayland buffers through the
  * wl_shm interface, back by Pixman drawables.
  */
-struct wld_shm_context * wld_shm_create_context(struct wl_display * display,
-                                                struct wl_event_queue * queue);
-
-/**
- * Destroy an SHM context.
- */
-void wld_shm_destroy_context(struct wld_shm_context * context);
+struct wld_context * wld_shm_create_context(struct wl_display * display,
+                                            struct wl_event_queue * queue);
 
 /**
  * Check if the wl_shm global has the specified pixel format.
  *
  * @see enum wld_format
  */
-bool wld_shm_has_format(struct wld_shm_context * context, uint32_t format);
-
-/**
- * Create a new SHM drawable with the specified dimensions.
- */
-struct wld_drawable * wld_shm_create_drawable(struct wld_shm_context * context,
-                                              uint32_t width, uint32_t height,
-                                              uint32_t format,
-                                              struct wl_buffer ** buffer);
+bool wld_shm_has_format(struct wld_context * context, uint32_t format);
 
 #endif
 

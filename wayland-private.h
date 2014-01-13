@@ -26,24 +26,14 @@
 
 #include <stdint.h>
 
-struct wld_drawable;
-
 struct wl_display;
 struct wl_event_queue;
 struct wl_buffer;
 
-typedef void * (* wayland_create_context_func_t)(struct wl_display * display,
-                                                 struct wl_event_queue * queue);
-typedef void (* wayland_destroy_context_func_t)(void * context);
-typedef struct wld_drawable * (* wayland_create_drawable_func_t)
-    (void * context, uint32_t width, uint32_t height, uint32_t format,
-     struct wl_buffer ** buffer);
-
 struct wld_wayland_interface
 {
-    wayland_create_context_func_t create_context;
-    wayland_destroy_context_func_t destroy_context;
-    wayland_create_drawable_func_t create_drawable;
+    struct wld_context * (* create_context)(struct wl_display * display,
+                                            struct wl_event_queue * queue);
 };
 
 #if WITH_WAYLAND_DRM
@@ -59,6 +49,8 @@ extern const struct wld_wayland_interface wayland_shm_interface;
  */
 int wayland_roundtrip(struct wl_display * display,
                       struct wl_event_queue * queue);
+
+struct wld_exporter * wayland_create_exporter(struct wl_buffer * buffer);
 
 #endif
 

@@ -33,10 +33,11 @@
 
 struct wld_wayland_context
 {
+    struct wld_context base;
     struct wl_display * display;
     struct wl_event_queue * queue;
     const struct wld_wayland_interface * interface;
-    void * context;
+    struct wld_context * context;
 };
 
 struct wayland_drawable
@@ -56,6 +57,12 @@ struct wayland_drawable
     uint32_t damage_tracking;
 };
 
+struct wayland_exporter
+{
+    struct wld_exporter base;
+    struct wl_buffer * buffer;
+};
+
 static void sync_done(void * data, struct wl_callback * callback,
                       uint32_t msecs);
 
@@ -63,6 +70,8 @@ static void buffer_release(void * data, struct wl_buffer * buffer);
 
 #define DRAWABLE_IMPLEMENTS_REGION
 #include "interface/drawable.h"
+#include "interface/exporter.h"
+IMPL(wayland, exporter)
 
 const struct wl_callback_listener sync_listener = {
     .done = &sync_done
@@ -162,7 +171,7 @@ struct wld_wayland_context * wld_wayland_create_context
 EXPORT
 void wld_wayland_destroy_context(struct wld_wayland_context * wayland)
 {
-    wayland->interface->destroy_context(wayland->context);
+    wld_destroy_context(wayland->context);
     free(wayland);
 }
 
@@ -172,6 +181,7 @@ struct wld_drawable * wld_wayland_create_drawable
      uint32_t width, uint32_t height, uint32_t format, uint32_t damage_flags)
 {
     struct wayland_drawable * wayland;
+    union wld_object object;
 
     wayland = malloc(sizeof *wayland);
 
@@ -179,17 +189,33 @@ struct wld_drawable * wld_wayland_create_drawable
         goto error0;
 
     wayland->context = context;
-    wayland->buffers[0].drawable = context->interface->create_drawable
-        (context->context, width, height, format, &wayland->buffers[0].wl);
+    wayland->buffers[0].drawable = wld_create_drawable(context->context,
+                                                       width, height, format);
 
     if (!wayland->buffers[0].drawable)
         goto error1;
 
-    wayland->buffers[1].drawable = context->interface->create_drawable
-        (context->context, width, height, format, &wayland->buffers[1].wl);
+    wayland->buffers[1].drawable = wld_create_drawable(context->context,
+                                                       width, height, format);
 
     if (!wayland->buffers[1].drawable)
         goto error2;
+
+    if (!wld_export(wayland->buffers[0].drawable,
+                    WLD_WAYLAND_OBJECT_BUFFER, &object))
+    {
+        goto error3;
+    }
+
+    wayland->buffers[0].wl = object.ptr;
+
+    if (!wld_export(wayland->buffers[1].drawable,
+                    WLD_WAYLAND_OBJECT_BUFFER, &object))
+    {
+        goto error3;
+    }
+
+    wayland->buffers[1].wl = object.ptr;
 
     wayland->buffers[0].busy = false;
     wayland->buffers[1].busy = false;
@@ -210,6 +236,8 @@ struct wld_drawable * wld_wayland_create_drawable
 
     return &wayland->base;
 
+  error3:
+    wld_destroy_drawable(wayland->buffers[1].drawable);
   error2:
     wld_destroy_drawable(wayland->buffers[0].drawable);
   error1:
@@ -251,6 +279,41 @@ int wayland_roundtrip(struct wl_display * display,
         wl_callback_destroy(callback);
 
     return ret;
+}
+
+struct wld_exporter * wayland_create_exporter(struct wl_buffer * buffer)
+{
+    struct wayland_exporter * exporter;
+
+    if (!(exporter = malloc(sizeof *exporter)))
+        return NULL;
+
+    exporter_initialize(&exporter->base, &exporter_impl);
+    exporter->buffer = buffer;
+
+    return &exporter->base;
+}
+
+bool exporter_export(struct wld_exporter * base, struct wld_drawable * drawable,
+                     uint32_t type, union wld_object * object)
+{
+    struct wayland_exporter * exporter = wayland_exporter(base);
+
+    switch (type)
+    {
+        case WLD_WAYLAND_OBJECT_BUFFER:
+            object->ptr = exporter->buffer;
+            return true;
+        default: return false;
+    }
+}
+
+void exporter_destroy(struct wld_exporter * base)
+{
+    struct wayland_exporter * exporter = wayland_exporter(base);
+
+    wl_buffer_destroy(exporter->buffer);
+    free(exporter);
 }
 
 void sync_done(void * data, struct wl_callback * callback, uint32_t msecs)

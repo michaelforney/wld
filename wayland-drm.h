@@ -27,44 +27,27 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-struct wld_wayland_drm_context;
-struct wld_drawable;
-
 struct wl_display;
 struct wl_event_queue;
-struct wl_buffer;
 
 /**
  * Create a new drawable context which creates Wayland buffers through the
  * wl_drm interface, backed by hardware specific drawable implementations.
  */
-struct wld_wayland_drm_context * wld_wayland_drm_create_context
+struct wld_context * wld_wayland_drm_create_context
     (struct wl_display * display, struct wl_event_queue * queue);
-
-/**
- * Destroy a Wayland DRM context.
- */
-void wld_wayland_drm_destroy_context(struct wld_wayland_drm_context * context);
 
 /**
  * Check if the wl_drm global has the specified pixel format.
  *
  * @see enum wld_format
  */
-bool wld_wayland_drm_has_format(struct wld_wayland_drm_context * context,
-                                uint32_t format);
+bool wld_wayland_drm_has_format(struct wld_context * context, uint32_t format);
 
 /**
  * Get the opened file descriptor for the DRM device.
  */
-int wld_wayland_drm_get_fd(struct wld_wayland_drm_context * context);
-
-/**
- * Create a new DRM drawable with the specified dimensions.
- */
-struct wld_drawable * wld_wayland_drm_create_drawable
-    (struct wld_wayland_drm_context * context, uint32_t width, uint32_t height,
-     uint32_t format, struct wl_buffer ** buffer);
+int wld_wayland_drm_get_fd(struct wld_context * context);
 
 #endif
 
