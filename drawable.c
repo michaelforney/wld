@@ -70,6 +70,21 @@ void drawable_initialize(struct wld_drawable * drawable,
     drawable->height = height;
     drawable->format = format;
     drawable->pitch = pitch;
+    drawable->exporters = NULL;
+}
+
+void drawable_add_exporter(struct wld_drawable * drawable,
+                           struct wld_exporter * exporter)
+{
+    exporter->next = drawable->exporters;
+    drawable->exporters = exporter;
+}
+
+void exporter_initialize(struct wld_exporter * exporter,
+                         const struct wld_exporter_impl * impl)
+{
+    *((const struct wld_exporter_impl **) &exporter->impl) = impl;
+    exporter->next = NULL;
 }
 
 EXPORT
@@ -134,6 +149,21 @@ EXPORT
 pixman_image_t * wld_map(struct wld_drawable * drawable)
 {
     return drawable->impl->map(drawable);
+}
+
+EXPORT
+bool wld_export(struct wld_drawable * drawable,
+                uint32_t type, union wld_object * object)
+{
+    struct wld_exporter * exporter;
+
+    for (exporter = drawable->exporters; exporter; exporter = exporter->next)
+    {
+        if (exporter->impl->export(exporter, drawable, type, object))
+            return true;
+    }
+
+    return false;
 }
 
 EXPORT

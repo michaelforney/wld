@@ -121,6 +121,20 @@ struct wld_drawable_impl
     void (* destroy)(struct wld_drawable * drawable);
 };
 
+struct wld_exporter
+{
+    const struct wld_exporter_impl * const impl;
+    struct wld_exporter * next;
+};
+
+struct wld_exporter_impl
+{
+    bool (* export)(struct wld_exporter * exporter,
+                    struct wld_drawable * drawable,
+                    uint32_t type, union wld_object * object);
+    void (* destroy)(struct wld_exporter * exporter);
+};
+
 bool font_ensure_glyph(struct font * font, FT_UInt glyph_index);
 
 /**
@@ -184,6 +198,12 @@ void drawable_initialize(struct wld_drawable * drawable,
                          const struct wld_drawable_impl * impl,
                          uint32_t width, uint32_t height,
                          uint32_t format, uint32_t pitch);
+
+void drawable_add_exporter(struct wld_drawable * drawable,
+                           struct wld_exporter * exporter);
+
+void exporter_initialize(struct wld_exporter * exporter,
+                         const struct wld_exporter_impl * impl);
 
 #endif
 

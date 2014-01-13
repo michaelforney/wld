@@ -150,8 +150,13 @@ struct wld_drawable
     unsigned long pitch;
     enum wld_format format;
 
+    struct wld_exporter * exporters;
+
     const struct wld_drawable_impl * impl;
 };
+
+bool wld_export(struct wld_drawable * drawable,
+                uint32_t type, union wld_object * object);
 
 /**
  * Destroy a drawable (created with any context).
