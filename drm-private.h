@@ -31,6 +31,7 @@ typedef uint32_t (* drm_get_handle_func_t)(struct wld_drawable * drawable);
 
 struct drm_driver
 {
+    const char * name;
     bool (* device_supported)(uint32_t vendor_id, uint32_t device_id);
     struct wld_context * (* create_context)(int drm_fd);
 };

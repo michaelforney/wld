@@ -61,9 +61,12 @@ static const struct drm_driver * find_driver(int fd)
 
     for (index = 0; index < ARRAY_LENGTH(drivers); ++index)
     {
+        DEBUG("Trying DRM driver `%s'\n", drivers[index]->name);
         if (drivers[index]->device_supported(vendor_id, device_id))
             return drivers[index];
     }
+
+    DEBUG("No DRM driver supports device 0x%x:0x%x\n", vendor_id, device_id);
 
     return NULL;
 }

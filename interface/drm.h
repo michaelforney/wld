@@ -31,10 +31,13 @@ static struct wld_context * driver_create_context(int drm_fd);
 
 #define EXPAND(f, x) f(x)
 #define VAR(name) name ## _drm_driver
+#define STRING(name) # name
 const struct drm_driver EXPAND(VAR, DRM_DRIVER_NAME) = {
+    .name = EXPAND(STRING, DRM_DRIVER_NAME),
     .device_supported = &driver_device_supported,
     .create_context = &driver_create_context,
 };
 #undef VAR
+#undef STRING
 #undef EXPAND
 
