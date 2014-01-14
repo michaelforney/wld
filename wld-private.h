@@ -126,8 +126,6 @@ struct wld_renderer_impl
 
 struct wld_drawable_impl
 {
-    void (* write)(struct wld_drawable * drawable,
-                   const void * data, size_t size);
     pixman_image_t * (* map)(struct wld_drawable * drawable);
     void (* destroy)(struct wld_drawable * drawable);
 };

@@ -160,8 +160,6 @@ struct wld_drawable
 bool wld_export(struct wld_drawable * drawable,
                 uint32_t type, union wld_object * object);
 
-void wld_write(struct wld_drawable * drawable, const void * data, size_t size);
-
 pixman_image_t * wld_map(struct wld_drawable * drawable);
 
 /**

@@ -331,13 +331,6 @@ void renderer_destroy(struct wld_renderer * base)
     free(renderer);
 }
 
-void drawable_write(struct wld_drawable * drawable, const void * data, size_t size)
-{
-    struct intel_drawable * intel = (void *) drawable;
-
-    drm_intel_bo_subdata(intel->bo, 0, size, data);
-}
-
 static void destroy_virtual(pixman_image_t * image, void * data)
 {
     struct intel_drawable * intel = data;

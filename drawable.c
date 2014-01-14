@@ -53,12 +53,6 @@ void exporter_initialize(struct wld_exporter * exporter,
 }
 
 EXPORT
-void wld_write(struct wld_drawable * drawable, const void * data, size_t size)
-{
-    drawable->impl->write(drawable, data, size);
-}
-
-EXPORT
 pixman_image_t * wld_map(struct wld_drawable * drawable)
 {
     return drawable->impl->map(drawable);

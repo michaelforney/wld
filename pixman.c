@@ -364,14 +364,6 @@ void renderer_destroy(struct wld_renderer * base)
     free(renderer);
 }
 
-void drawable_write(struct wld_drawable * drawable,
-                    const void * data, size_t size)
-{
-    struct pixman_drawable * pixman = (void *) drawable;
-
-    memcpy(pixman_image_get_data(pixman->image), data, size);
-}
-
 pixman_image_t * drawable_map(struct wld_drawable * drawable)
 {
     struct pixman_drawable * pixman = (void *) drawable;
