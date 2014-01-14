@@ -90,6 +90,8 @@ FINAL_CFLAGS += -Werror=implicit-function-declaration -Werror=implicit-int \
 ifeq ($(ENABLE_DEBUG),1)
     FINAL_CPPFLAGS += -DENABLE_DEBUG=1
     FINAL_CFLAGS += -g
+else
+    FINAL_CPPFLAGS += -DNDEBUG
 endif
 
 compile     = $(call quiet,CC) $(FINAL_CPPFLAGS) $(FINAL_CFLAGS) -c -o $@ $< \
