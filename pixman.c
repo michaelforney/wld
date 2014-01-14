@@ -100,6 +100,7 @@ struct wld_drawable * new_drawable(pixman_image_t * image)
                         pixman_image_get_height(image),
                         format_pixman_to_wld(pixman_image_get_format(image)),
                         pixman_image_get_stride(image));
+    drawable->base.map.data = pixman_image_get_data(image);
     drawable->image = image;
 
     return &drawable->base;
@@ -364,11 +365,14 @@ void renderer_destroy(struct wld_renderer * base)
     free(renderer);
 }
 
-pixman_image_t * drawable_map(struct wld_drawable * drawable)
+bool drawable_map(struct wld_drawable * drawable)
 {
-    struct pixman_drawable * pixman = (void *) drawable;
+    return true;
+}
 
-    return pixman_image_ref(pixman->image);
+bool drawable_unmap(struct wld_drawable * drawable)
+{
+    return true;
 }
 
 void drawable_destroy(struct wld_drawable * drawable)

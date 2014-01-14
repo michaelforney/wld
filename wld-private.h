@@ -126,7 +126,8 @@ struct wld_renderer_impl
 
 struct wld_drawable_impl
 {
-    pixman_image_t * (* map)(struct wld_drawable * drawable);
+    bool (* map)(struct wld_drawable * drawable);
+    bool (* unmap)(struct wld_drawable * drawable);
     void (* destroy)(struct wld_drawable * drawable);
 };
 

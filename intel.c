@@ -48,7 +48,6 @@ struct intel_drawable
     struct wld_drawable base;
     struct wld_exporter exporter;
     drm_intel_bo * bo;
-    pixman_image_t * virtual;
 };
 
 #include "interface/context.h"
@@ -121,7 +120,6 @@ static struct intel_drawable * new_drawable(uint32_t width, uint32_t height,
 
     drawable_initialize(&intel->base, &drawable_impl,
                         width, height, format, 0);
-    intel->virtual = NULL;
     exporter_initialize(&intel->exporter, &exporter_impl);
     drawable_add_exporter(&intel->base, &intel->exporter);
 
@@ -331,32 +329,28 @@ void renderer_destroy(struct wld_renderer * base)
     free(renderer);
 }
 
-static void destroy_virtual(pixman_image_t * image, void * data)
+bool drawable_map(struct wld_drawable * base)
 {
-    struct intel_drawable * intel = data;
+    struct intel_drawable * drawable = intel_drawable(base);
 
-    drm_intel_gem_bo_unmap_gtt(intel->bo);
-    intel->virtual = NULL;
+    if (drm_intel_gem_bo_map_gtt(drawable->bo) != 0)
+        return false;
+
+    drawable->base.map.data = drawable->bo->virtual;
+
+    return true;
 }
 
-pixman_image_t * drawable_map(struct wld_drawable * drawable)
+bool drawable_unmap(struct wld_drawable * base)
 {
-    struct intel_drawable * intel = (void *) drawable;
+    struct intel_drawable * drawable = intel_drawable(base);
 
-    if (!intel->virtual)
-    {
-        drm_intel_gem_bo_map_gtt(intel->bo);
-        intel->virtual = pixman_image_create_bits_no_clear
-            (format_wld_to_pixman(drawable->format),
-             drawable->width, drawable->height,
-             intel->bo->virtual, drawable->pitch);
-        pixman_image_set_destroy_function(intel->virtual, &destroy_virtual,
-                                          intel);
-    }
-    else
-        pixman_image_ref(intel->virtual);
+    if (drm_intel_gem_bo_unmap_gtt(drawable->bo) != 0)
+        return false;
 
-    return intel->virtual;
+    drawable->base.map.data = NULL;
+
+    return true;
 }
 
 void drawable_destroy(struct wld_drawable * drawable)

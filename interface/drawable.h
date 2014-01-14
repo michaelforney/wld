@@ -21,11 +21,13 @@
  * SOFTWARE.
  */
 
-static pixman_image_t * drawable_map(struct wld_drawable * drawable);
+static bool drawable_map(struct wld_drawable * drawable);
+static bool drawable_unmap(struct wld_drawable * drawable);
 static void drawable_destroy(struct wld_drawable * drawable);
 
 static const struct wld_drawable_impl drawable_impl = {
     .map = &drawable_map,
+    .unmap = &drawable_unmap,
     .destroy = &drawable_destroy
 };
 

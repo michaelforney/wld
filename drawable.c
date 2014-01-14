@@ -35,6 +35,8 @@ void drawable_initialize(struct wld_drawable * drawable,
     drawable->height = height;
     drawable->format = format;
     drawable->pitch = pitch;
+    drawable->map.data = NULL;
+    drawable->map.count = 0;
     drawable->exporters = NULL;
 }
 
@@ -53,9 +55,26 @@ void exporter_initialize(struct wld_exporter * exporter,
 }
 
 EXPORT
-pixman_image_t * wld_map(struct wld_drawable * drawable)
+bool wld_map(struct wld_drawable * drawable)
 {
-    return drawable->impl->map(drawable);
+    if (drawable->map.count == 0 && !drawable->impl->map(drawable))
+        return false;
+
+    ++drawable->map.count;
+    return true;
+}
+
+EXPORT
+bool wld_unmap(struct wld_drawable * drawable)
+{
+    if (drawable->map.count == 0
+        || (drawable->map.count == 1 && !drawable->impl->unmap(drawable)))
+    {
+        return false;
+    }
+
+    --drawable->map.count;
+    return true;
 }
 
 EXPORT
