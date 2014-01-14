@@ -34,15 +34,15 @@ struct wl_event_queue;
  * Create a new WLD context which creates Wayland buffers through the wl_shm
  * interface, backed by Pixman images.
  */
-struct wld_context * wld_shm_create_context(struct wl_display * display,
-                                            struct wl_event_queue * queue);
+struct wld_context * wld_wayland_shm_create_context
+    (struct wl_display * display, struct wl_event_queue * queue);
 
 /**
  * Check if the wl_shm global has the specified pixel format.
  *
  * @see enum wld_format
  */
-bool wld_shm_has_format(struct wld_context * context, uint32_t format);
+bool wld_wayland_shm_has_format(struct wld_context * context, uint32_t format);
 
 #endif
 

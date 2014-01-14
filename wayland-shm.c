@@ -57,7 +57,7 @@ static void registry_global_remove(void * data, struct wl_registry * registry,
 static void shm_format(void * data, struct wl_shm * wl, uint32_t format);
 
 const struct wld_wayland_interface wayland_shm_interface = {
-    .create_context = &wld_shm_create_context,
+    .create_context = &wld_wayland_shm_create_context,
 };
 
 const static struct wl_registry_listener registry_listener = {
@@ -83,8 +83,8 @@ static inline uint32_t wayland_format(uint32_t format)
 }
 
 EXPORT
-struct wld_context * wld_shm_create_context(struct wl_display * display,
-                                            struct wl_event_queue * queue)
+struct wld_context * wld_wayland_shm_create_context
+    (struct wl_display * display, struct wl_event_queue * queue)
 {
     struct shm_context * context;
 
