@@ -111,8 +111,9 @@ struct wld_renderer * context_create_renderer(struct wld_context * base)
     return NULL;
 }
 
-static struct intel_buffer * new_buffer(uint32_t width, uint32_t height,
-                                        uint32_t format)
+static struct wld_buffer * new_buffer(uint32_t width, uint32_t height,
+                                      uint32_t format, uint32_t pitch,
+                                      drm_intel_bo * bo)
 {
     struct intel_buffer * buffer;
 
@@ -120,11 +121,12 @@ static struct intel_buffer * new_buffer(uint32_t width, uint32_t height,
         return NULL;
 
     buffer_initialize(&buffer->base, &buffer_impl,
-                      width, height, format, 0);
+                      width, height, format, pitch);
+    buffer->bo = bo;
     exporter_initialize(&buffer->exporter, &exporter_impl);
     buffer_add_exporter(&buffer->base, &buffer->exporter);
 
-    return buffer;
+    return &buffer->base;
 }
 
 struct wld_buffer * context_create_buffer(struct wld_context * base,
@@ -132,17 +134,26 @@ struct wld_buffer * context_create_buffer(struct wld_context * base,
                                           uint32_t format)
 {
     struct intel_context * context = intel_context(base);
-    struct intel_buffer * buffer;
+    struct wld_buffer * buffer;
+    drm_intel_bo * bo;
     uint32_t tiling_mode = width >= 128 ? I915_TILING_X : I915_TILING_NONE;
+    unsigned long pitch;
 
-    if (!(buffer = new_buffer(width, height, format)))
-        return NULL;
+    bo = drm_intel_bo_alloc_tiled(context->bufmgr, "buffer", width, height, 4,
+                                  &tiling_mode, &pitch, 0);
 
-    buffer->bo = drm_intel_bo_alloc_tiled(context->bufmgr, "buffer",
-                                          width, height, 4, &tiling_mode,
-                                          &buffer->base.pitch, 0);
+    if (!bo)
+        goto error0;
 
-    return &buffer->base;
+    if (!(buffer = new_buffer(width, height, format, pitch, bo)))
+        goto error1;
+
+    return buffer;
+
+  error1:
+    drm_intel_bo_unreference(bo);
+  error0:
+    return NULL;
 }
 
 struct wld_buffer * context_import_buffer(struct wld_context * base,
@@ -152,7 +163,7 @@ struct wld_buffer * context_import_buffer(struct wld_context * base,
                                           uint32_t format, uint32_t pitch)
 {
     struct intel_context * context = intel_context(base);
-    struct intel_buffer * buffer;
+    struct wld_buffer * buffer;
     drm_intel_bo * bo;
 
     switch (type)
@@ -174,13 +185,10 @@ struct wld_buffer * context_import_buffer(struct wld_context * base,
     if (!bo)
         goto error0;
 
-    if (!(buffer = new_buffer(width, height, format)))
+    if (!(buffer = new_buffer(width, height, format, pitch, bo)))
         goto error1;
 
-    buffer->bo = bo;
-    buffer->base.pitch = pitch;
-
-    return &buffer->base;
+    return buffer;
 
   error1:
     drm_intel_bo_unreference(bo);
