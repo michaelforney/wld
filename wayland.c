@@ -28,57 +28,20 @@
 #include <stdlib.h>
 #include <wayland-client.h>
 
-#define BACKBUF(drawable) ((drawable)->buffers[(drawable)->front_buffer ^ 1])
-#define FRONTBUF(drawable) ((drawable)->buffers[(drawable)->front_buffer])
-
-struct wld_wayland_context
-{
-    struct wld_context base;
-    struct wl_display * display;
-    struct wl_event_queue * queue;
-    const struct wld_wayland_interface * interface;
-    struct wld_context * context;
-};
-
-struct wayland_drawable
-{
-    struct wld_drawable base;
-
-    struct wld_wayland_context * context;
-    struct wl_surface * surface;
-    struct
-    {
-        struct wl_buffer * wl;
-        struct wld_drawable * drawable;
-        bool busy;
-        pixman_region32_t damage;
-    } buffers[2];
-    uint8_t front_buffer;
-    uint32_t damage_tracking;
-};
-
 struct wayland_exporter
 {
     struct wld_exporter base;
     struct wl_buffer * buffer;
 };
 
-static void sync_done(void * data, struct wl_callback * callback,
-                      uint32_t msecs);
-
-static void buffer_release(void * data, struct wl_buffer * buffer);
-
-#define DRAWABLE_IMPLEMENTS_REGION
-#include "interface/drawable.h"
 #include "interface/exporter.h"
 IMPL(wayland, exporter)
 
+static void sync_done(void * data, struct wl_callback * callback,
+                      uint32_t msecs);
+
 const struct wl_callback_listener sync_listener = {
     .done = &sync_done
-};
-
-const struct wl_buffer_listener buffer_listener = {
-    .release = &buffer_release
 };
 
 const static struct wld_wayland_interface * interfaces[] = {
@@ -92,24 +55,16 @@ const static struct wld_wayland_interface * interfaces[] = {
 };
 
 EXPORT
-struct wld_wayland_context * wld_wayland_create_context
+struct wld_context * wld_wayland_create_context
     (struct wl_display * display, enum wld_wayland_interface_id id, ...)
 {
-    struct wld_wayland_context * wayland;
+    struct wld_context * context;
+    struct wl_event_queue * queue;
     va_list requested_interfaces;
     bool interfaces_tried[ARRAY_LENGTH(interfaces)] = {0};
 
-    wayland = malloc(sizeof *wayland);
-
-    if (!wayland)
-        goto error0;
-
-    if (!(wayland->queue = wl_display_create_queue(display)))
-        goto error1;
-
-    wayland->display = display;
-    wayland->context = NULL;
-    wayland->interface = NULL;
+    if (!(queue = wl_display_create_queue(display)))
+        return NULL;
 
     va_start(requested_interfaces, id);
 
@@ -118,14 +73,8 @@ struct wld_wayland_context * wld_wayland_create_context
         if (interfaces_tried[id] || !interfaces[id])
             continue;
 
-        wayland->context
-            = interfaces[id]->create_context(display, wayland->queue);
-
-        if (wayland->context)
-        {
-            wayland->interface = interfaces[id];
+        if ((context = interfaces[id]->create_context(display, queue)))
             break;
-        }
 
         interfaces_tried[id] = true;
         id = va_arg(requested_interfaces, enum wld_wayland_interface_id);
@@ -134,131 +83,27 @@ struct wld_wayland_context * wld_wayland_create_context
     va_end(requested_interfaces);
 
     /* If the user specified WLD_ANY, try any remaining interfaces. */
-    if (!wayland->context && id == WLD_ANY)
+    if (!context && id == WLD_ANY)
     {
         for (id = 0; id < ARRAY_LENGTH(interfaces); ++id)
         {
             if (interfaces_tried[id] || !interfaces[id])
                 continue;
 
-            wayland->context
-                = interfaces[id]->create_context(display, wayland->queue);
-
-            if (wayland->context)
-            {
-                wayland->interface = interfaces[id];
+            if ((context = interfaces[id]->create_context(display, queue)))
                 break;
-            }
         }
     }
 
-    if (!wayland->context)
+    wl_event_queue_destroy(queue);
+
+    if (!context)
     {
         DEBUG("Could not initialize any of the specified interfaces\n");
-        goto error2;
+        return NULL;
     }
 
-    return wayland;
-
-  error2:
-    wl_event_queue_destroy(wayland->queue);
-  error1:
-    free(wayland);
-  error0:
-    return NULL;
-}
-
-EXPORT
-void wld_wayland_destroy_context(struct wld_wayland_context * wayland)
-{
-    wld_destroy_context(wayland->context);
-    free(wayland);
-}
-
-EXPORT
-struct wld_drawable * wld_wayland_create_drawable
-    (struct wld_wayland_context * context, struct wl_surface * surface,
-     uint32_t width, uint32_t height, uint32_t format, uint32_t damage_flags)
-{
-    struct wayland_drawable * wayland;
-    union wld_object object;
-
-    wayland = malloc(sizeof *wayland);
-
-    if (!wayland)
-        goto error0;
-
-    wayland->context = context;
-    wayland->buffers[0].drawable = wld_create_drawable(context->context,
-                                                       width, height, format);
-
-    if (!wayland->buffers[0].drawable)
-        goto error1;
-
-    wayland->buffers[1].drawable = wld_create_drawable(context->context,
-                                                       width, height, format);
-
-    if (!wayland->buffers[1].drawable)
-        goto error2;
-
-    if (!wld_export(wayland->buffers[0].drawable,
-                    WLD_WAYLAND_OBJECT_BUFFER, &object))
-    {
-        goto error3;
-    }
-
-    wayland->buffers[0].wl = object.ptr;
-
-    if (!wld_export(wayland->buffers[1].drawable,
-                    WLD_WAYLAND_OBJECT_BUFFER, &object))
-    {
-        goto error3;
-    }
-
-    wayland->buffers[1].wl = object.ptr;
-
-    wayland->buffers[0].busy = false;
-    wayland->buffers[1].busy = false;
-    pixman_region32_init(&wayland->buffers[0].damage);
-    pixman_region32_init(&wayland->buffers[1].damage);
-    wayland->front_buffer = 0;
-    wayland->surface = surface;
-    wayland->damage_tracking = damage_flags;
-
-    wayland->base.impl = &drawable_impl;
-    wayland->base.width = width;
-    wayland->base.height = height;
-
-    wl_buffer_add_listener(wayland->buffers[0].wl, &buffer_listener,
-                           &wayland->buffers[0].busy);
-    wl_buffer_add_listener(wayland->buffers[1].wl, &buffer_listener,
-                           &wayland->buffers[1].busy);
-
-    return &wayland->base;
-
-  error3:
-    wld_destroy_drawable(wayland->buffers[1].drawable);
-  error2:
-    wld_destroy_drawable(wayland->buffers[0].drawable);
-  error1:
-    free(wayland);
-  error0:
-    return NULL;
-}
-
-EXPORT
-void wld_wayland_drawable_set_damage_tracking(struct wld_drawable * drawable,
-                                              uint32_t flags)
-{
-    struct wayland_drawable * wayland = (void *) drawable;
-
-    if (!wayland->damage_tracking && flags)
-    {
-        pixman_region32_clear(&wayland->buffers[0].damage);
-        pixman_region32_clear(&wayland->buffers[1].damage);
-    }
-
-    wayland->damage_tracking = flags;
+    return context;
 }
 
 int wayland_roundtrip(struct wl_display * display,
@@ -322,171 +167,5 @@ void sync_done(void * data, struct wl_callback * callback, uint32_t msecs)
 
     *done = true;
     wl_callback_destroy(callback);
-}
-
-void buffer_release(void * data, struct wl_buffer * buffer)
-{
-    bool * busy = data;
-
-    *busy = false;
-}
-
-static void wait_for_backbuf(struct wayland_drawable * wayland)
-{
-    if (BACKBUF(wayland).busy)
-    {
-        int ret;
-
-        do {
-            ret = wl_display_dispatch_queue(wayland->context->display,
-                                            wayland->context->queue);
-        } while (BACKBUF(wayland).busy && ret != -1);
-    }
-}
-
-static void begin(struct wayland_drawable * wayland)
-{
-    /* Wait for the back buffer to become available. */
-    wait_for_backbuf(wayland);
-
-    /* Copy across damage from front buffer. */
-    if (wayland->damage_tracking & WLD_WAYLAND_DAMAGE_COPY
-        && pixman_region32_not_empty(&FRONTBUF(wayland).damage))
-    {
-        wld_copy_region(FRONTBUF(wayland).drawable,
-                        BACKBUF(wayland).drawable,
-                        &FRONTBUF(wayland).damage, 0, 0);
-        pixman_region32_clear(&FRONTBUF(wayland).damage);
-    }
-}
-
-void drawable_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
-                             int32_t x, int32_t y,
-                             uint32_t width, uint32_t height)
-{
-    struct wayland_drawable * wayland = (void *) drawable;
-
-    begin(wayland);
-    wld_fill_rectangle(BACKBUF(wayland).drawable, color, x, y, width, height);
-
-    if (wayland->damage_tracking)
-    {
-        pixman_region32_union_rect(&BACKBUF(wayland).damage,
-                                   &BACKBUF(wayland).damage,
-                                   x, y, width, height);
-    }
-}
-
-void drawable_fill_region(struct wld_drawable * drawable, uint32_t color,
-                          pixman_region32_t * region)
-{
-    struct wayland_drawable * wayland = (void *) drawable;
-
-    begin(wayland);
-    wld_fill_region(BACKBUF(wayland).drawable, color, region);
-
-    if (wayland->damage_tracking)
-    {
-        pixman_region32_union(&BACKBUF(wayland).damage,
-                              &BACKBUF(wayland).damage, region);
-    }
-}
-
-void drawable_copy_rectangle(struct wld_drawable * src_drawable,
-                             struct wld_drawable * dst_drawable,
-                             int32_t src_x, int32_t src_y,
-                             int32_t dst_x, int32_t dst_y,
-                             uint32_t width, uint32_t height)
-{
-    fprintf(stderr, "wayland: Copy rectangle is not implemented\n");
-}
-
-void drawable_copy_region(struct wld_drawable * src_drawable,
-                          struct wld_drawable * dst_drawable,
-                          pixman_region32_t * region,
-                          int32_t dst_x, int32_t dst_y)
-{
-    fprintf(stderr, "wayland: Copy region is not implemented\n");
-}
-
-void drawable_draw_text(struct wld_drawable * drawable,
-                        struct font * font, uint32_t color,
-                        int32_t x, int32_t y,
-                        const char * text, int32_t length,
-                        struct wld_extents * extents)
-{
-    struct wld_extents extents0;
-    struct wayland_drawable * wayland = (void *) drawable;
-
-    if (wayland->damage_tracking && !extents)
-        extents = &extents0;
-
-    begin(wayland);
-    wld_draw_text_n(BACKBUF(wayland).drawable, &font->base, color,
-                    x, y, text, length, extents);
-
-    if (wayland->damage_tracking)
-    {
-        pixman_region32_union_rect(&BACKBUF(wayland).damage,
-                                   &BACKBUF(wayland).damage,
-                                   x, y - font->base.ascent,
-                                   extents->advance, font->base.height);
-    }
-}
-
-void drawable_write(struct wld_drawable * drawable,
-                    const void * data, size_t size)
-{
-    fprintf(stderr, "wayland: Write is not implemented\n");
-}
-
-pixman_image_t * drawable_map(struct wld_drawable * drawable)
-{
-    fprintf(stderr, "wayland: Map is not implemented\n");
-
-    return NULL;
-}
-
-void drawable_flush(struct wld_drawable * drawable)
-{
-    struct wayland_drawable * wayland = (void *) drawable;
-
-    wait_for_backbuf(wayland);
-
-    wld_flush(BACKBUF(wayland).drawable);
-
-    if (wayland->damage_tracking & WLD_WAYLAND_DAMAGE_SUBMIT)
-    {
-        pixman_box32_t * box;
-        int num_boxes;
-
-        box = pixman_region32_rectangles(&BACKBUF(wayland).damage, &num_boxes);
-
-        while (num_boxes--)
-        {
-            wl_surface_damage(wayland->surface, box->x1, box->y1,
-                              box->x2 - box->x1, box->y2 - box->y1);
-            ++box;
-        }
-    }
-
-    wl_surface_attach(wayland->surface, BACKBUF(wayland).wl, 0, 0);
-    wl_surface_commit(wayland->surface);
-
-    BACKBUF(wayland).busy = true;
-
-    wayland->front_buffer ^= 1;
-}
-
-void drawable_destroy(struct wld_drawable * drawable)
-{
-    struct wayland_drawable * wayland = (void *) drawable;
-
-    wl_buffer_destroy(wayland->buffers[0].wl);
-    wl_buffer_destroy(wayland->buffers[1].wl);
-    wld_destroy_drawable(wayland->buffers[0].drawable);
-    wld_destroy_drawable(wayland->buffers[1].drawable);
-    pixman_region32_fini(&wayland->buffers[0].damage);
-    pixman_region32_fini(&wayland->buffers[1].damage);
 }
 
