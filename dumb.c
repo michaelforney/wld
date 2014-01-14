@@ -21,10 +21,9 @@
  * SOFTWARE.
  */
 
-#include "pixman.h"
-#include "pixman-private.h"
 #include "drm-private.h"
 #include "drm.h"
+#include "pixman.h"
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -41,17 +40,19 @@ struct dumb_context
 
 struct dumb_drawable
 {
-    struct pixman_drawable pixman;
+    struct wld_drawable base;
     struct wld_exporter exporter;
     struct dumb_context * context;
     uint32_t handle;
 };
 
-#define DRM_DRIVER_NAME dumb
 #include "interface/context.h"
+#include "interface/drawable.h"
 #include "interface/exporter.h"
+#define DRM_DRIVER_NAME dumb
 #include "interface/drm.h"
 IMPL(dumb, context)
+IMPL(dumb, drawable)
 
 const struct wld_context_impl * dumb_context_impl = &context_impl;
 
@@ -84,44 +85,18 @@ static struct wld_drawable * new_drawable(struct dumb_context * context,
                                           unsigned long pitch)
 {
     struct dumb_drawable * drawable;
-    struct drm_mode_map_dumb map_dumb_arg = { .handle = handle };
-    void * data;
-    size_t size = pitch * height;
-    int ret;
 
     if (!(drawable = malloc(sizeof *drawable)))
-        goto error0;
+        return NULL;
 
-    ret = drmIoctl(context->fd, DRM_IOCTL_MODE_MAP_DUMB, &map_dumb_arg);
-
-    if (ret != 0)
-        goto error1;
-
-    data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, context->fd,
-                map_dumb_arg.offset);
-
-    if (data == MAP_FAILED)
-        goto error1;
-
-    if (!pixman_initialize_drawable(wld_pixman_context, &drawable->pixman,
-                                    width, height, data, pitch, format))
-    {
-        goto error2;
-    }
-
+    drawable_initialize(&drawable->base, &drawable_impl,
+                        width, height, format, pitch);
     drawable->context = context;
     drawable->handle = handle;
     exporter_initialize(&drawable->exporter, &exporter_impl);
-    drawable_add_exporter(&drawable->pixman.base, &drawable->exporter);
+    drawable_add_exporter(&drawable->base, &drawable->exporter);
 
-    return &drawable->pixman.base;
-
-  error2:
-    munmap(data, size);
-  error1:
-    free(drawable);
-  error0:
-    return NULL;
+    return &drawable->base;
 }
 
 struct wld_drawable * context_create_drawable(struct  wld_context * base,
@@ -199,12 +174,58 @@ void context_destroy(struct wld_context * base)
     free(context);
 }
 
+/**** Drawable ****/
+
+bool drawable_map(struct wld_drawable * drawable)
+{
+    struct dumb_drawable * dumb = dumb_drawable(drawable);
+    struct drm_mode_map_dumb map_dumb = { .handle = dumb->handle };
+    void * data;
+
+    if (drmIoctl(dumb->context->fd, DRM_IOCTL_MODE_MAP_DUMB,
+                 &map_dumb) != 0)
+    {
+        return false;
+    }
+
+    data = mmap(NULL, drawable->pitch * drawable->height, PROT_READ | PROT_WRITE,
+                MAP_SHARED, dumb->context->fd, map_dumb.offset);
+
+    if (data == MAP_FAILED)
+        return false;
+
+    drawable->map.data = data;
+
+    return true;
+}
+
+bool drawable_unmap(struct wld_drawable * drawable)
+{
+    if (munmap(drawable->map.data, drawable->pitch * drawable->height) == -1)
+        return false;
+
+    drawable->map.data = NULL;
+
+    return true;
+}
+
+void drawable_destroy(struct wld_drawable * drawable_base)
+{
+    struct dumb_drawable * drawable = dumb_drawable(drawable_base);
+    struct drm_mode_destroy_dumb destroy_dumb = {
+        .handle = drawable->handle
+    };
+
+    drmIoctl(drawable->context->fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_dumb);
+    free(drawable);
+}
+
 /**** Exporter ****/
 
 bool exporter_export(struct wld_exporter * exporter, struct wld_drawable * base,
                      uint32_t type, union wld_object * object)
 {
-    struct dumb_drawable * drawable = (void *) base;
+    struct dumb_drawable * drawable = dumb_drawable(base);
 
     switch (type)
     {

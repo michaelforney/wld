@@ -22,7 +22,6 @@
  */
 
 #include "pixman.h"
-#include "pixman-private.h"
 #include "wld-private.h"
 
 #define PIXMAN_COLOR(c) {                   \
@@ -37,6 +36,12 @@ struct pixman_renderer
     struct wld_renderer base;
     pixman_image_t * target;
     pixman_glyph_cache_t * glyph_cache;
+};
+
+struct pixman_drawable
+{
+    struct wld_drawable base;
+    pixman_image_t * image;
 };
 
 struct pixman_exporter
@@ -55,7 +60,6 @@ IMPL(pixman, drawable)
 IMPL(pixman, exporter)
 
 static struct wld_context context = { .impl = &context_impl };
-const struct wld_drawable_impl * const pixman_drawable_impl = &drawable_impl;
 
 EXPORT
 struct wld_context * wld_pixman_context = &context;
@@ -79,21 +83,6 @@ struct wld_renderer * context_create_renderer(struct wld_context * context)
     free(renderer);
   error0:
     return NULL;
-}
-
-bool pixman_initialize_drawable
-    (struct wld_context * context, struct pixman_drawable * drawable,
-     uint32_t width, uint32_t height,
-     void * data, uint32_t pitch, uint32_t format)
-{
-    drawable_initialize(&drawable->base, &drawable_impl,
-                        width, height, format, pitch);
-    drawable->context = (void *) context;
-    drawable->image = pixman_image_create_bits(format_wld_to_pixman(format),
-                                               width, height,
-                                               (uint32_t *) data, pitch);
-
-    return drawable->image != NULL;
 }
 
 struct wld_drawable * new_drawable(pixman_image_t * image)
