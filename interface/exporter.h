@@ -23,7 +23,7 @@
 
 static void exporter_destroy(struct wld_exporter * exporter);
 static bool exporter_export(struct wld_exporter * exporter,
-                            struct wld_drawable * drawable,
+                            struct wld_buffer * buffer,
                             uint32_t type, union wld_object * object);
 
 static const struct wld_exporter_impl exporter_impl = {

@@ -31,8 +31,8 @@ struct wl_display;
 struct wl_event_queue;
 
 /**
- * Create a new drawable context which creates Wayland buffers through the
- * wl_shm interface, back by Pixman drawables.
+ * Create a new WLD context which creates Wayland buffers through the wl_shm
+ * interface, backed by Pixman images.
  */
 struct wld_context * wld_shm_create_context(struct wl_display * display,
                                             struct wl_event_queue * queue);

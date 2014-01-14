@@ -1,6 +1,6 @@
-/* wld: interface/drawable.h
+/* wld: interface/buffer.h
  *
- * Copyright (c) 2013 Michael Forney
+ * Copyright (c) 2013, 2014 Michael Forney
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,13 +21,13 @@
  * SOFTWARE.
  */
 
-static bool drawable_map(struct wld_drawable * drawable);
-static bool drawable_unmap(struct wld_drawable * drawable);
-static void drawable_destroy(struct wld_drawable * drawable);
+static bool buffer_map(struct wld_buffer * drawable);
+static bool buffer_unmap(struct wld_buffer * drawable);
+static void buffer_destroy(struct wld_buffer * drawable);
 
-static const struct wld_drawable_impl drawable_impl = {
-    .map = &drawable_map,
-    .unmap = &drawable_unmap,
-    .destroy = &drawable_destroy
+static const struct wld_buffer_impl buffer_impl = {
+    .map = &buffer_map,
+    .unmap = &buffer_unmap,
+    .destroy = &buffer_destroy
 };
 

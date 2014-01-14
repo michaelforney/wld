@@ -22,14 +22,14 @@
  */
 
 static uint32_t renderer_capabilities(struct wld_renderer * renderer,
-                                      struct wld_drawable * drawable);
+                                      struct wld_buffer * buffer);
 static bool renderer_set_target(struct wld_renderer * renderer,
-                                struct wld_drawable * drawable);
+                                struct wld_buffer * buffer);
 static void renderer_fill_rectangle(struct wld_renderer * renderer,
                                     uint32_t color, int32_t x, int32_t y,
                                     uint32_t width, uint32_t height);
 static void renderer_copy_rectangle(struct wld_renderer * renderer,
-                                    struct wld_drawable * drawable,
+                                    struct wld_buffer * buffer,
                                     int32_t dst_x, int32_t dst_y,
                                     int32_t src_x, int32_t src_y,
                                     uint32_t width, uint32_t height);
@@ -37,7 +37,7 @@ static void renderer_copy_rectangle(struct wld_renderer * renderer,
 static void renderer_fill_region(struct wld_renderer * base, uint32_t color,
                                  pixman_region32_t * region);
 static void renderer_copy_region(struct wld_renderer * base,
-                                 struct wld_drawable * drawable,
+                                 struct wld_buffer * buffer,
                                  int32_t dst_x, int32_t dst_y,
                                  pixman_region32_t * region);
 #endif

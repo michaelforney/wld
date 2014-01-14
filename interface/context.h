@@ -23,18 +23,18 @@
 
 static struct wld_renderer * context_create_renderer
     (struct wld_context * context);
-static struct wld_drawable * context_create_drawable
+static struct wld_buffer * context_create_buffer
     (struct wld_context * context,
      uint32_t width, uint32_t height, uint32_t format);
-static struct wld_drawable * context_import
+static struct wld_buffer * context_import_buffer
     (struct wld_context * context, uint32_t type, union wld_object object,
      uint32_t width, uint32_t height, uint32_t format, uint32_t pitch);
 static void context_destroy(struct wld_context * context);
 
 static const struct wld_context_impl context_impl = {
     .create_renderer = &context_create_renderer,
-    .create_drawable = &context_create_drawable,
-    .import = &context_import,
+    .create_buffer = &context_create_buffer,
+    .import_buffer = &context_import_buffer,
     .destroy = &context_destroy
 };
 

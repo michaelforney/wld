@@ -191,12 +191,12 @@ struct wld_renderer * context_create_renderer(struct wld_context * base)
     return wld_create_renderer(context->driver_context);
 }
 
-struct wld_drawable * context_create_drawable(struct wld_context * base,
-                                              uint32_t width, uint32_t height,
-                                              uint32_t format)
+struct wld_buffer * context_create_buffer(struct wld_context * base,
+                                          uint32_t width, uint32_t height,
+                                          uint32_t format)
 {
     struct drm_context * context = drm_context(base);
-    struct wld_drawable * drawable;
+    struct wld_buffer * buffer;
     struct wld_exporter * exporter;
     union wld_object object;
     struct wl_buffer * wl;
@@ -204,16 +204,16 @@ struct wld_drawable * context_create_drawable(struct wld_context * base,
     if (!wld_wayland_drm_has_format(&context->base, format))
         goto error0;
 
-    drawable = wld_create_drawable(context->driver_context, width, height, format);
+    buffer = wld_create_buffer(context->driver_context, width, height, format);
 
-    if (!drawable)
+    if (!buffer)
         goto error0;
 
-    if (!wld_export(drawable, WLD_DRM_OBJECT_PRIME_FD, &object))
+    if (!wld_export(buffer, WLD_DRM_OBJECT_PRIME_FD, &object))
         goto error1;
 
     wl = wl_drm_create_prime_buffer(context->wl, object.i, width, height,
-                                    format, 0, drawable->pitch, 0, 0, 0, 0);
+                                    format, 0, buffer->pitch, 0, 0, 0, 0);
     close(object.i);
 
     if (!wl)
@@ -222,22 +222,23 @@ struct wld_drawable * context_create_drawable(struct wld_context * base,
     if (!(exporter = wayland_create_exporter(wl)))
         goto error2;
 
-    drawable_add_exporter(drawable, exporter);
+    buffer_add_exporter(buffer, exporter);
 
-    return drawable;
+    return buffer;
 
   error2:
     wl_buffer_destroy(wl);
   error1:
-    wld_destroy_drawable(drawable);
+    wld_destroy_buffer(buffer);
   error0:
     return NULL;
 }
 
-struct wld_drawable * context_import(struct wld_context * context,
-                                     uint32_t type, union wld_object object,
-                                     uint32_t width, uint32_t height,
-                                     uint32_t format, uint32_t pitch)
+struct wld_buffer * context_import_buffer(struct wld_context * context,
+                                          uint32_t type,
+                                          union wld_object object,
+                                          uint32_t width, uint32_t height,
+                                          uint32_t format, uint32_t pitch)
 {
     return NULL;
 }

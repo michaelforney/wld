@@ -40,7 +40,7 @@ void default_fill_region(struct wld_renderer * renderer, uint32_t color,
 }
 
 void default_copy_region(struct wld_renderer * renderer,
-                         struct wld_drawable * drawable,
+                         struct wld_buffer * buffer,
                          int32_t dst_x, int32_t dst_y,
                          pixman_region32_t * region)
 {
@@ -51,7 +51,7 @@ void default_copy_region(struct wld_renderer * renderer,
 
     while (num_boxes--)
     {
-        renderer->impl->copy_rectangle(renderer, drawable,
+        renderer->impl->copy_rectangle(renderer, buffer,
                                        dst_x + box->x1, dst_y + box->y1,
                                        box->x1, box->y1,
                                        box->x2 - box->x1, box->y2 - box->y1);
@@ -74,19 +74,19 @@ void wld_destroy_renderer(struct wld_renderer * renderer)
 
 EXPORT
 uint32_t wld_capabilities(struct wld_renderer * renderer,
-                          struct wld_drawable * drawable)
+                          struct wld_buffer * buffer)
 {
-    return renderer->impl->capabilities(renderer, drawable);
+    return renderer->impl->capabilities(renderer, buffer);
 }
 
 EXPORT
-bool wld_set_target_drawable(struct wld_renderer * renderer,
-                             struct wld_drawable * drawable)
+bool wld_set_target_buffer(struct wld_renderer * renderer,
+                           struct wld_buffer * buffer)
 {
-    if (!renderer->impl->set_target(renderer, drawable))
+    if (!renderer->impl->set_target(renderer, buffer))
         return false;
 
-    renderer->target = drawable;
+    renderer->target = buffer;
 
     return true;
 }
@@ -107,21 +107,21 @@ void wld_fill_region(struct wld_renderer * renderer, uint32_t color,
 
 EXPORT
 void wld_copy_rectangle(struct wld_renderer * renderer,
-                        struct wld_drawable * drawable,
+                        struct wld_buffer * buffer,
                         int32_t dst_x, int32_t dst_y,
                         int32_t src_x, int32_t src_y,
                         uint32_t width, uint32_t height)
 {
-    renderer->impl->copy_rectangle(renderer, drawable, dst_x, dst_y,
-                                   src_x, src_y, width, height);
+    renderer->impl->copy_rectangle(renderer, buffer, dst_x, dst_y, src_x, src_y,
+                                   width, height);
 }
 
 EXPORT
 void wld_copy_region(struct wld_renderer * renderer,
-                     struct wld_drawable * drawable,
+                     struct wld_buffer * buffer,
                      int32_t dst_x, int32_t dst_y, pixman_region32_t * region)
 {
-    renderer->impl->copy_region(renderer, drawable, dst_x, dst_y, region);
+    renderer->impl->copy_region(renderer, buffer, dst_x, dst_y, region);
 }
 
 EXPORT

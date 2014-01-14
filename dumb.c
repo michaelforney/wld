@@ -38,21 +38,21 @@ struct dumb_context
     int fd;
 };
 
-struct dumb_drawable
+struct dumb_buffer
 {
-    struct wld_drawable base;
+    struct wld_buffer base;
     struct wld_exporter exporter;
     struct dumb_context * context;
     uint32_t handle;
 };
 
 #include "interface/context.h"
-#include "interface/drawable.h"
+#include "interface/buffer.h"
 #include "interface/exporter.h"
 #define DRM_DRIVER_NAME dumb
 #include "interface/drm.h"
 IMPL(dumb, context)
-IMPL(dumb, drawable)
+IMPL(dumb, buffer)
 
 const struct wld_context_impl * dumb_context_impl = &context_impl;
 
@@ -79,32 +79,32 @@ struct wld_renderer * context_create_renderer(struct wld_context * context)
     return wld_create_renderer(wld_pixman_context);
 }
 
-static struct wld_drawable * new_drawable(struct dumb_context * context,
-                                          uint32_t width, uint32_t height,
-                                          uint32_t format, uint32_t handle,
-                                          unsigned long pitch)
+static struct wld_buffer * new_buffer(struct dumb_context * context,
+                                      uint32_t width, uint32_t height,
+                                      uint32_t format, uint32_t handle,
+                                      unsigned long pitch)
 {
-    struct dumb_drawable * drawable;
+    struct dumb_buffer * buffer;
 
-    if (!(drawable = malloc(sizeof *drawable)))
+    if (!(buffer = malloc(sizeof *buffer)))
         return NULL;
 
-    drawable_initialize(&drawable->base, &drawable_impl,
-                        width, height, format, pitch);
-    drawable->context = context;
-    drawable->handle = handle;
-    exporter_initialize(&drawable->exporter, &exporter_impl);
-    drawable_add_exporter(&drawable->base, &drawable->exporter);
+    buffer_initialize(&buffer->base, &buffer_impl,
+                      width, height, format, pitch);
+    buffer->context = context;
+    buffer->handle = handle;
+    exporter_initialize(&buffer->exporter, &exporter_impl);
+    buffer_add_exporter(&buffer->base, &buffer->exporter);
 
-    return &drawable->base;
+    return &buffer->base;
 }
 
-struct wld_drawable * context_create_drawable(struct  wld_context * base,
-                                              uint32_t width, uint32_t height,
-                                              uint32_t format)
+struct wld_buffer * context_create_buffer(struct wld_context * base,
+                                          uint32_t width, uint32_t height,
+                                          uint32_t format)
 {
     struct dumb_context * context = dumb_context(base);
-    struct wld_drawable * drawable;
+    struct wld_buffer * buffer;
     struct drm_mode_create_dumb create_dumb_arg = {
         .height = height, .width = width,
         .bpp = format_bytes_per_pixel(format) * 8,
@@ -116,13 +116,13 @@ struct wld_drawable * context_create_drawable(struct  wld_context * base,
     if (ret != 0)
         goto error0;
 
-    drawable = new_drawable(context, width, height, format,
-                            create_dumb_arg.handle, create_dumb_arg.pitch);
+    buffer = new_buffer(context, width, height, format,
+                        create_dumb_arg.handle, create_dumb_arg.pitch);
 
-    if (!drawable)
+    if (!buffer)
         goto error1;
 
-    return drawable;
+    return buffer;
 
   error1:
     {
@@ -136,10 +136,11 @@ struct wld_drawable * context_create_drawable(struct  wld_context * base,
     return NULL;
 }
 
-struct wld_drawable * context_import(struct wld_context * base,
-                                     uint32_t type, union wld_object object,
-                                     uint32_t width, uint32_t height,
-                                     uint32_t format, uint32_t pitch)
+struct wld_buffer * context_import_buffer(struct wld_context * base,
+                                          uint32_t type,
+                                          union wld_object object,
+                                          uint32_t width, uint32_t height,
+                                          uint32_t format, uint32_t pitch)
 {
     struct dumb_context * context = dumb_context(base);
     uint32_t handle;
@@ -163,7 +164,7 @@ struct wld_drawable * context_import(struct wld_context * base,
         default: return NULL;
     }
 
-    return new_drawable(context, width, height, format, handle, pitch);
+    return new_buffer(context, width, height, format, handle, pitch);
 }
 
 void context_destroy(struct wld_context * base)
@@ -174,66 +175,66 @@ void context_destroy(struct wld_context * base)
     free(context);
 }
 
-/**** Drawable ****/
+/**** Buffer ****/
 
-bool drawable_map(struct wld_drawable * drawable)
+bool buffer_map(struct wld_buffer * base)
 {
-    struct dumb_drawable * dumb = dumb_drawable(drawable);
-    struct drm_mode_map_dumb map_dumb = { .handle = dumb->handle };
+    struct dumb_buffer * buffer = dumb_buffer(base);
+    struct drm_mode_map_dumb map_dumb = { .handle = buffer->handle };
     void * data;
 
-    if (drmIoctl(dumb->context->fd, DRM_IOCTL_MODE_MAP_DUMB,
+    if (drmIoctl(buffer->context->fd, DRM_IOCTL_MODE_MAP_DUMB,
                  &map_dumb) != 0)
     {
         return false;
     }
 
-    data = mmap(NULL, drawable->pitch * drawable->height, PROT_READ | PROT_WRITE,
-                MAP_SHARED, dumb->context->fd, map_dumb.offset);
+    data = mmap(NULL, base->pitch * base->height, PROT_READ | PROT_WRITE,
+                MAP_SHARED, buffer->context->fd, map_dumb.offset);
 
     if (data == MAP_FAILED)
         return false;
 
-    drawable->map.data = data;
+    buffer->base.map.data = data;
 
     return true;
 }
 
-bool drawable_unmap(struct wld_drawable * drawable)
+bool buffer_unmap(struct wld_buffer * buffer)
 {
-    if (munmap(drawable->map.data, drawable->pitch * drawable->height) == -1)
+    if (munmap(buffer->map.data, buffer->pitch * buffer->height) == -1)
         return false;
 
-    drawable->map.data = NULL;
+    buffer->map.data = NULL;
 
     return true;
 }
 
-void drawable_destroy(struct wld_drawable * drawable_base)
+void buffer_destroy(struct wld_buffer * base)
 {
-    struct dumb_drawable * drawable = dumb_drawable(drawable_base);
+    struct dumb_buffer * buffer = dumb_buffer(base);
     struct drm_mode_destroy_dumb destroy_dumb = {
-        .handle = drawable->handle
+        .handle = buffer->handle
     };
 
-    drmIoctl(drawable->context->fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_dumb);
-    free(drawable);
+    drmIoctl(buffer->context->fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_dumb);
+    free(buffer);
 }
 
 /**** Exporter ****/
 
-bool exporter_export(struct wld_exporter * exporter, struct wld_drawable * base,
+bool exporter_export(struct wld_exporter * exporter, struct wld_buffer * base,
                      uint32_t type, union wld_object * object)
 {
-    struct dumb_drawable * drawable = dumb_drawable(base);
+    struct dumb_buffer * buffer = dumb_buffer(base);
 
     switch (type)
     {
         case WLD_DRM_OBJECT_HANDLE:
-            object->u32 = drawable->handle;
+            object->u32 = buffer->handle;
             return true;
         case WLD_DRM_OBJECT_PRIME_FD:
-            if (drmPrimeHandleToFD(drawable->context->fd, drawable->handle,
+            if (drmPrimeHandleToFD(buffer->context->fd, buffer->handle,
                                    DRM_CLOEXEC, &object->i) != 0)
             {
                 return false;
@@ -242,13 +243,10 @@ bool exporter_export(struct wld_exporter * exporter, struct wld_drawable * base,
             return true;
         case WLD_DRM_OBJECT_GEM_NAME:
         {
-            struct drm_gem_flink flink = { .handle = drawable->handle };
+            struct drm_gem_flink flink = { .handle = buffer->handle };
 
-            if (drmIoctl(drawable->context->fd, DRM_IOCTL_GEM_FLINK,
-                         &flink) != 0)
-            {
+            if (drmIoctl(buffer->context->fd, DRM_IOCTL_GEM_FLINK, &flink) != 0)
                 return false;
-            }
 
             object->u32 = flink.name;
             return true;

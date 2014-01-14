@@ -139,7 +139,7 @@ struct wld_exporter * wayland_create_exporter(struct wl_buffer * buffer)
     return &exporter->base;
 }
 
-bool exporter_export(struct wld_exporter * base, struct wld_drawable * drawable,
+bool exporter_export(struct wld_exporter * base, struct wld_buffer * buffer,
                      uint32_t type, union wld_object * object)
 {
     struct wayland_exporter * exporter = wayland_exporter(base);

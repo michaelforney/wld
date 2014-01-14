@@ -149,12 +149,12 @@ struct wld_renderer * context_create_renderer(struct wld_context * context)
     return wld_create_renderer(wld_pixman_context);
 }
 
-struct wld_drawable * context_create_drawable(struct wld_context * base,
-                                              uint32_t width, uint32_t height,
-                                              uint32_t format)
+struct wld_buffer * context_create_buffer(struct wld_context * base,
+                                          uint32_t width, uint32_t height,
+                                          uint32_t format)
 {
     struct shm_context * context = shm_context(base);
-    struct wld_drawable * drawable;
+    struct wld_buffer * buffer;
     struct wld_exporter * exporter;
     char name[] = "/tmp/wld-XXXXXX";
     uint32_t pitch = width * format_bytes_per_pixel(format);
@@ -182,10 +182,10 @@ struct wld_drawable * context_create_drawable(struct wld_context * base,
         goto error1;
 
     object.ptr = data;
-    drawable = wld_import(wld_pixman_context, WLD_OBJECT_DATA, object,
-                          width, height, format, pitch);
+    buffer = wld_import_buffer(wld_pixman_context, WLD_OBJECT_DATA, object,
+                               width, height, format, pitch);
 
-    if (!drawable)
+    if (!buffer)
         goto error2;
 
     if (!(pool = wl_shm_create_pool(context->wl, fd, size)))
@@ -200,15 +200,15 @@ struct wld_drawable * context_create_drawable(struct wld_context * base,
     if (!(exporter = wayland_create_exporter(wl)))
         goto error4;
 
-    drawable_add_exporter(drawable, exporter);
+    buffer_add_exporter(buffer, exporter);
     close(fd);
 
-    return drawable;
+    return buffer;
 
   error4:
     wl_buffer_destroy(wl);
   error3:
-    wld_destroy_drawable(drawable);
+    wld_destroy_buffer(buffer);
   error2:
     munmap(object.ptr, size);
   error1:
@@ -217,10 +217,11 @@ struct wld_drawable * context_create_drawable(struct wld_context * base,
     return NULL;
 }
 
-struct wld_drawable * context_import(struct wld_context * context,
-                                     uint32_t type, union wld_object object,
-                                     uint32_t width, uint32_t height,
-                                     uint32_t format, uint32_t pitch)
+struct wld_buffer * context_import_buffer(struct wld_context * context,
+                                          uint32_t type,
+                                          union wld_object object,
+                                          uint32_t width, uint32_t height,
+                                          uint32_t format, uint32_t pitch)
 {
     return NULL;
 }

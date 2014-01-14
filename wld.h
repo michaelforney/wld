@@ -68,14 +68,14 @@ struct wld_context
 
 struct wld_renderer * wld_create_renderer(struct wld_context * context);
 
-struct wld_drawable * wld_create_drawable(struct wld_context * context,
-                                          uint32_t width, uint32_t height,
-                                          uint32_t format);
+struct wld_buffer * wld_create_buffer(struct wld_context * context,
+                                      uint32_t width, uint32_t height,
+                                      uint32_t format);
 
-struct wld_drawable * wld_import(struct wld_context * context, uint32_t type,
-                                 union wld_object object,
-                                 uint32_t width, uint32_t height,
-                                 uint32_t format, uint32_t pitch);
+struct wld_buffer * wld_import_buffer(struct wld_context * context,
+                                      uint32_t type, union wld_object object,
+                                      uint32_t width, uint32_t height,
+                                      uint32_t format, uint32_t pitch);
 
 void wld_destroy_context(struct wld_context * context);
 
@@ -144,10 +144,12 @@ static inline void wld_font_text_extents(struct wld_font * font,
     wld_font_text_extents_n(font, text, INT32_MAX, extents);
 }
 
-/**** Drawables ****/
+/**** Buffers ****/
 
-struct wld_drawable
+struct wld_buffer
 {
+    const struct wld_buffer_impl * const impl;
+
     uint32_t width, height;
     unsigned long pitch;
     enum wld_format format;
@@ -159,27 +161,25 @@ struct wld_drawable
     } map;
 
     struct wld_exporter * exporters;
-
-    const struct wld_drawable_impl * impl;
 };
 
-bool wld_map(struct wld_drawable * drawable);
-bool wld_unmap(struct wld_drawable * drawable);
+bool wld_map(struct wld_buffer * buffer);
+bool wld_unmap(struct wld_buffer * buffer);
 
-bool wld_export(struct wld_drawable * drawable,
+bool wld_export(struct wld_buffer * buffer,
                 uint32_t type, union wld_object * object);
 
 /**
- * Destroy a drawable (created with any context).
+ * Destroy a buffer.
  */
-void wld_destroy_drawable(struct wld_drawable * drawable);
+void wld_destroy_buffer(struct wld_buffer * buffer);
 
 /**** Renderers ****/
 
 struct wld_renderer
 {
     const struct wld_renderer_impl * const impl;
-    struct wld_drawable * target;
+    struct wld_buffer * target;
 };
 
 enum wld_capability
@@ -191,10 +191,10 @@ enum wld_capability
 void wld_destroy_renderer(struct wld_renderer * renderer);
 
 uint32_t wld_capabilities(struct wld_renderer * renderer,
-                          struct wld_drawable * drawable);
+                          struct wld_buffer * buffer);
 
 bool wld_set_target_buffer(struct wld_renderer * renderer,
-                           struct wld_drawable * drawable);
+                           struct wld_buffer * buffer);
 
 void wld_fill_rectangle(struct wld_renderer * renderer, uint32_t color,
                         int32_t x, int32_t y, uint32_t width, uint32_t height);
@@ -203,17 +203,17 @@ void wld_fill_region(struct wld_renderer * renderer, uint32_t color,
                      pixman_region32_t * region);
 
 void wld_copy_rectangle(struct wld_renderer * renderer,
-                        struct wld_drawable * drawable,
+                        struct wld_buffer * buffer,
                         int32_t dst_x, int32_t dst_y,
                         int32_t src_x, int32_t src_y,
                         uint32_t width, uint32_t height);
 
 void wld_copy_region(struct wld_renderer * renderer,
-                     struct wld_drawable * drawable,
+                     struct wld_buffer * buffer,
                      int32_t dst_x, int32_t dst_y, pixman_region32_t * region);
 
 /**
- * Draw a UTF-8 text string to the given drawable.
+ * Draw a UTF-8 text string to the given buffer.
  *
  * @param length    The maximum number of bytes in the string to process
  * @param extents   If not NULL, will be initialized to the extents of the

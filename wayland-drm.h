@@ -31,8 +31,8 @@ struct wl_display;
 struct wl_event_queue;
 
 /**
- * Create a new drawable context which creates Wayland buffers through the
- * wl_drm interface, backed by hardware specific drawable implementations.
+ * Create a new WLD context which creates Wayland buffers through the wl_drm
+ * interface, backed by hardware specific buffer implementations.
  */
 struct wld_context * wld_wayland_drm_create_context
     (struct wl_display * display, struct wl_event_queue * queue);

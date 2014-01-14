@@ -36,21 +36,21 @@ struct wld_renderer * wld_create_renderer(struct wld_context * context)
 }
 
 EXPORT
-struct wld_drawable * wld_create_drawable(struct wld_context * context,
-                                          uint32_t width, uint32_t height,
-                                          uint32_t format)
+struct wld_buffer * wld_create_buffer(struct wld_context * context,
+                                      uint32_t width, uint32_t height,
+                                      uint32_t format)
 {
-    return context->impl->create_drawable(context, width, height, format);
+    return context->impl->create_buffer(context, width, height, format);
 }
 
 EXPORT
-struct wld_drawable * wld_import(struct wld_context * context,
-                                 uint32_t type, union wld_object object,
-                                 uint32_t width, uint32_t height,
-                                 uint32_t format, uint32_t pitch)
+struct wld_buffer * wld_import_buffer(struct wld_context * context,
+                                      uint32_t type, union wld_object object,
+                                      uint32_t width, uint32_t height,
+                                      uint32_t format, uint32_t pitch)
 {
-    return context->impl->import(context, type, object,
-                                 width, height, format, pitch);
+    return context->impl->import_buffer(context, type, object,
+                                        width, height, format, pitch);
 }
 
 EXPORT

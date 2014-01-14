@@ -1,6 +1,6 @@
-/* wld: drawable.c
+/* wld: buffer.c
  *
- * Copyright (c) 2013 Michael Forney
+ * Copyright (c) 2013, 2014 Michael Forney
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,28 +23,26 @@
 
 #include "wld-private.h"
 
-#include <assert.h>
-
-void drawable_initialize(struct wld_drawable * drawable,
-                         const struct wld_drawable_impl * impl,
-                         uint32_t width, uint32_t height,
-                         uint32_t format, uint32_t pitch)
+void buffer_initialize(struct wld_buffer * buffer,
+                       const struct wld_buffer_impl * impl,
+                       uint32_t width, uint32_t height,
+                       uint32_t format, uint32_t pitch)
 {
-    *((const struct wld_drawable_impl **) &drawable->impl) = impl;
-    drawable->width = width;
-    drawable->height = height;
-    drawable->format = format;
-    drawable->pitch = pitch;
-    drawable->map.data = NULL;
-    drawable->map.count = 0;
-    drawable->exporters = NULL;
+    *((const struct wld_buffer_impl **) &buffer->impl) = impl;
+    buffer->width = width;
+    buffer->height = height;
+    buffer->format = format;
+    buffer->pitch = pitch;
+    buffer->map.data = NULL;
+    buffer->map.count = 0;
+    buffer->exporters = NULL;
 }
 
-void drawable_add_exporter(struct wld_drawable * drawable,
-                           struct wld_exporter * exporter)
+void buffer_add_exporter(struct wld_buffer * buffer,
+                         struct wld_exporter * exporter)
 {
-    exporter->next = drawable->exporters;
-    drawable->exporters = exporter;
+    exporter->next = buffer->exporters;
+    buffer->exporters = exporter;
 }
 
 void exporter_initialize(struct wld_exporter * exporter,
@@ -55,37 +53,37 @@ void exporter_initialize(struct wld_exporter * exporter,
 }
 
 EXPORT
-bool wld_map(struct wld_drawable * drawable)
+bool wld_map(struct wld_buffer * buffer)
 {
-    if (drawable->map.count == 0 && !drawable->impl->map(drawable))
+    if (buffer->map.count == 0 && !buffer->impl->map(buffer))
         return false;
 
-    ++drawable->map.count;
+    ++buffer->map.count;
     return true;
 }
 
 EXPORT
-bool wld_unmap(struct wld_drawable * drawable)
+bool wld_unmap(struct wld_buffer * buffer)
 {
-    if (drawable->map.count == 0
-        || (drawable->map.count == 1 && !drawable->impl->unmap(drawable)))
+    if (buffer->map.count == 0
+        || (buffer->map.count == 1 && !buffer->impl->unmap(buffer)))
     {
         return false;
     }
 
-    --drawable->map.count;
+    --buffer->map.count;
     return true;
 }
 
 EXPORT
-bool wld_export(struct wld_drawable * drawable,
+bool wld_export(struct wld_buffer * buffer,
                 uint32_t type, union wld_object * object)
 {
     struct wld_exporter * exporter;
 
-    for (exporter = drawable->exporters; exporter; exporter = exporter->next)
+    for (exporter = buffer->exporters; exporter; exporter = exporter->next)
     {
-        if (exporter->impl->export(exporter, drawable, type, object))
+        if (exporter->impl->export(exporter, buffer, type, object))
             return true;
     }
 
@@ -93,8 +91,16 @@ bool wld_export(struct wld_drawable * drawable,
 }
 
 EXPORT
-void wld_destroy_drawable(struct wld_drawable * drawable)
+void wld_destroy_buffer(struct wld_buffer * buffer)
 {
-    drawable->impl->destroy(drawable);
+    struct wld_exporter * exporter;
+
+    if (buffer->map.count > 0)
+        wld_unmap(buffer);
+
+    for (exporter = buffer->exporters; exporter; exporter = exporter->next)
+        exporter->impl->destroy(exporter);
+
+    buffer->impl->destroy(buffer);
 }
 

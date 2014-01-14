@@ -50,9 +50,9 @@ enum wld_wayland_object_type
 };
 
 /**
- * Create a new drawing context which uses various available Wayland interfaces
- * (such as wl_shm and wl_drm) to create buffers backed by drawables specific
- * to the interface.
+ * Create a new WLD context which uses various available Wayland interfaces
+ * (such as wl_shm and wl_drm) to create wl_buffers backed by implementations
+ * specific to the interface.
  *
  * You can specify the particular interface you want to use by specifying them
  * as arguments. Interfaces will be tried in the order they are given.

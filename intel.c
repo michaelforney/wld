@@ -40,25 +40,25 @@ struct intel_renderer
 {
     struct wld_renderer base;
     struct intel_batch * batch;
-    struct intel_drawable * target;
+    struct intel_buffer * target;
 };
 
-struct intel_drawable
+struct intel_buffer
 {
-    struct wld_drawable base;
+    struct wld_buffer base;
     struct wld_exporter exporter;
     drm_intel_bo * bo;
 };
 
 #include "interface/context.h"
 #include "interface/renderer.h"
-#include "interface/drawable.h"
+#include "interface/buffer.h"
 #include "interface/exporter.h"
 #define DRM_DRIVER_NAME intel
 #include "interface/drm.h"
 IMPL(intel, context)
 IMPL(intel, renderer)
-IMPL(intel, drawable)
+IMPL(intel, buffer)
 
 bool driver_device_supported(uint32_t vendor_id, uint32_t device_id)
 {
@@ -110,47 +110,48 @@ struct wld_renderer * context_create_renderer(struct wld_context * base)
     return NULL;
 }
 
-static struct intel_drawable * new_drawable(uint32_t width, uint32_t height,
-                                            uint32_t format)
+static struct intel_buffer * new_buffer(uint32_t width, uint32_t height,
+                                        uint32_t format)
 {
-    struct intel_drawable * intel;
+    struct intel_buffer * buffer;
 
-    if (!(intel = malloc(sizeof *intel)))
+    if (!(buffer = malloc(sizeof *buffer)))
         return NULL;
 
-    drawable_initialize(&intel->base, &drawable_impl,
-                        width, height, format, 0);
-    exporter_initialize(&intel->exporter, &exporter_impl);
-    drawable_add_exporter(&intel->base, &intel->exporter);
+    buffer_initialize(&buffer->base, &buffer_impl,
+                      width, height, format, 0);
+    exporter_initialize(&buffer->exporter, &exporter_impl);
+    buffer_add_exporter(&buffer->base, &buffer->exporter);
 
-    return intel;
+    return buffer;
 }
 
-struct wld_drawable * context_create_drawable(struct wld_context * base,
-                                              uint32_t width, uint32_t height,
-                                              uint32_t format)
+struct wld_buffer * context_create_buffer(struct wld_context * base,
+                                          uint32_t width, uint32_t height,
+                                          uint32_t format)
 {
     struct intel_context * context = intel_context(base);
-    struct intel_drawable * intel;
+    struct intel_buffer * buffer;
     uint32_t tiling_mode = width >= 128 ? I915_TILING_X : I915_TILING_NONE;
 
-    if (!(intel = new_drawable(width, height, format)))
+    if (!(buffer = new_buffer(width, height, format)))
         return NULL;
 
-    intel->bo = drm_intel_bo_alloc_tiled(context->bufmgr, "drawable",
-                                         width, height, 4, &tiling_mode,
-                                         &intel->base.pitch, 0);
+    buffer->bo = drm_intel_bo_alloc_tiled(context->bufmgr, "buffer",
+                                          width, height, 4, &tiling_mode,
+                                          &buffer->base.pitch, 0);
 
-    return &intel->base;
+    return &buffer->base;
 }
 
-struct wld_drawable * context_import(struct wld_context * base,
-                                     uint32_t type, union wld_object object,
-                                     uint32_t width, uint32_t height,
-                                     uint32_t format, uint32_t pitch)
+struct wld_buffer * context_import_buffer(struct wld_context * base,
+                                          uint32_t type,
+                                          union wld_object object,
+                                          uint32_t width, uint32_t height,
+                                          uint32_t format, uint32_t pitch)
 {
     struct intel_context * context = intel_context(base);
-    struct intel_drawable * intel;
+    struct intel_buffer * buffer;
     drm_intel_bo * bo;
 
     switch (type)
@@ -172,13 +173,13 @@ struct wld_drawable * context_import(struct wld_context * base,
     if (!bo)
         goto error0;
 
-    if (!(intel = new_drawable(width, height, format)))
+    if (!(buffer = new_buffer(width, height, format)))
         goto error1;
 
-    intel->bo = bo;
-    intel->base.pitch = pitch;
+    buffer->bo = bo;
+    buffer->base.pitch = pitch;
 
-    return &intel->base;
+    return &buffer->base;
 
   error1:
     drm_intel_bo_unreference(bo);
@@ -196,23 +197,23 @@ void context_destroy(struct wld_context * base)
 
 /**** Renderer ****/
 uint32_t renderer_capabilities(struct wld_renderer * renderer,
-                               struct wld_drawable * drawable)
+                               struct wld_buffer * buffer)
 {
-    if (drawable->impl == &drawable_impl)
+    if (buffer->impl == &buffer_impl)
         return WLD_CAPABILITY_READ | WLD_CAPABILITY_WRITE;
 
     return 0;
 }
 
 bool renderer_set_target(struct wld_renderer * base,
-                         struct wld_drawable * drawable)
+                         struct wld_buffer * buffer)
 {
     struct intel_renderer * renderer = intel_renderer(base);
 
-    if (drawable && drawable->impl != &drawable_impl)
+    if (buffer && buffer->impl != &buffer_impl)
         return false;
 
-    renderer->target = drawable ? intel_drawable(drawable) : NULL;
+    renderer->target = buffer ? intel_buffer(buffer) : NULL;
 
     return true;
 }
@@ -229,19 +230,19 @@ void renderer_fill_rectangle(struct wld_renderer * base, uint32_t color,
 }
 
 void renderer_copy_rectangle(struct wld_renderer * base,
-                             struct wld_drawable * drawable_base,
+                             struct wld_buffer * buffer_base,
                              int32_t dst_x, int32_t dst_y,
                              int32_t src_x, int32_t src_y,
                              uint32_t width, uint32_t height)
 {
     struct intel_renderer * renderer = intel_renderer(base);
 
-    if (drawable_base->impl != &drawable_impl)
+    if (buffer_base->impl != &buffer_impl)
         return;
 
-    struct intel_drawable * drawable = intel_drawable(drawable_base);
+    struct intel_buffer * buffer = intel_buffer(buffer_base);
 
-    xy_src_copy_blt(renderer->batch, drawable->bo, drawable->base.pitch,
+    xy_src_copy_blt(renderer->batch, buffer->bo, buffer->base.pitch,
                     src_x, src_y,
                     renderer->target->bo, renderer->target->base.pitch,
                     dst_x, dst_y, width, height);
@@ -329,54 +330,56 @@ void renderer_destroy(struct wld_renderer * base)
     free(renderer);
 }
 
-bool drawable_map(struct wld_drawable * base)
+/**** Buffer ****/
+bool buffer_map(struct wld_buffer * base)
 {
-    struct intel_drawable * drawable = intel_drawable(base);
+    struct intel_buffer * buffer = intel_buffer(base);
 
-    if (drm_intel_gem_bo_map_gtt(drawable->bo) != 0)
+    if (drm_intel_gem_bo_map_gtt(buffer->bo) != 0)
         return false;
 
-    drawable->base.map.data = drawable->bo->virtual;
+    buffer->base.map.data = buffer->bo->virtual;
 
     return true;
 }
 
-bool drawable_unmap(struct wld_drawable * base)
+bool buffer_unmap(struct wld_buffer * base)
 {
-    struct intel_drawable * drawable = intel_drawable(base);
+    struct intel_buffer * buffer = intel_buffer(base);
 
-    if (drm_intel_gem_bo_unmap_gtt(drawable->bo) != 0)
+    if (drm_intel_gem_bo_unmap_gtt(buffer->bo) != 0)
         return false;
 
-    drawable->base.map.data = NULL;
+    buffer->base.map.data = NULL;
 
     return true;
 }
 
-void drawable_destroy(struct wld_drawable * drawable)
+void buffer_destroy(struct wld_buffer * base)
 {
-    struct intel_drawable * intel = (void *) drawable;
-    drm_intel_bo_unreference(intel->bo);
-    free(intel);
+    struct intel_buffer * buffer = intel_buffer(base);
+
+    drm_intel_bo_unreference(buffer->bo);
+    free(buffer);
 }
 
 /**** Exporter ****/
-bool exporter_export(struct wld_exporter * exporter, struct wld_drawable * base,
+bool exporter_export(struct wld_exporter * exporter, struct wld_buffer * base,
                      uint32_t type, union wld_object * object)
 {
-    struct intel_drawable * drawable = intel_drawable(base);
+    struct intel_buffer * buffer = intel_buffer(base);
 
     switch (type)
     {
         case WLD_DRM_OBJECT_HANDLE:
-            object->u32 = drawable->bo->handle;
+            object->u32 = buffer->bo->handle;
             return true;
         case WLD_DRM_OBJECT_PRIME_FD:
-            if (drm_intel_bo_gem_export_to_prime(drawable->bo, &object->i) != 0)
+            if (drm_intel_bo_gem_export_to_prime(buffer->bo, &object->i) != 0)
                 return false;
             return true;
         case WLD_DRM_OBJECT_GEM_NAME:
-            if (drm_intel_bo_flink(drawable->bo, &object->u32) != 0)
+            if (drm_intel_bo_flink(buffer->bo, &object->u32) != 0)
                 return false;
             return true;
         default:
