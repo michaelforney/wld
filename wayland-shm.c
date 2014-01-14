@@ -171,7 +171,7 @@ struct wld_buffer * context_create_buffer(struct wld_context * base,
 
     unlink(name);
 
-    if (ftruncate(fd, size) < 0)
+    if (posix_fallocate(fd, 0, size) != 0)
         goto error1;
 
     object.ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
