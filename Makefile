@@ -38,6 +38,12 @@ ifeq ($(ENABLE_DRM),1)
         WLD_SOURCES += intel.c
         WLD_CPPFLAGS += -DWITH_DRM_INTEL=1
     endif
+
+    ifneq ($(findstring nouveau,$(DRM_DRIVERS)),)
+        WLD_REQUIRES_PRIVATE += libdrm_nouveau
+        WLD_SOURCES += nouveau.c
+        WLD_CPPFLAGS += -DWITH_DRM_NOUVEAU=1
+    endif
 endif
 
 ifeq ($(ENABLE_PIXMAN),1)

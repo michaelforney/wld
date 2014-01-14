@@ -14,7 +14,7 @@ ENABLE_PIXMAN       = 1
 ENABLE_DRM          = 1
 ENABLE_WAYLAND      = 0
 
-DRM_DRIVERS         = intel
+DRM_DRIVERS         = intel nouveau
 WAYLAND_INTERFACES  = shm
 
 ifeq ($(ENABLE_DRM),1)
