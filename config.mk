@@ -7,8 +7,6 @@ PKGCONFIGDIR        = $(LIBDIR)/pkgconfig
 
 CC                  = gcc
 CFLAGS              = -pipe
-PKG_CONFIG         ?= pkg-config
-WAYLAND_SCANNER    ?= wayland-scanner
 
 ENABLE_DEBUG        = 1
 
