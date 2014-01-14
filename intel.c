@@ -60,6 +60,7 @@ IMPL(intel, context)
 IMPL(intel, renderer)
 IMPL(intel, buffer)
 
+/**** DRM driver ****/
 bool driver_device_supported(uint32_t vendor_id, uint32_t device_id)
 {
     return vendor_id == 0x8086;

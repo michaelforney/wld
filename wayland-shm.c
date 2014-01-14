@@ -29,11 +29,11 @@
 #include "wld-private.h"
 #include "pixman.h"
 
+#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <sys/mman.h>
+#include <unistd.h>
 #include <wayland-client.h>
 
 struct shm_context
@@ -69,7 +69,7 @@ const static struct wl_shm_listener shm_listener = {
     .format = &shm_format,
 };
 
-static inline uint32_t wayland_format(uint32_t format)
+static inline uint32_t format_wld_to_shm(uint32_t format)
 {
     switch (format)
     {
@@ -158,10 +158,8 @@ struct wld_buffer * context_create_buffer(struct wld_context * base,
     struct wld_exporter * exporter;
     char name[] = "/tmp/wld-XXXXXX";
     uint32_t pitch = width * format_bytes_per_pixel(format);
-    uint32_t size = height * pitch;
+    size_t size = pitch * height;
     int fd;
-    void * data;
-    uint32_t shm_format = wayland_format(format);
     union wld_object object;
     struct wl_shm_pool * pool;
     struct wl_buffer * wl;
@@ -176,12 +174,11 @@ struct wld_buffer * context_create_buffer(struct wld_context * base,
     if (ftruncate(fd, size) < 0)
         goto error1;
 
-    data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    object.ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
-    if (data == MAP_FAILED)
+    if (object.ptr == MAP_FAILED)
         goto error1;
 
-    object.ptr = data;
     buffer = wld_import_buffer(wld_pixman_context, WLD_OBJECT_DATA, object,
                                width, height, format, pitch);
 
@@ -191,7 +188,8 @@ struct wld_buffer * context_create_buffer(struct wld_context * base,
     if (!(pool = wl_shm_create_pool(context->wl, fd, size)))
         goto error3;
 
-    wl = wl_shm_pool_create_buffer(pool, 0, width, height, pitch, shm_format);
+    wl = wl_shm_pool_create_buffer(pool, 0, width, height, pitch,
+                                   format_wld_to_shm(format));
     wl_shm_pool_destroy(pool);
 
     if (!wl)

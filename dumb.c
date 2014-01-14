@@ -105,19 +105,16 @@ struct wld_buffer * context_create_buffer(struct wld_context * base,
 {
     struct dumb_context * context = dumb_context(base);
     struct wld_buffer * buffer;
-    struct drm_mode_create_dumb create_dumb_arg = {
+    struct drm_mode_create_dumb create_dumb = {
         .height = height, .width = width,
         .bpp = format_bytes_per_pixel(format) * 8,
     };
-    int ret;
 
-    ret = drmIoctl(context->fd, DRM_IOCTL_MODE_CREATE_DUMB, &create_dumb_arg);
-
-    if (ret != 0)
+    if (drmIoctl(context->fd, DRM_IOCTL_MODE_CREATE_DUMB, &create_dumb) != 0)
         goto error0;
 
     buffer = new_buffer(context, width, height, format,
-                        create_dumb_arg.handle, create_dumb_arg.pitch);
+                        create_dumb.handle, create_dumb.pitch);
 
     if (!buffer)
         goto error1;
@@ -126,11 +123,11 @@ struct wld_buffer * context_create_buffer(struct wld_context * base,
 
   error1:
     {
-        struct drm_mode_destroy_dumb destroy_dumb_arg = {
-            .handle = create_dumb_arg.handle
+        struct drm_mode_destroy_dumb destroy_dumb = {
+            .handle = create_dumb.handle
         };
 
-        drmIoctl(context->fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_dumb_arg);
+        drmIoctl(context->fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_dumb);
     }
   error0:
     return NULL;

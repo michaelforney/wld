@@ -22,9 +22,9 @@
  */
 
 #include "wayland-drm.h"
-#include "protocol/wayland-drm-client-protocol.h"
 #include "wayland.h"
 #include "drm.h"
+#include "protocol/wayland-drm-client-protocol.h"
 #include "wayland-private.h"
 #include "wld-private.h"
 #include "drm-private.h"
@@ -84,48 +84,44 @@ EXPORT
 struct wld_context * wld_wayland_drm_create_context(struct wl_display * display,
                                                     struct wl_event_queue * queue)
 {
-    struct drm_context * drm;
+    struct drm_context * context;
 
-    drm = malloc(sizeof *drm);
-
-    if (!drm)
+    if (!(context = malloc(sizeof *context)))
         goto error0;
 
-    context_initialize(&drm->base, &context_impl);
-    drm->wl = NULL;
-    drm->fd = -1;
-    drm->capabilities = 0;
-    wl_array_init(&drm->formats);
+    context_initialize(&context->base, &context_impl);
+    context->wl = NULL;
+    context->fd = -1;
+    context->capabilities = 0;
+    wl_array_init(&context->formats);
 
-    drm->registry = wl_display_get_registry(display);
-
-    if (!drm->registry)
+    if (!(context->registry = wl_display_get_registry(display)))
         goto error1;
 
-    wl_registry_add_listener(drm->registry, &registry_listener, drm);
-    wl_proxy_set_queue((struct wl_proxy *) drm->registry, queue);
+    wl_registry_add_listener(context->registry, &registry_listener, context);
+    wl_proxy_set_queue((struct wl_proxy *) context->registry, queue);
 
     /* Wait for wl_drm global. */
     wayland_roundtrip(display, queue);
 
-    if (!drm->wl)
+    if (!context->wl)
     {
         DEBUG("No wl_drm global\n");
         goto error2;
     }
 
-    wl_drm_add_listener(drm->wl, &drm_listener, drm);
+    wl_drm_add_listener(context->wl, &drm_listener, context);
 
     /* Wait for DRM capabilities and device. */
     wayland_roundtrip(display, queue);
 
-    if (!(drm->capabilities & WL_DRM_CAPABILITY_PRIME))
+    if (!(context->capabilities & WL_DRM_CAPABILITY_PRIME))
     {
         DEBUG("No PRIME support\n");
         goto error3;
     }
 
-    if (drm->fd == -1)
+    if (context->fd == -1)
     {
         DEBUG("No DRM device\n");
         goto error3;
@@ -134,29 +130,29 @@ struct wld_context * wld_wayland_drm_create_context(struct wl_display * display,
     /* Wait for DRM authentication. */
     wayland_roundtrip(display, queue);
 
-    if (!drm->authenticated)
+    if (!context->authenticated)
     {
         DEBUG("DRM authentication failed\n");
         goto error4;
     }
 
-    if (!(drm->driver_context = wld_drm_create_context(drm->fd)))
+    if (!(context->driver_context = wld_drm_create_context(context->fd)))
     {
         DEBUG("Couldn't initialize context for DRM device\n");
         goto error4;
     }
 
-    return &drm->base;
+    return &context->base;
 
   error4:
-    close(drm->fd);
+    close(context->fd);
   error3:
-    wl_drm_destroy(drm->wl);
+    wl_drm_destroy(context->wl);
   error2:
-    wl_registry_destroy(drm->registry);
+    wl_registry_destroy(context->registry);
   error1:
-    wl_array_release(&drm->formats);
-    free(drm);
+    wl_array_release(&context->formats);
+    free(context);
   error0:
     return NULL;
 }
