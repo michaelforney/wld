@@ -30,6 +30,12 @@ void context_initialize(struct wld_context * context,
 }
 
 EXPORT
+struct wld_renderer * wld_create_renderer(struct wld_context * context)
+{
+    return context->impl->create_renderer(context);
+}
+
+EXPORT
 struct wld_drawable * wld_create_drawable(struct wld_context * context,
                                           uint32_t width, uint32_t height,
                                           uint32_t format)

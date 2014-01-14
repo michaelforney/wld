@@ -32,33 +32,43 @@
     .blue   = ((c >>  0) & 0xff) * 0x101,   \
 }
 
-struct pixman_context
+struct pixman_renderer
 {
-    struct wld_context base;
+    struct wld_renderer base;
+    pixman_image_t * target;
     pixman_glyph_cache_t * glyph_cache;
 };
 
 #include "interface/context.h"
-#define DRAWABLE_IMPLEMENTS_REGION
+#define RENDERER_IMPLEMENTS_REGION
+#include "interface/renderer.h"
 #include "interface/drawable.h"
+IMPL(pixman, renderer)
+IMPL(pixman, drawable)
 
+static struct wld_context context = { .impl = &context_impl };
 const struct wld_drawable_impl * const pixman_drawable_impl = &drawable_impl;
 
 EXPORT
-struct wld_context * wld_pixman_create_context()
-{
-    struct pixman_context * context;
+struct wld_context * wld_pixman_context = &context;
 
-    if (!(context = malloc(sizeof *context)))
+struct wld_renderer * context_create_renderer(struct wld_context * context)
+{
+    struct pixman_renderer * renderer;
+
+    if (!(renderer = malloc(sizeof *renderer)))
         goto error0;
 
-    if (!(context->glyph_cache = pixman_glyph_cache_create()))
+    if (!(renderer->glyph_cache = pixman_glyph_cache_create()))
         goto error1;
 
-    return &context->base;
+    renderer_initialize(&renderer->base, &renderer_impl);
+    renderer->target = NULL;
+
+    return &renderer->base;
 
   error1:
-    free(context);
+    free(renderer);
   error0:
     return NULL;
 }
@@ -78,8 +88,7 @@ bool pixman_initialize_drawable
     return drawable->image != NULL;
 }
 
-struct wld_drawable * new_drawable(struct pixman_context * context,
-                                   pixman_image_t * image)
+struct wld_drawable * new_drawable(pixman_image_t * image)
 {
     struct pixman_drawable * drawable;
 
@@ -91,17 +100,15 @@ struct wld_drawable * new_drawable(struct pixman_context * context,
                         pixman_image_get_height(image),
                         format_pixman_to_wld(pixman_image_get_format(image)),
                         pixman_image_get_stride(image));
-    drawable->context = context;
     drawable->image = image;
 
     return &drawable->base;
 }
 
-struct wld_drawable * context_create_drawable(struct wld_context * base,
+struct wld_drawable * context_create_drawable(struct wld_context * context,
                                               uint32_t width, uint32_t height,
                                               uint32_t format)
 {
-    struct pixman_context * context = (void *) base;
     struct wld_drawable * drawable;
     pixman_image_t * image;
 
@@ -111,7 +118,7 @@ struct wld_drawable * context_create_drawable(struct wld_context * base,
     if (!image)
         goto error0;
 
-    if (!(drawable = new_drawable(context, image)))
+    if (!(drawable = new_drawable(image)))
         goto error1;
 
     return drawable;
@@ -122,11 +129,11 @@ struct wld_drawable * context_create_drawable(struct wld_context * base,
     return NULL;
 }
 
-struct wld_drawable * context_import
-    (struct wld_context * base, uint32_t type, union wld_object object,
-     uint32_t width, uint32_t height, uint32_t format, uint32_t pitch)
+struct wld_drawable * context_import(struct wld_context * context,
+                                     uint32_t type, union wld_object object,
+                                     uint32_t width, uint32_t height,
+                                     uint32_t format, uint32_t pitch)
 {
-    struct pixman_context * context = (void *) base;
     struct wld_drawable * drawable;
     pixman_image_t * image;
 
@@ -142,7 +149,7 @@ struct wld_drawable * context_import
     if (!image)
         goto error0;
 
-    if (!(drawable = new_drawable(context, image)))
+    if (!(drawable = new_drawable(image)))
         goto error1;
 
     return drawable;
@@ -154,68 +161,94 @@ struct wld_drawable * context_import
 
 }
 
-void context_destroy(struct wld_context * base)
+void context_destroy(struct wld_context * context)
 {
-    struct pixman_context * context = (void *) base;
-
-    pixman_glyph_cache_destroy(context->glyph_cache);
-    free(context);
 }
 
-void drawable_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
+uint32_t renderer_capabilities(struct wld_renderer * renderer,
+                               struct wld_drawable * drawable)
+{
+    if (drawable->impl == &drawable_impl)
+        return WLD_CAPABILITY_READ | WLD_CAPABILITY_WRITE;
+
+    return 0;
+}
+
+bool renderer_set_target(struct wld_renderer * base,
+                         struct wld_drawable * drawable)
+{
+    struct pixman_renderer * renderer = pixman_renderer(base);
+
+    if (drawable && drawable->impl != &drawable_impl)
+        return false;
+
+    renderer->target = drawable ? pixman_drawable(drawable)->image : NULL;
+
+    return true;
+}
+
+void renderer_fill_rectangle(struct wld_renderer * base, uint32_t color,
                              int32_t x, int32_t y,
                              uint32_t width, uint32_t height)
 {
-    struct pixman_drawable * pixman = (void *) drawable;
+    struct pixman_renderer * renderer = pixman_renderer(base);
     pixman_color_t pixman_color = PIXMAN_COLOR(color);
     pixman_box32_t box = { x, y, x + width, y + height };
 
-    pixman_image_fill_boxes(PIXMAN_OP_SRC, pixman->image, &pixman_color,
-                            1, &box);
+    pixman_image_fill_boxes(PIXMAN_OP_SRC, renderer->target,
+                            &pixman_color, 1, &box);
 }
 
-void drawable_fill_region(struct wld_drawable * drawable, uint32_t color,
+void renderer_fill_region(struct wld_renderer * base, uint32_t color,
                           pixman_region32_t * region)
 {
-    struct pixman_drawable * pixman = (void *) drawable;
+    struct pixman_renderer * renderer = pixman_renderer(base);
     pixman_color_t pixman_color = PIXMAN_COLOR(color);
     pixman_box32_t * boxes;
     int num_boxes;
 
     boxes = pixman_region32_rectangles(region, &num_boxes);
-    pixman_image_fill_boxes(PIXMAN_OP_SRC, pixman->image, &pixman_color,
-                            num_boxes, boxes);
+    pixman_image_fill_boxes(PIXMAN_OP_SRC, renderer->target,
+                            &pixman_color, num_boxes, boxes);
 }
 
-void drawable_copy_rectangle(struct wld_drawable * src_drawable,
-                             struct wld_drawable * dst_drawable,
-                             int32_t src_x, int32_t src_y,
+void renderer_copy_rectangle(struct wld_renderer * base,
+                             struct wld_drawable * drawable,
                              int32_t dst_x, int32_t dst_y,
+                             int32_t src_x, int32_t src_y,
                              uint32_t width, uint32_t height)
 {
-    struct pixman_drawable * src = (void *) src_drawable;
-    struct pixman_drawable * dst = (void *) dst_drawable;
+    struct pixman_renderer * renderer = pixman_renderer(base);
+    pixman_image_t * dst = renderer->target, * src;
 
-    pixman_image_composite32(PIXMAN_OP_SRC, src->image, NULL, dst->image,
+    if (drawable->impl != &drawable_impl)
+        return;
+
+    src = pixman_drawable(drawable)->image;
+    pixman_image_composite32(PIXMAN_OP_SRC, src, NULL, dst,
                              src_x, src_y, 0, 0, dst_x, dst_y, width, height);
 }
 
-void drawable_copy_region(struct wld_drawable * src_drawable,
-                          struct wld_drawable * dst_drawable,
-                          pixman_region32_t * region,
-                          int32_t dst_x, int32_t dst_y)
+void renderer_copy_region(struct wld_renderer * base,
+                          struct wld_drawable * drawable,
+                          int32_t dst_x, int32_t dst_y,
+                          pixman_region32_t * region)
 {
-    struct pixman_drawable * src = (void *) src_drawable;
-    struct pixman_drawable * dst = (void *) dst_drawable;
+    struct pixman_renderer * renderer = pixman_renderer(base);
+    pixman_image_t * dst = renderer->target, * src;
 
-    pixman_image_set_clip_region32(src->image, region);
-    pixman_image_composite32(PIXMAN_OP_SRC, src->image, NULL, dst->image,
+    if (drawable->impl != &drawable_impl)
+        return;
+
+    src = pixman_drawable(drawable)->image;
+    pixman_image_set_clip_region32(src, region);
+    pixman_image_composite32(PIXMAN_OP_SRC, src, NULL, dst,
                              region->extents.x1, region->extents.y1, 0, 0,
                              region->extents.x1 + dst_x,
                              region->extents.y1 + dst_y,
                              region->extents.x2 - region->extents.x1,
                              region->extents.y2 - region->extents.y1);
-    pixman_image_set_clip_region32(src->image, NULL);
+    pixman_image_set_clip_region32(src, NULL);
 }
 
 static inline uint8_t reverse(uint8_t byte)
@@ -227,12 +260,12 @@ static inline uint8_t reverse(uint8_t byte)
     return byte;
 }
 
-void drawable_draw_text(struct wld_drawable * drawable,
+void renderer_draw_text(struct wld_renderer * base,
                         struct font * font, uint32_t color,
                         int32_t x, int32_t y, const char * text, int32_t length,
                         struct wld_extents * extents)
 {
-    struct pixman_drawable * pixman = (void *) drawable;
+    struct pixman_renderer * renderer = pixman_renderer(base);
     int ret;
     uint32_t c;
     struct glyph * glyph;
@@ -257,8 +290,8 @@ void drawable_draw_text(struct wld_drawable * drawable,
 
         glyphs[index].x = origin_x;
         glyphs[index].y = 0;
-        glyphs[index].glyph = pixman_glyph_cache_lookup
-            (pixman->context->glyph_cache, font, glyph);
+        glyphs[index].glyph = pixman_glyph_cache_lookup(renderer->glyph_cache,
+                                                        font, glyph);
 
         /* If we don't have the glyph in our cache, do some conversions to make
          * pixman happy, and then insert it. */
@@ -293,11 +326,11 @@ void drawable_draw_text(struct wld_drawable * drawable,
             }
 
             /* Insert the glyph into the cache. */
-            pixman_glyph_cache_freeze(pixman->context->glyph_cache);
+            pixman_glyph_cache_freeze(renderer->glyph_cache);
             glyphs[index].glyph = pixman_glyph_cache_insert
-                (pixman->context->glyph_cache, font, glyph,
+                (renderer->glyph_cache, font, glyph,
                  -glyph->x, -glyph->y, image);
-            pixman_glyph_cache_thaw(pixman->context->glyph_cache);
+            pixman_glyph_cache_thaw(renderer->glyph_cache);
 
             /* The glyph cache copies the contents of the glyph bitmap. */
             pixman_image_unref(image);
@@ -309,14 +342,26 @@ void drawable_draw_text(struct wld_drawable * drawable,
         origin_x += glyph->advance;
     }
 
-    pixman_composite_glyphs_no_mask(PIXMAN_OP_OVER, solid, pixman->image, 0, 0,
-                                    x, y, pixman->context->glyph_cache,
+    pixman_composite_glyphs_no_mask(PIXMAN_OP_OVER, solid, renderer->target,
+                                    0, 0, x, y, renderer->glyph_cache,
                                     index, glyphs);
 
     pixman_image_unref(solid);
 
     if (extents)
         extents->advance = origin_x;
+}
+
+void renderer_flush(struct wld_renderer * renderer)
+{
+}
+
+void renderer_destroy(struct wld_renderer * base)
+{
+    struct pixman_renderer * renderer = pixman_renderer(base);
+
+    pixman_glyph_cache_destroy(renderer->glyph_cache);
+    free(renderer);
 }
 
 void drawable_write(struct wld_drawable * drawable,
@@ -332,10 +377,6 @@ pixman_image_t * drawable_map(struct wld_drawable * drawable)
     struct pixman_drawable * pixman = (void *) drawable;
 
     return pixman_image_ref(pixman->image);
-}
-
-void drawable_flush(struct wld_drawable * drawable)
-{
 }
 
 void drawable_destroy(struct wld_drawable * drawable)

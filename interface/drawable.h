@@ -21,47 +21,14 @@
  * SOFTWARE.
  */
 
-static void drawable_fill_rectangle(struct wld_drawable * drawable,
-                                    uint32_t color, int32_t x, int32_t y,
-                                    uint32_t width, uint32_t height);
-static void drawable_copy_rectangle(struct wld_drawable * src,
-                                    struct wld_drawable * dst,
-                                    int32_t src_x, int32_t src_y,
-                                    int32_t dst_x, int32_t dst_y,
-                                    uint32_t width, uint32_t height);
-#ifdef DRAWABLE_IMPLEMENTS_REGION
-static void drawable_fill_region(struct wld_drawable * drawable, uint32_t color,
-                                 pixman_region32_t * region);
-static void drawable_copy_region(struct wld_drawable * src,
-                                 struct wld_drawable * drawable,
-                                 pixman_region32_t * region,
-                                 int32_t dst_x, int32_t dst_y);
-#endif
-static void drawable_draw_text(struct wld_drawable * drawable,
-                               struct font * font, uint32_t color,
-                               int32_t x, int32_t y,
-                               const char * text, int32_t length,
-                               struct wld_extents * extents);
 static void drawable_write(struct wld_drawable * drawable,
                            const void * data, size_t size);
 static pixman_image_t * drawable_map(struct wld_drawable * drawable);
-static void drawable_flush(struct wld_drawable * drawable);
 static void drawable_destroy(struct wld_drawable * drawable);
 
 static const struct wld_drawable_impl drawable_impl = {
-    .fill_rectangle = &drawable_fill_rectangle,
-    .copy_rectangle = &drawable_copy_rectangle,
-#ifdef DRAWABLE_IMPLEMENTS_REGION
-    .fill_region = &drawable_fill_region,
-    .copy_region = &drawable_copy_region,
-#else
-    .fill_region = &default_fill_region,
-    .copy_region = &default_copy_region,
-#endif
-    .draw_text = &drawable_draw_text,
     .write = &drawable_write,
     .map = &drawable_map,
-    .flush = &drawable_flush,
     .destroy = &drawable_destroy
 };
 

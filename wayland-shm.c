@@ -43,8 +43,6 @@ struct shm_context
     struct wl_registry * registry;
     struct wl_shm * wl;
     struct wl_array formats;
-
-    struct wld_context * pixman_context;
 };
 
 #include "interface/context.h"
@@ -106,8 +104,6 @@ struct wld_context * wld_shm_create_context(struct wl_display * display,
     wl_registry_add_listener(context->registry, &registry_listener, context);
     wl_proxy_set_queue((struct wl_proxy *) context->registry, queue);
 
-    context->pixman_context = wld_pixman_create_context();
-
     /* Wait for wl_shm global. */
     wayland_roundtrip(display, queue);
 
@@ -148,6 +144,11 @@ bool wld_shm_has_format(struct wld_context * base, uint32_t format)
     return false;
 }
 
+struct wld_renderer * context_create_renderer(struct wld_context * context)
+{
+    return wld_create_renderer(wld_pixman_context);
+}
+
 struct wld_drawable * context_create_drawable(struct wld_context * base,
                                               uint32_t width, uint32_t height,
                                               uint32_t format)
@@ -181,7 +182,7 @@ struct wld_drawable * context_create_drawable(struct wld_context * base,
         goto error1;
 
     object.ptr = data;
-    drawable = wld_import(context->pixman_context, WLD_OBJECT_DATA, object,
+    drawable = wld_import(wld_pixman_context, WLD_OBJECT_DATA, object,
                           width, height, format, pitch);
 
     if (!drawable)
@@ -228,7 +229,6 @@ void context_destroy(struct wld_context * base)
 {
     struct shm_context * context = shm_context(base);
 
-    wld_destroy_context(context->pixman_context);
     wl_shm_destroy(context->wl);
     wl_registry_destroy(context->registry);
     wl_array_release(&context->formats);

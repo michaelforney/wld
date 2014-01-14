@@ -25,41 +25,6 @@
 
 #include <assert.h>
 
-void default_fill_region(struct wld_drawable * drawable, uint32_t color,
-                         pixman_region32_t * region)
-{
-    pixman_box32_t * box;
-    int num_boxes;
-
-    box = pixman_region32_rectangles(region, &num_boxes);
-
-    while (num_boxes--)
-    {
-        drawable->impl->fill_rectangle(drawable, color, box->x1, box->y1,
-                                       box->x2 - box->x1,
-                                       box->y2 - box->y1);
-        ++box;
-    }
-}
-
-void default_copy_region(struct wld_drawable * src, struct wld_drawable * dst,
-                         pixman_region32_t * region,
-                         int32_t dst_x, int32_t dst_y)
-{
-    pixman_box32_t * box;
-    int num_boxes;
-
-    box = pixman_region32_rectangles(region, &num_boxes);
-
-    while (num_boxes--)
-    {
-        dst->impl->copy_rectangle(src, dst, box->x1, box->y1,
-                                  dst_x + box->x1, dst_y + box->y1,
-                                  box->x2 - box->x1, box->y2 - box->y1);
-        ++box;
-    }
-}
-
 void drawable_initialize(struct wld_drawable * drawable,
                          const struct wld_drawable_impl * impl,
                          uint32_t width, uint32_t height,
@@ -85,58 +50,6 @@ void exporter_initialize(struct wld_exporter * exporter,
 {
     *((const struct wld_exporter_impl **) &exporter->impl) = impl;
     exporter->next = NULL;
-}
-
-EXPORT
-void wld_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
-                        int32_t x, int32_t y, uint32_t width, uint32_t height)
-{
-    drawable->impl->fill_rectangle(drawable, color, x, y, width, height);
-}
-
-EXPORT
-void wld_fill_region(struct wld_drawable * drawable, uint32_t color,
-                     pixman_region32_t * region)
-{
-    drawable->impl->fill_region(drawable, color, region);
-}
-
-EXPORT
-void wld_copy_rectangle(struct wld_drawable * src, struct wld_drawable * dst,
-                        int32_t src_x, int32_t src_y,
-                        int32_t dst_x, int32_t dst_y,
-                        uint32_t width, uint32_t height)
-{
-    assert(src->impl == dst->impl);
-    dst->impl->copy_rectangle(src, dst, src_x, src_y, dst_x, dst_y,
-                              width, height);
-}
-
-EXPORT
-void wld_copy_region(struct wld_drawable * src, struct wld_drawable * dst,
-                     pixman_region32_t * region, int32_t dst_x, int32_t dst_y)
-{
-    assert(src->impl == dst->impl);
-    dst->impl->copy_region(src, dst, region, dst_x, dst_y);
-}
-
-EXPORT
-void wld_draw_text_n(struct wld_drawable * drawable,
-                          struct wld_font * font_base, uint32_t color,
-                          int32_t x, int32_t y,
-                          const char * text, int32_t length,
-                          struct wld_extents * extents)
-{
-    struct font * font = (void *) font_base;
-
-    drawable->impl->draw_text(drawable, font, color, x, y,
-                              text, length, extents);
-}
-
-EXPORT
-void wld_destroy_drawable(struct wld_drawable * drawable)
-{
-    drawable->impl->destroy(drawable);
 }
 
 EXPORT
@@ -167,8 +80,8 @@ bool wld_export(struct wld_drawable * drawable,
 }
 
 EXPORT
-void wld_flush(struct wld_drawable * drawable)
+void wld_destroy_drawable(struct wld_drawable * drawable)
 {
-    drawable->impl->flush(drawable);
+    drawable->impl->destroy(drawable);
 }
 

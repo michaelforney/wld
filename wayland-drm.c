@@ -184,6 +184,13 @@ int wld_wayland_drm_get_fd(struct wld_context * base)
     return context->authenticated ? context->fd : -1;
 }
 
+struct wld_renderer * context_create_renderer(struct wld_context * base)
+{
+    struct drm_context * context = drm_context(base);
+
+    return wld_create_renderer(context->driver_context);
+}
+
 struct wld_drawable * context_create_drawable(struct wld_context * base,
                                               uint32_t width, uint32_t height,
                                               uint32_t format)

@@ -21,6 +21,8 @@
  * SOFTWARE.
  */
 
+static struct wld_renderer * context_create_renderer
+    (struct wld_context * context);
 static struct wld_drawable * context_create_drawable
     (struct wld_context * context,
      uint32_t width, uint32_t height, uint32_t format);
@@ -30,6 +32,7 @@ static struct wld_drawable * context_import
 static void context_destroy(struct wld_context * context);
 
 static const struct wld_context_impl context_impl = {
+    .create_renderer = &context_create_renderer,
     .create_drawable = &context_create_drawable,
     .import = &context_import,
     .destroy = &context_destroy

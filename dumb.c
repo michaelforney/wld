@@ -27,6 +27,7 @@
 #include "drm.h"
 
 #include <fcntl.h>
+#include <unistd.h>
 #include <sys/mman.h>
 #include <xf86drm.h>
 
@@ -35,7 +36,6 @@
 struct dumb_context
 {
     struct wld_context base;
-    struct wld_context * pixman;
     int fd;
 };
 
@@ -65,20 +65,17 @@ struct wld_context * driver_create_context(int drm_fd)
     struct dumb_context * context;
 
     if (!(context = malloc(sizeof *context)))
-        goto error0;
-
-    if (!(context->pixman = wld_pixman_create_context()))
-        goto error1;
+        return NULL;
 
     context_initialize(&context->base, &context_impl);
     context->fd = drm_fd;
 
     return &context->base;
+}
 
-  error1:
-    free(context);
-  error0:
-    return NULL;
+struct wld_renderer * context_create_renderer(struct wld_context * context)
+{
+    return wld_create_renderer(wld_pixman_context);
 }
 
 static struct wld_drawable * new_drawable(struct dumb_context * context,
@@ -106,7 +103,7 @@ static struct wld_drawable * new_drawable(struct dumb_context * context,
     if (data == MAP_FAILED)
         goto error1;
 
-    if (!pixman_initialize_drawable(context->pixman, &drawable->pixman,
+    if (!pixman_initialize_drawable(wld_pixman_context, &drawable->pixman,
                                     width, height, data, pitch, format))
     {
         goto error2;
@@ -198,7 +195,7 @@ void context_destroy(struct wld_context * base)
 {
     struct dumb_context * context = dumb_context(base);
 
-    wld_destroy_context(context->pixman);
+    close(context->fd);
     free(context);
 }
 

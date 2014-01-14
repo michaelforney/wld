@@ -26,13 +26,12 @@
 
 #include <stdint.h>
 
-struct wld_context;
+extern struct wld_context * wld_pixman_context;
 
-/**
- * Create a new drawing context which uses Pixman to do software rendering on
- * buffers in memory.
- */
-struct wld_context * wld_pixman_create_context();
+static inline struct wld_context * wld_pixman_create_context()
+{
+    return wld_pixman_context;
+}
 
 #endif
 

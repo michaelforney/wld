@@ -66,6 +66,8 @@ struct wld_context
     const struct wld_context_impl * const impl;
 };
 
+struct wld_renderer * wld_create_renderer(struct wld_context * context);
+
 struct wld_drawable * wld_create_drawable(struct wld_context * context,
                                           uint32_t width, uint32_t height,
                                           uint32_t format);
@@ -158,24 +160,52 @@ struct wld_drawable
 bool wld_export(struct wld_drawable * drawable,
                 uint32_t type, union wld_object * object);
 
+void wld_write(struct wld_drawable * drawable, const void * data, size_t size);
+
+pixman_image_t * wld_map(struct wld_drawable * drawable);
+
 /**
  * Destroy a drawable (created with any context).
  */
 void wld_destroy_drawable(struct wld_drawable * drawable);
 
-void wld_fill_rectangle(struct wld_drawable * drawable, uint32_t color,
+/**** Renderers ****/
+
+struct wld_renderer
+{
+    const struct wld_renderer_impl * const impl;
+    struct wld_drawable * target;
+};
+
+enum wld_capability
+{
+    WLD_CAPABILITY_READ     = 1<<0,
+    WLD_CAPABILITY_WRITE    = 1<<1,
+};
+
+void wld_destroy_renderer(struct wld_renderer * renderer);
+
+uint32_t wld_capabilities(struct wld_renderer * renderer,
+                          struct wld_drawable * drawable);
+
+bool wld_set_target_buffer(struct wld_renderer * renderer,
+                           struct wld_drawable * drawable);
+
+void wld_fill_rectangle(struct wld_renderer * renderer, uint32_t color,
                         int32_t x, int32_t y, uint32_t width, uint32_t height);
 
-void wld_fill_region(struct wld_drawable * drawable, uint32_t color,
+void wld_fill_region(struct wld_renderer * renderer, uint32_t color,
                      pixman_region32_t * region);
 
-void wld_copy_rectangle(struct wld_drawable * src, struct wld_drawable * dst,
-                        int32_t src_x, int32_t src_y,
+void wld_copy_rectangle(struct wld_renderer * renderer,
+                        struct wld_drawable * drawable,
                         int32_t dst_x, int32_t dst_y,
+                        int32_t src_x, int32_t src_y,
                         uint32_t width, uint32_t height);
 
-void wld_copy_region(struct wld_drawable * src, struct wld_drawable * dst,
-                     pixman_region32_t * region, int32_t dst_x, int32_t dst_y);
+void wld_copy_region(struct wld_renderer * renderer,
+                     struct wld_drawable * drawable,
+                     int32_t dst_x, int32_t dst_y, pixman_region32_t * region);
 
 /**
  * Draw a UTF-8 text string to the given drawable.
@@ -184,24 +214,20 @@ void wld_copy_region(struct wld_drawable * src, struct wld_drawable * dst,
  * @param extents   If not NULL, will be initialized to the extents of the
  *                  drawn text
  */
-void wld_draw_text_n(struct wld_drawable * drawable,
+void wld_draw_text_n(struct wld_renderer * renderer,
                      struct wld_font * font, uint32_t color,
                      int32_t x, int32_t y, const char * text, int32_t length,
                      struct wld_extents * extents);
 
-static inline void wld_draw_text(struct wld_drawable * drawable,
+static inline void wld_draw_text(struct wld_renderer * renderer,
                                  struct wld_font * font, uint32_t color,
                                  int32_t x, int32_t y, const char * text,
                                  struct wld_extents * extents)
 {
-    wld_draw_text_n(drawable, font, color, x, y, text, INT32_MAX, extents);
+    wld_draw_text_n(renderer, font, color, x, y, text, INT32_MAX, extents);
 }
 
-void wld_write(struct wld_drawable * drawable, const void * data, size_t size);
-
-pixman_image_t * wld_map(struct wld_drawable * drawable);
-
-void wld_flush(struct wld_drawable * drawable);
+void wld_flush(struct wld_renderer * renderer);
 
 #endif
 

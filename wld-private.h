@@ -85,6 +85,7 @@ struct font
 
 struct wld_context_impl
 {
+    struct wld_renderer * (* create_renderer)(struct wld_context * context);
     struct wld_drawable * (* create_drawable)(struct wld_context * context,
                                               uint32_t width, uint32_t height,
                                               uint32_t format);
@@ -95,29 +96,39 @@ struct wld_context_impl
     void (* destroy)(struct wld_context * context);
 };
 
-struct wld_drawable_impl
+struct wld_renderer_impl
 {
-    void (* fill_rectangle)(struct wld_drawable * drawable, uint32_t color,
-                            int32_t x, int32_t y,
+    uint32_t (* capabilities)(struct wld_renderer * renderer,
+                              struct wld_drawable * buffer);
+    bool (* set_target)(struct wld_renderer * renderer,
+                        struct wld_drawable * drawable);
+    void (* fill_rectangle)(struct wld_renderer * renderer,
+                            uint32_t color, int32_t x, int32_t y,
                             uint32_t width, uint32_t height);
-    void (* fill_region)(struct wld_drawable * drawable, uint32_t color,
-                         pixman_region32_t * region);
-    void (* copy_rectangle)(struct wld_drawable * src,
-                            struct wld_drawable * dst,
-                            int32_t src_x, int32_t src_y,
+    void (* fill_region)(struct wld_renderer * renderer,
+                         uint32_t color, pixman_region32_t * region);
+    void (* copy_rectangle)(struct wld_renderer * renderer,
+                            struct wld_drawable * src,
                             int32_t dst_x, int32_t dst_y,
+                            int32_t src_x, int32_t src_y,
                             uint32_t width, uint32_t height);
-    void (* copy_region)(struct wld_drawable * src, struct wld_drawable * dst,
-                         pixman_region32_t * region,
-                         int32_t dst_x, int32_t dst_y);
-    void (* draw_text)(struct wld_drawable * drawable,
+    void (* copy_region)(struct wld_renderer * renderer,
+                         struct wld_drawable * src,
+                         int32_t dst_x, int32_t dst_y,
+                         pixman_region32_t * region);
+    void (* draw_text)(struct wld_renderer * renderer,
                        struct font * font, uint32_t color,
                        int32_t x, int32_t y, const char * text, int32_t length,
                        struct wld_extents * extents);
+    void (* flush)(struct wld_renderer * renderer);
+    void (* destroy)(struct wld_renderer * renderer);
+};
+
+struct wld_drawable_impl
+{
     void (* write)(struct wld_drawable * drawable,
                    const void * data, size_t size);
     pixman_image_t * (* map)(struct wld_drawable * drawable);
-    void (* flush)(struct wld_drawable * drawable);
     void (* destroy)(struct wld_drawable * drawable);
 };
 
@@ -181,18 +192,22 @@ static inline uint32_t format_pixman_to_wld(pixman_format_code_t format)
 /**
  * This default fill_region method is implemented in terms of fill_rectangle.
  */
-void default_fill_region(struct wld_drawable * drawable, uint32_t color,
+void default_fill_region(struct wld_renderer * renderer, uint32_t color,
                          pixman_region32_t * region);
 
 /**
  * This default copy_region method is implemented in terms of copy_rectangle.
  */
-void default_copy_region(struct wld_drawable * src, struct wld_drawable * dst,
-                         pixman_region32_t * region,
-                         int32_t dst_x, int32_t dst_y);
+void default_copy_region(struct wld_renderer * renderer,
+                         struct wld_drawable * drawable,
+                         int32_t dst_x, int32_t dst_y,
+                         pixman_region32_t * region);
 
 void context_initialize(struct wld_context * context,
                         const struct wld_context_impl * impl);
+
+void renderer_initialize(struct wld_renderer * renderer,
+                         const struct wld_renderer_impl * impl);
 
 void drawable_initialize(struct wld_drawable * drawable,
                          const struct wld_drawable_impl * impl,
