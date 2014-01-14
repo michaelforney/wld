@@ -150,8 +150,7 @@ struct wld_buffer
 {
     const struct wld_buffer_impl * const impl;
 
-    uint32_t width, height;
-    unsigned long pitch;
+    uint32_t width, height, pitch;
     enum wld_format format;
 
     struct
