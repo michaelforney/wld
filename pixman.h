@@ -26,6 +26,11 @@
 
 #include <stdint.h>
 
+enum wld_pixman_object_type
+{
+    WLD_PIXMAN_OBJECT_IMAGE = 0x00030000
+};
+
 extern struct wld_context * wld_pixman_context;
 
 static inline struct wld_context * wld_pixman_create_context()

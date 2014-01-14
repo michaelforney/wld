@@ -39,12 +39,20 @@ struct pixman_renderer
     pixman_glyph_cache_t * glyph_cache;
 };
 
+struct pixman_exporter
+{
+    struct wld_exporter base;
+    pixman_image_t * image;
+};
+
 #include "interface/context.h"
 #define RENDERER_IMPLEMENTS_REGION
 #include "interface/renderer.h"
 #include "interface/drawable.h"
+#include "interface/exporter.h"
 IMPL(pixman, renderer)
 IMPL(pixman, drawable)
+IMPL(pixman, exporter)
 
 static struct wld_context context = { .impl = &context_impl };
 const struct wld_drawable_impl * const pixman_drawable_impl = &drawable_impl;
@@ -169,10 +177,55 @@ void context_destroy(struct wld_context * context)
 uint32_t renderer_capabilities(struct wld_renderer * renderer,
                                struct wld_drawable * drawable)
 {
-    if (drawable->impl == &drawable_impl)
-        return WLD_CAPABILITY_READ | WLD_CAPABILITY_WRITE;
+    /* The pixman renderer can read and write to any drawable using it's map
+     * implementation. */
+    return WLD_CAPABILITY_READ | WLD_CAPABILITY_WRITE;
+}
 
-    return 0;
+static void destroy_image(pixman_image_t * image, void * data)
+{
+    struct wld_drawable * drawable = data;
+
+    wld_unmap(drawable);
+}
+
+static pixman_image_t * pixman_image(struct wld_drawable * drawable)
+{
+    if (drawable->impl == &drawable_impl)
+        return pixman_image_ref(pixman_drawable(drawable)->image);
+
+    union wld_object object;
+
+    if (wld_export(drawable, WLD_PIXMAN_OBJECT_IMAGE, &object))
+        return object.ptr;
+
+    struct pixman_exporter * exporter;
+    pixman_image_t * image;
+
+    if (!wld_map(drawable))
+        goto error0;
+
+    image = pixman_image_create_bits(format_wld_to_pixman(drawable->format),
+                                     drawable->width, drawable->height,
+                                     drawable->map.data, drawable->pitch);
+    pixman_image_set_destroy_function(image, &destroy_image, drawable);
+
+    if (!image)
+        goto error1;
+
+    if (!(exporter = malloc(sizeof *exporter)))
+        return NULL;
+
+    exporter_initialize(&exporter->base, &exporter_impl);
+    exporter->image = image;
+    drawable_add_exporter(drawable, &exporter->base);
+
+    return pixman_image_ref(image);
+
+  error1:
+    wld_unmap(drawable);
+  error0:
+    return NULL;
 }
 
 bool renderer_set_target(struct wld_renderer * base,
@@ -180,11 +233,13 @@ bool renderer_set_target(struct wld_renderer * base,
 {
     struct pixman_renderer * renderer = pixman_renderer(base);
 
-    if (drawable && drawable->impl != &drawable_impl)
-        return false;
+    if (renderer->target)
+        pixman_image_unref(renderer->target);
 
-    renderer->target = drawable ? pixman_drawable(drawable)->image : NULL;
+    if (drawable)
+        return (renderer->target = pixman_image(drawable));
 
+    renderer->target = NULL;
     return true;
 }
 
@@ -220,12 +275,10 @@ void renderer_copy_rectangle(struct wld_renderer * base,
                              uint32_t width, uint32_t height)
 {
     struct pixman_renderer * renderer = pixman_renderer(base);
-    pixman_image_t * dst = renderer->target, * src;
+    pixman_image_t * src = pixman_image(drawable), * dst = renderer->target;
 
-    if (drawable->impl != &drawable_impl)
-        return;
+    if (!src) return;
 
-    src = pixman_drawable(drawable)->image;
     pixman_image_composite32(PIXMAN_OP_SRC, src, NULL, dst,
                              src_x, src_y, 0, 0, dst_x, dst_y, width, height);
 }
@@ -236,12 +289,10 @@ void renderer_copy_region(struct wld_renderer * base,
                           pixman_region32_t * region)
 {
     struct pixman_renderer * renderer = pixman_renderer(base);
-    pixman_image_t * dst = renderer->target, * src;
+    pixman_image_t * src = pixman_image(drawable), * dst = renderer->target;
 
-    if (drawable->impl != &drawable_impl)
-        return;
+    if (!src) return;
 
-    src = pixman_drawable(drawable)->image;
     pixman_image_set_clip_region32(src, region);
     pixman_image_composite32(PIXMAN_OP_SRC, src, NULL, dst,
                              region->extents.x1, region->extents.y1, 0, 0,
@@ -381,5 +432,29 @@ void drawable_destroy(struct wld_drawable * drawable)
 
     pixman_image_unref(pixman->image);
     free(pixman);
+}
+
+/**** Exporter ****/
+bool exporter_export(struct wld_exporter * base, struct wld_drawable * drawable,
+                     uint32_t type, union wld_object * object)
+{
+    struct pixman_exporter * exporter = pixman_exporter(base);
+
+    switch (type)
+    {
+        case WLD_PIXMAN_OBJECT_IMAGE:
+            object->ptr = pixman_image_ref(exporter->image);
+            return true;
+        default:
+            return false;
+    }
+}
+
+void exporter_destroy(struct wld_exporter * base)
+{
+    struct pixman_exporter * exporter = pixman_exporter(base);
+
+    pixman_image_unref(exporter->image);
+    free(exporter);
 }
 
