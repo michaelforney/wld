@@ -198,20 +198,22 @@ static pixman_image_t * pixman_image(struct wld_buffer * buffer)
     image = pixman_image_create_bits(format_wld_to_pixman(buffer->format),
                                      buffer->width, buffer->height,
                                      buffer->map.data, buffer->pitch);
-    pixman_image_set_destroy_function(image, &destroy_image, buffer);
 
     if (!image)
         goto error1;
 
     if (!(exporter = malloc(sizeof *exporter)))
-        return NULL;
+        goto error2;
 
     exporter_initialize(&exporter->base, &exporter_impl);
     exporter->image = image;
     buffer_add_exporter(buffer, &exporter->base);
+    pixman_image_set_destroy_function(image, &destroy_image, buffer);
 
     return pixman_image_ref(image);
 
+  error2:
+    pixman_image_unref(image);
   error1:
     wld_unmap(buffer);
   error0:
