@@ -40,7 +40,7 @@ IMPL(wayland, exporter)
 static void sync_done(void * data, struct wl_callback * callback,
                       uint32_t msecs);
 
-const struct wl_callback_listener sync_listener = {
+static const struct wl_callback_listener sync_listener = {
     .done = &sync_done
 };
 
