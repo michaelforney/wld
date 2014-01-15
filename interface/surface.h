@@ -1,4 +1,4 @@
-/* wld: interface/context.h
+/* wld: interface/surface.h
  *
  * Copyright (c) 2013, 2014 Michael Forney
  *
@@ -21,30 +21,21 @@
  * SOFTWARE.
  */
 
-static struct wld_renderer * context_create_renderer
-    (struct wld_context * context);
-static struct wld_buffer * context_create_buffer
-    (struct wld_context * context,
-     uint32_t width, uint32_t height, uint32_t format);
-static struct wld_buffer * context_import_buffer
-    (struct wld_context * context, uint32_t type, union wld_object object,
-     uint32_t width, uint32_t height, uint32_t format, uint32_t pitch);
-#ifdef CONTEXT_IMPLEMENTS_CREATE_SURFACE
-static struct wld_surface * context_create_surface
-    (struct wld_context * context,
-     uint32_t width, uint32_t height, uint32_t format);
-#endif
-static void context_destroy(struct wld_context * context);
+static pixman_region32_t * surface_damage(struct wld_surface * surface,
+                                          pixman_region32_t * new_damage);
+static struct wld_buffer * surface_back(struct wld_surface * surface);
+static struct wld_buffer * surface_take(struct wld_surface * surface);
+static bool surface_release(struct wld_surface * surface,
+                            struct wld_buffer * buffer);
+static bool surface_swap(struct wld_surface * surface);
+static void surface_destroy(struct wld_surface * surface);
 
-static const struct wld_context_impl context_impl = {
-    .create_renderer = &context_create_renderer,
-    .create_buffer = &context_create_buffer,
-    .import_buffer = &context_import_buffer,
-#ifdef CONTEXT_IMPLEMENTS_CREATE_SURFACE
-    .create_surface = &context_create_surface,
-#else
-    .create_surface = &default_create_surface,
-#endif
-    .destroy = &context_destroy
+static const struct wld_surface_impl surface_impl = {
+    .damage = &surface_damage,
+    .back = &surface_back,
+    .take = &surface_take,
+    .release = &surface_release,
+    .swap = &surface_swap,
+    .destroy = &surface_destroy
 };
 

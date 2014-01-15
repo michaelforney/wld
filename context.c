@@ -54,6 +54,14 @@ struct wld_buffer * wld_import_buffer(struct wld_context * context,
 }
 
 EXPORT
+struct wld_surface * wld_create_surface(struct wld_context * context,
+                                        uint32_t width, uint32_t height,
+                                        uint32_t format)
+{
+    return context->impl->create_surface(context, width, height, format);
+}
+
+EXPORT
 void wld_destroy_context(struct wld_context * context)
 {
     context->impl->destroy(context);

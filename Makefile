@@ -23,7 +23,8 @@ WLD_SOURCES =           \
     color.c             \
     context.c           \
     font.c              \
-    renderer.c
+    renderer.c          \
+    surface.c
 WLD_HEADERS = wld.h
 
 ifeq ($(ENABLE_DRM),1)

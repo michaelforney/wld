@@ -77,6 +77,10 @@ struct wld_buffer * wld_import_buffer(struct wld_context * context,
                                       uint32_t width, uint32_t height,
                                       uint32_t format, uint32_t pitch);
 
+struct wld_surface * wld_create_surface(struct wld_context * context,
+                                        uint32_t width, uint32_t height,
+                                        uint32_t format);
+
 void wld_destroy_context(struct wld_context * context);
 
 /**** Font Handling ****/
@@ -177,6 +181,25 @@ bool wld_export(struct wld_buffer * buffer,
  */
 void wld_destroy_buffer(struct wld_buffer * buffer);
 
+/**** Surfaces ****/
+
+struct wld_surface
+{
+    const struct wld_surface_impl * const impl;
+};
+
+pixman_region32_t * wld_surface_damage(struct wld_surface * surface,
+                                       pixman_region32_t * new_damage);
+
+struct wld_buffer * wld_surface_take(struct wld_surface * surface);
+
+void wld_surface_release(struct wld_surface * surface,
+                         struct wld_buffer * buffer);
+
+bool wld_swap(struct wld_surface * surface);
+
+void wld_destroy_surface(struct wld_surface * surface);
+
 /**** Renderers ****/
 
 struct wld_renderer
@@ -198,6 +221,9 @@ uint32_t wld_capabilities(struct wld_renderer * renderer,
 
 bool wld_set_target_buffer(struct wld_renderer * renderer,
                            struct wld_buffer * buffer);
+
+bool wld_set_target_surface(struct wld_renderer * renderer,
+                            struct wld_surface * surface);
 
 void wld_fill_rectangle(struct wld_renderer * renderer, uint32_t color,
                         int32_t x, int32_t y, uint32_t width, uint32_t height);

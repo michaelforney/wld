@@ -92,6 +92,18 @@ bool wld_set_target_buffer(struct wld_renderer * renderer,
 }
 
 EXPORT
+bool wld_set_target_surface(struct wld_renderer * renderer,
+                            struct wld_surface * surface)
+{
+    struct wld_buffer * back_buffer;
+
+    if (!(back_buffer = surface->impl->back(surface)))
+        return false;
+
+    return wld_set_target_buffer(renderer, back_buffer);
+}
+
+EXPORT
 void wld_fill_rectangle(struct wld_renderer * renderer, uint32_t color,
                         int32_t x, int32_t y, uint32_t width, uint32_t height)
 {

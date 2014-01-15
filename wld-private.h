@@ -94,6 +94,9 @@ struct wld_context_impl
                                           union wld_object object,
                                           uint32_t width, uint32_t height,
                                           uint32_t format, uint32_t pitch);
+    struct wld_surface * (* create_surface)(struct wld_context * context,
+                                            uint32_t width, uint32_t height,
+                                            uint32_t format);
     void (* destroy)(struct wld_context * context);
 };
 
@@ -130,6 +133,17 @@ struct wld_buffer_impl
     bool (* map)(struct wld_buffer * buffer);
     bool (* unmap)(struct wld_buffer * buffer);
     void (* destroy)(struct wld_buffer * buffer);
+};
+
+struct wld_surface_impl
+{
+    pixman_region32_t * (* damage)(struct wld_surface * surface,
+                                   pixman_region32_t * damage);
+    struct wld_buffer * (* back)(struct wld_surface * surface);
+    struct wld_buffer * (* take)(struct wld_surface * surface);
+    bool (* release)(struct wld_surface * surface, struct wld_buffer * buffer);
+    bool (* swap)(struct wld_surface * surface);
+    void (* destroy)(struct wld_surface * surface);
 };
 
 struct wld_exporter
@@ -202,6 +216,10 @@ void default_copy_region(struct wld_renderer * renderer,
                          int32_t dst_x, int32_t dst_y,
                          pixman_region32_t * region);
 
+struct wld_surface * default_create_surface(struct wld_context * context,
+                                            uint32_t width, uint32_t height,
+                                            uint32_t format);
+
 void context_initialize(struct wld_context * context,
                         const struct wld_context_impl * impl);
 
@@ -218,6 +236,9 @@ void buffer_add_exporter(struct wld_buffer * buffer,
 
 void exporter_initialize(struct wld_exporter * exporter,
                          const struct wld_exporter_impl * impl);
+
+void surface_initialize(struct wld_surface * surface,
+                        const struct wld_surface_impl * impl);
 
 #endif
 
