@@ -44,8 +44,16 @@ struct shm_context
     struct wl_array formats;
 };
 
+struct shm_buffer
+{
+    struct wld_buffer base;
+    int fd;
+};
+
 #include "interface/context.h"
+#include "interface/buffer.h"
 IMPL(shm, context)
+IMPL(shm, buffer)
 
 static void registry_global(void * data, struct wl_registry * registry,
                             uint32_t name, const char * interface,
@@ -154,63 +162,54 @@ struct wld_buffer * context_create_buffer(struct wld_context * base,
                                           uint32_t format)
 {
     struct shm_context * context = shm_context(base);
-    struct wld_buffer * buffer;
+    struct shm_buffer * buffer;
     struct wld_exporter * exporter;
     char name[] = "/tmp/wld-XXXXXX";
     uint32_t pitch = width * format_bytes_per_pixel(format);
     size_t size = pitch * height;
     int fd;
-    union wld_object object;
     struct wl_shm_pool * pool;
     struct wl_buffer * wl;
+
+    if (!(buffer = malloc(sizeof *buffer)))
+        goto error0;
 
     fd = mkostemp(name, O_CLOEXEC);
 
     if (fd < 0)
-        goto error0;
+        goto error1;
 
     unlink(name);
 
     if (posix_fallocate(fd, 0, size) != 0)
-        goto error1;
-
-    object.ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-
-    if (object.ptr == MAP_FAILED)
-        goto error1;
-
-    buffer = wld_import_buffer(wld_pixman_context, WLD_OBJECT_DATA, object,
-                               width, height, format, pitch);
-
-    if (!buffer)
         goto error2;
 
     if (!(pool = wl_shm_create_pool(context->wl, fd, size)))
-        goto error3;
+        goto error2;
 
     wl = wl_shm_pool_create_buffer(pool, 0, width, height, pitch,
                                    format_wld_to_shm(format));
     wl_shm_pool_destroy(pool);
 
     if (!wl)
-        goto error3;
+        goto error2;
 
     if (!(exporter = wayland_create_exporter(wl)))
-        goto error4;
+        goto error3;
 
-    buffer_add_exporter(buffer, exporter);
-    close(fd);
+    buffer_initialize(&buffer->base, &buffer_impl,
+                      width, height, format, pitch);
+    buffer->fd = fd;
+    buffer_add_exporter(&buffer->base, exporter);
 
-    return buffer;
+    return &buffer->base;
 
-  error4:
-    wl_buffer_destroy(wl);
   error3:
-    wld_destroy_buffer(buffer);
+    wl_buffer_destroy(wl);
   error2:
-    munmap(object.ptr, size);
-  error1:
     close(fd);
+  error1:
+    free(buffer);
   error0:
     return NULL;
 }
@@ -233,6 +232,42 @@ void context_destroy(struct wld_context * base)
     wl_array_release(&context->formats);
     wl_event_queue_destroy(context->base.queue);
     free(context);
+}
+
+/**** Buffer ****/
+
+bool buffer_map(struct wld_buffer * base)
+{
+    struct shm_buffer * buffer = shm_buffer(base);
+    void * data;
+
+    data = mmap(NULL, base->pitch * base->height, PROT_READ | PROT_WRITE,
+                MAP_SHARED, buffer->fd, 0);
+
+    if (data == MAP_FAILED)
+        return false;
+
+    buffer->base.map.data = data;
+
+    return true;
+}
+
+bool buffer_unmap(struct wld_buffer * buffer)
+{
+    if (munmap(buffer->map.data, buffer->pitch * buffer->height) == -1)
+        return false;
+
+    buffer->map.data = NULL;
+
+    return true;
+}
+
+void buffer_destroy(struct wld_buffer * base)
+{
+    struct shm_buffer * buffer = shm_buffer(base);
+
+    close(buffer->fd);
+    free(buffer);
 }
 
 void registry_global(void * data, struct wl_registry * registry, uint32_t name,
