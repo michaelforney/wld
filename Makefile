@@ -26,10 +26,6 @@ WLD_SOURCES =           \
     renderer.c
 WLD_HEADERS = wld.h
 
-ifeq ($(ENABLE_DEBUG),1)
-    WLD_CPPFLAGS += -DENABLE_DEBUG=1
-endif
-
 ifeq ($(ENABLE_DRM),1)
     WLD_REQUIRES_PRIVATE += libdrm
     WLD_SOURCES += drm.c dumb.c
