@@ -33,10 +33,6 @@
 #include FT_FREETYPE_H
 #include FT_BITMAP_H
 
-#ifndef offsetof
-#   define offsetof __builtin_offsetof
-#endif
-
 #define ARRAY_LENGTH(array) (sizeof (array) / sizeof (array)[0])
 #if ENABLE_DEBUG
 #   define DEBUG(format, ...) \
@@ -46,6 +42,8 @@
 #endif
 
 #define EXPORT __attribute__((visibility("default")))
+#define CONTAINER_OF(ptr, type, member) \
+    ((type *)((uintptr_t) ptr - offsetof(type, member)))
 #define IMPL(name, type)                                                    \
     static inline struct name ## _ ## type * name ## _ ## type              \
         (struct wld_ ## type * type)                                        \

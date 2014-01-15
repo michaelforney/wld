@@ -90,6 +90,7 @@ struct wld_context * wld_wayland_drm_create_context(struct wl_display * display,
         goto error0;
 
     context_initialize(&context->base.base, &context_impl);
+    context->base.display = display;
     context->base.queue = queue;
     context->wl = NULL;
     context->fd = -1;

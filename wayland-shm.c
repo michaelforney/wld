@@ -99,6 +99,7 @@ struct wld_context * wld_wayland_shm_create_context
         goto error0;
 
     context_initialize(&context->base.base, &context_impl);
+    context->base.display = display;
     context->base.queue = queue;
     context->wl = NULL;
     wl_array_init(&context->formats);

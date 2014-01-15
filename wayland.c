@@ -34,8 +34,31 @@ struct wayland_exporter
     struct wl_buffer * buffer;
 };
 
+struct wayland_buffer_socket
+{
+    struct wld_buffer_socket base;
+    struct wl_buffer_listener listener;
+    struct wld_surface * surface;
+    struct wl_surface * wl;
+    struct wl_display * display;
+    struct wl_event_queue * queue;
+};
+
 #include "interface/exporter.h"
 IMPL(wayland, exporter)
+
+static bool buffer_socket_attach(struct wld_buffer_socket * socket,
+                                 struct wld_buffer * buffer);
+static void buffer_socket_process(struct wld_buffer_socket * socket);
+static void buffer_socket_destroy(struct wld_buffer_socket * socket);
+
+static const struct wld_buffer_socket_impl buffer_socket_impl = {
+    .attach = &buffer_socket_attach,
+    .process = &buffer_socket_process,
+    .destroy = &buffer_socket_destroy
+};
+
+IMPL(wayland, buffer_socket)
 
 static void sync_done(void * data, struct wl_callback * callback,
                       uint32_t msecs);
@@ -43,6 +66,8 @@ static void sync_done(void * data, struct wl_callback * callback,
 static const struct wl_callback_listener sync_listener = {
     .done = &sync_done
 };
+
+static void buffer_release(void * data, struct wl_buffer * buffer);
 
 const static struct wld_wayland_interface * interfaces[] = {
 #if WITH_WAYLAND_DRM
@@ -130,6 +155,36 @@ struct wld_context * wld_wayland_create_context
     return context;
 }
 
+EXPORT
+struct wld_surface * wld_wayland_create_surface(struct wld_context * context,
+                                                uint32_t width, uint32_t height,
+                                                uint32_t format,
+                                                struct wl_surface * wl)
+{
+    struct wayland_buffer_socket * socket;
+
+    if (!(socket = malloc(sizeof *socket)))
+        goto error0;
+
+    socket->base.impl = &buffer_socket_impl;
+    socket->listener.release = &buffer_release;
+    socket->wl = wl;
+    socket->queue = ((struct wayland_context *) context)->queue;
+    socket->display = ((struct wayland_context *) context)->display;
+    socket->surface = buffered_surface_create(context, width, height, format,
+                                              &socket->base);
+
+    if (!socket->surface)
+        goto error1;
+
+    return socket->surface;
+
+  error1:
+    free(socket);
+  error0:
+    return NULL;
+}
+
 int wayland_roundtrip(struct wl_display * display,
                       struct wl_event_queue * queue)
 {
@@ -185,11 +240,58 @@ void exporter_destroy(struct wld_exporter * base)
     free(exporter);
 }
 
+bool buffer_socket_attach(struct wld_buffer_socket * base,
+                          struct wld_buffer * buffer)
+{
+    struct wayland_buffer_socket * socket = wayland_buffer_socket(base);
+    struct wl_buffer * wl;
+    union wld_object object;
+
+    if (!wld_export(buffer, WLD_WAYLAND_OBJECT_BUFFER, &object))
+        return false;
+
+    wl = object.ptr;
+
+    if (!wl_proxy_get_listener((struct wl_proxy *) wl))
+        wl_buffer_add_listener(wl, &socket->listener, buffer);
+
+    wl_surface_attach(socket->wl, wl, 0, 0);
+    wl_surface_commit(socket->wl);
+
+    return true;
+}
+
+void buffer_socket_process(struct wld_buffer_socket * base)
+{
+    struct wayland_buffer_socket * socket = wayland_buffer_socket(base);
+
+    /* Since events for our wl_buffers lie in a special queue used by WLD, we
+     * must dispatch these events here so that we see any release events before
+     * the next back buffer is chosen. */
+    wl_display_dispatch_queue_pending(socket->display, socket->queue);
+}
+
+void buffer_socket_destroy(struct wld_buffer_socket * socket)
+{
+    free(socket);
+}
+
 void sync_done(void * data, struct wl_callback * callback, uint32_t msecs)
 {
     bool * done = data;
 
     *done = true;
     wl_callback_destroy(callback);
+}
+
+void buffer_release(void * data, struct wl_buffer * wl)
+{
+    struct wld_buffer * buffer = data;
+    const struct wl_buffer_listener * listener
+        = wl_proxy_get_listener((struct wl_proxy *) wl);
+    struct wayland_buffer_socket * socket
+        = CONTAINER_OF(listener, struct wayland_buffer_socket, listener);
+
+    wld_surface_release(socket->surface, buffer);
 }
 

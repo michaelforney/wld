@@ -27,6 +27,7 @@
 #include <stdint.h>
 
 struct wl_display;
+struct wl_surface;
 
 enum wld_wayland_interface_id
 {
@@ -63,6 +64,11 @@ enum wld_wayland_object_type
  */
 struct wld_context * wld_wayland_create_context
     (struct wl_display * display, enum wld_wayland_interface_id id, ...);
+
+struct wld_surface * wld_wayland_create_surface(struct wld_context * context,
+                                                uint32_t width, uint32_t height,
+                                                uint32_t format,
+                                                struct wl_surface * surface);
 
 #endif
 

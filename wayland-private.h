@@ -39,6 +39,7 @@ struct wld_wayland_interface
 struct wayland_context
 {
     struct wld_context base;
+    struct wl_display * display;
     struct wl_event_queue * queue;
 };
 
