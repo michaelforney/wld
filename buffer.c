@@ -37,6 +37,7 @@ void buffer_initialize(struct wld_buffer * buffer,
     buffer->map.count = 0;
     buffer->destroy_data = NULL;
     buffer->exporters = NULL;
+    pixman_region32_init_rect(&buffer->damage, 0, 0, width, height);
 }
 
 void buffer_add_exporter(struct wld_buffer * buffer,
@@ -101,6 +102,8 @@ void wld_destroy_buffer(struct wld_buffer * buffer)
 
     if (buffer->destroy_data)
         buffer->destroy_data(buffer->data);
+
+    pixman_region32_fini(&buffer->damage);
 
     for (exporter = buffer->exporters, next = exporter ? exporter->next : NULL;
          exporter; exporter = next, next = exporter ? exporter->next : NULL)
