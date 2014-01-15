@@ -34,6 +34,12 @@ ifeq ($(ENABLE_DRM),1)
     WLD_REQUIRES_PRIVATE += libdrm
     WLD_SOURCES += drm.c dumb.c
     WLD_HEADERS += drm.h
+
+    ifneq ($(findstring intel,$(DRM_DRIVERS)),)
+        WLD_REQUIRES_PRIVATE += libdrm_intel intelbatch
+        WLD_SOURCES += intel.c
+        WLD_CPPFLAGS += -DWITH_DRM_INTEL=1
+    endif
 endif
 
 ifeq ($(ENABLE_PIXMAN),1)
@@ -57,12 +63,6 @@ ifeq ($(ENABLE_WAYLAND),1)
         WLD_HEADERS += wayland-drm.h
         WLD_CPPFLAGS += -DWITH_WAYLAND_DRM=1
     endif
-endif
-
-ifneq ($(findstring intel,$(DRM_DRIVERS)),)
-    WLD_REQUIRES_PRIVATE += libdrm_intel intelbatch
-    WLD_SOURCES += intel.c
-    WLD_CPPFLAGS += -DWITH_DRM_INTEL=1
 endif
 
 ifeq ($(if $(V),$(V),0), 0)
