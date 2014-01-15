@@ -95,8 +95,6 @@ struct wld_context * wld_wayland_create_context
         }
     }
 
-    wl_event_queue_destroy(queue);
-
     if (!context)
     {
         DEBUG("Could not initialize any of the specified interfaces\n");

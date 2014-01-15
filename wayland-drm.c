@@ -39,7 +39,7 @@
 
 struct drm_context
 {
-    struct wld_context base;
+    struct wayland_context base;
     struct wld_context * driver_context;
     struct wl_drm * wl;
     struct wl_registry * registry;
@@ -89,7 +89,8 @@ struct wld_context * wld_wayland_drm_create_context(struct wl_display * display,
     if (!(context = malloc(sizeof *context)))
         goto error0;
 
-    context_initialize(&context->base, &context_impl);
+    context_initialize(&context->base.base, &context_impl);
+    context->base.queue = queue;
     context->wl = NULL;
     context->fd = -1;
     context->capabilities = 0;
@@ -142,7 +143,7 @@ struct wld_context * wld_wayland_drm_create_context(struct wl_display * display,
         goto error4;
     }
 
-    return &context->base;
+    return &context->base.base;
 
   error4:
     close(context->fd);
@@ -197,7 +198,7 @@ struct wld_buffer * context_create_buffer(struct wld_context * base,
     union wld_object object;
     struct wl_buffer * wl;
 
-    if (!wld_wayland_drm_has_format(&context->base, format))
+    if (!wld_wayland_drm_has_format(base, format))
         goto error0;
 
     buffer = wld_create_buffer(context->driver_context, width, height, format);
@@ -248,6 +249,7 @@ void context_destroy(struct wld_context * base)
     wl_drm_destroy(context->wl);
     wl_registry_destroy(context->registry);
     wl_array_release(&context->formats);
+    wl_event_queue_destroy(context->base.queue);
     free(context);
 }
 

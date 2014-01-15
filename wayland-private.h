@@ -24,7 +24,7 @@
 #ifndef WLD_WAYLAND_PRIVATE_H
 #define WLD_WAYLAND_PRIVATE_H
 
-#include <stdint.h>
+#include "wld.h"
 
 struct wl_display;
 struct wl_event_queue;
@@ -34,6 +34,12 @@ struct wld_wayland_interface
 {
     struct wld_context * (* create_context)(struct wl_display * display,
                                             struct wl_event_queue * queue);
+};
+
+struct wayland_context
+{
+    struct wld_context base;
+    struct wl_event_queue * queue;
 };
 
 #if WITH_WAYLAND_DRM

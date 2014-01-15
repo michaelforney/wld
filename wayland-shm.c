@@ -38,8 +38,7 @@
 
 struct shm_context
 {
-    struct wld_context base;
-
+    struct wayland_context base;
     struct wl_registry * registry;
     struct wl_shm * wl;
     struct wl_array formats;
@@ -91,7 +90,8 @@ struct wld_context * wld_wayland_shm_create_context
     if (!(context = malloc(sizeof *context)))
         goto error0;
 
-    context_initialize(&context->base, &context_impl);
+    context_initialize(&context->base.base, &context_impl);
+    context->base.queue = queue;
     context->wl = NULL;
     wl_array_init(&context->formats);
 
@@ -118,7 +118,7 @@ struct wld_context * wld_wayland_shm_create_context
     /* Wait for SHM formats. */
     wayland_roundtrip(display, queue);
 
-    return &context->base;
+    return &context->base.base;
 
   error2:
     wl_registry_destroy(context->registry);
@@ -231,6 +231,7 @@ void context_destroy(struct wld_context * base)
     wl_shm_destroy(context->wl);
     wl_registry_destroy(context->registry);
     wl_array_release(&context->formats);
+    wl_event_queue_destroy(context->base.queue);
     free(context);
 }
 
