@@ -58,7 +58,7 @@ EXPORT
 struct wld_context * wld_wayland_create_context
     (struct wl_display * display, enum wld_wayland_interface_id id, ...)
 {
-    struct wld_context * context;
+    struct wld_context * context = NULL;
     struct wl_event_queue * queue;
     va_list requested_interfaces;
     bool interfaces_tried[ARRAY_LENGTH(interfaces)] = {0};
