@@ -27,7 +27,7 @@ struct wld_surface * default_create_surface(struct wld_context * context,
                                             uint32_t width, uint32_t height,
                                             uint32_t format)
 {
-    return NULL;
+    return buffered_surface_create(context, width, height, format, NULL);
 }
 
 void surface_initialize(struct wld_surface * surface,

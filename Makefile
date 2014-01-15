@@ -20,6 +20,7 @@ WLD_REQUIRES = fontconfig pixman-1
 WLD_REQUIRES_PRIVATE = freetype2
 WLD_SOURCES =           \
     buffer.c            \
+    buffered_surface.c  \
     color.c             \
     context.c           \
     font.c              \
