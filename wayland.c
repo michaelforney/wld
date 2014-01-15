@@ -54,6 +54,18 @@ const static struct wld_wayland_interface * interfaces[] = {
 #endif
 };
 
+enum wld_wayland_interface_id interface_id(const char * string)
+{
+    if (strcmp(string, "drm") == 0)
+        return WLD_DRM;
+    if (strcmp(string, "shm") == 0)
+        return WLD_SHM;
+
+    fprintf(stderr, "Unknown Wayland interface specified: '%s'\n", string);
+
+    return WLD_NONE;
+}
+
 EXPORT
 struct wld_context * wld_wayland_create_context
     (struct wl_display * display, enum wld_wayland_interface_id id, ...)
@@ -62,9 +74,23 @@ struct wld_context * wld_wayland_create_context
     struct wl_event_queue * queue;
     va_list requested_interfaces;
     bool interfaces_tried[ARRAY_LENGTH(interfaces)] = {0};
+    const char * interface_string;
 
     if (!(queue = wl_display_create_queue(display)))
         return NULL;
+
+    if ((interface_string = getenv("WLD_WAYLAND_INTERFACE")))
+    {
+        id = interface_id(interface_string);
+
+        if ((context = interfaces[id]->create_context(display, queue)))
+            return context;
+
+        fprintf(stderr, "Could not create context for Wayland interface '%s'\n",
+                interface_string);
+
+        return NULL;
+    }
 
     va_start(requested_interfaces, id);
 
