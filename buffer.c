@@ -35,6 +35,7 @@ void buffer_initialize(struct wld_buffer * buffer,
     buffer->pitch = pitch;
     buffer->map.data = NULL;
     buffer->map.count = 0;
+    buffer->destroy_data = NULL;
     buffer->exporters = NULL;
 }
 
@@ -97,6 +98,9 @@ void wld_destroy_buffer(struct wld_buffer * buffer)
 
     if (buffer->map.count > 0)
         wld_unmap(buffer);
+
+    if (buffer->destroy_data)
+        buffer->destroy_data(buffer->data);
 
     for (exporter = buffer->exporters, next = exporter ? exporter->next : NULL;
          exporter; exporter = next, next = exporter ? exporter->next : NULL)

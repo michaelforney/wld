@@ -153,6 +153,9 @@ struct wld_buffer
     uint32_t width, height, pitch;
     enum wld_format format;
 
+    void * data;
+    void (* destroy_data)(void * data);
+
     struct
     {
         void * data;
