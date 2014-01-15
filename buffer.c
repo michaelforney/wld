@@ -93,13 +93,16 @@ bool wld_export(struct wld_buffer * buffer,
 EXPORT
 void wld_destroy_buffer(struct wld_buffer * buffer)
 {
-    struct wld_exporter * exporter;
+    struct wld_exporter * exporter, * next;
 
     if (buffer->map.count > 0)
         wld_unmap(buffer);
 
-    for (exporter = buffer->exporters; exporter; exporter = exporter->next)
+    for (exporter = buffer->exporters, next = exporter ? exporter->next : NULL;
+         exporter; exporter = next, next = exporter ? exporter->next : NULL)
+    {
         exporter->impl->destroy(exporter);
+    }
 
     buffer->impl->destroy(buffer);
 }
