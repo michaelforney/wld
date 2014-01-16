@@ -256,6 +256,21 @@ bool buffer_socket_attach(struct wld_buffer_socket * base,
         wl_buffer_add_listener(wl, &socket->listener, buffer);
 
     wl_surface_attach(socket->wl, wl, 0, 0);
+
+    if (pixman_region32_not_empty(&buffer->damage))
+    {
+        pixman_box32_t * box;
+        int num_boxes;
+
+        box = pixman_region32_rectangles(&buffer->damage, &num_boxes);
+
+        while (num_boxes--)
+        {
+            wl_surface_damage(socket->wl, box->x1, box->y1,
+                              box->x2 - box->x1, box->y2 - box->y1);
+        }
+    }
+
     wl_surface_commit(socket->wl);
 
     return true;
