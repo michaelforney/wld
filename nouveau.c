@@ -124,6 +124,13 @@ static inline void nv_add_dwords_va(struct nouveau_pushbuf * push,
         nv_add_dword(push, va_arg(dwords, uint32_t));
 }
 
+static inline void nv_add_data(struct nouveau_pushbuf * push,
+                               void * data, uint32_t count)
+{
+    memcpy(push->cur, data, count * 4);
+    push->cur += count;
+}
+
 static uint32_t nvc0_format(uint32_t format)
 {
     switch (format)
@@ -488,7 +495,72 @@ void renderer_draw_text(struct wld_renderer * base,
                         int32_t x, int32_t y, const char * text, int32_t length,
                         struct wld_extents * extents)
 {
-    /* TODO: Implement */
+    struct nouveau_renderer * renderer = nouveau_renderer(base);
+    uint32_t format;
+    int ret;
+    struct glyph * glyph;
+    FT_UInt glyph_index;
+    uint32_t c, count;
+    int32_t origin_x = x;
+
+    if (!ensure_space(renderer->pushbuf, 17))
+        return;
+
+    format = nvc0_format(renderer->target->base.format);
+
+    nouveau_bufctx_reset(renderer->bufctx, 0);
+    nvc0_2d_use_buffer(renderer, renderer->target,
+                       NV50_2D_DST_FORMAT, format);
+    nvc0_2d_inline(renderer->pushbuf, NV50_2D_SIFC_BITMAP_ENABLE, 1);
+    nvc0_2d(renderer->pushbuf, NV50_2D_SIFC_BITMAP_FORMAT, 6,
+            NV50_2D_SIFC_BITMAP_FORMAT_I1,
+            0,          /* SIFC_FORMAT */
+            NV50_2D_SIFC_BITMAP_LINE_PACK_MODE_ALIGN_BYTE,
+            0, color,   /* SIFC_BITMAP_COLOR_BIT0, SIFC_BITMAP_COLOR_BIT1 */
+            0           /* SIFC_BITMAP_WRITE_BIT0_ENABLE */
+    );
+    nouveau_pushbuf_bufctx(renderer->pushbuf, renderer->bufctx);
+
+    if (nouveau_pushbuf_validate(renderer->pushbuf) != 0)
+        return;
+
+    while ((ret = FcUtf8ToUcs4((FcChar8 *) text, &c, length)) > 0 && c != '\0')
+    {
+        text += ret;
+        length -= ret;
+        glyph_index = FT_Get_Char_Index(font->face, c);
+
+        if (!font_ensure_glyph(font, glyph_index))
+            continue;
+
+        glyph = font->glyphs[glyph_index];
+
+        if (glyph->bitmap.width == 0 || glyph->bitmap.rows == 0)
+            goto advance;
+
+        count = (glyph->bitmap.pitch * glyph->bitmap.rows + 3) / 4;
+
+        if (!ensure_space(renderer->pushbuf, 12 + count))
+            return;
+
+        nvc0_2d(renderer->pushbuf, NV50_2D_SIFC_WIDTH, 10,
+                /* Use the pitch instead of width to ensure the correct
+                 * alignment is used. */
+                glyph->bitmap.pitch * 8, glyph->bitmap.rows,
+                0, 1, 0, 1,
+                0, origin_x + glyph->x, 0, y + glyph->y);
+        nv_add_dword(renderer->pushbuf,
+                     nvc0_command(NVC0_COMMAND_TYPE_NON_INCREASING,
+                                  NVC0_SUBCHANNEL_2D,
+                                  NV50_2D_SIFC_DATA, count));
+        nv_add_data(renderer->pushbuf, glyph->bitmap.buffer, count);
+
+      advance:
+        origin_x += glyph->advance;
+    }
+
+    if (extents)
+        extents->advance = origin_x - x;
 }
 
 void renderer_flush(struct wld_renderer * base)
