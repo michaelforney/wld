@@ -189,11 +189,13 @@ static bool nvc0_2d_initialize(struct nouveau_renderer * renderer)
     if (ret != 0)
         goto error0;
 
-    if (!ensure_space(renderer->pushbuf, 4))
+    if (!ensure_space(renderer->pushbuf, 5))
         goto error1;
 
     nvc0_2d(renderer->pushbuf, NV01_SUBCHAN_OBJECT, 1,
             renderer->nvc0_2d->handle);
+    nvc0_2d_inline(renderer->pushbuf, NV50_2D_OPERATION,
+                   NV50_2D_OPERATION_SRCCOPY_AND);
     nvc0_2d_inline(renderer->pushbuf, NV50_2D_UNK0884, 0x3f);
     nvc0_2d_inline(renderer->pushbuf, NV50_2D_UNK0888, 1);
 
@@ -433,7 +435,6 @@ void renderer_fill_rectangle(struct wld_renderer * base, uint32_t color,
     nouveau_bufctx_reset(renderer->bufctx, 0);
     nvc0_2d_use_buffer(renderer, renderer->target,
                        NV50_2D_DST_FORMAT, format);
-    nvc0_2d(renderer->pushbuf, NV50_2D_OPERATION, 1, NV50_2D_OPERATION_SRCCOPY);
     nvc0_2d(renderer->pushbuf, NV50_2D_DRAW_SHAPE, 3,
             NV50_2D_DRAW_SHAPE_RECTANGLES, format, color);
     nouveau_pushbuf_bufctx(renderer->pushbuf, renderer->bufctx);
@@ -469,7 +470,6 @@ void renderer_copy_rectangle(struct wld_renderer * base,
     nvc0_2d_use_buffer(renderer, buffer, NV50_2D_SRC_FORMAT, src_format);
     nvc0_2d_use_buffer(renderer, renderer->target,
                        NV50_2D_DST_FORMAT, dst_format);
-    nvc0_2d(renderer->pushbuf, NV50_2D_OPERATION, 1, NV50_2D_OPERATION_SRCCOPY);
     nouveau_pushbuf_bufctx(renderer->pushbuf, renderer->bufctx);
 
     if (nouveau_pushbuf_validate(renderer->pushbuf) != 0)
