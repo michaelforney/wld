@@ -7,7 +7,7 @@ ENABLE_DEBUG        = 1
 
 ENABLE_PIXMAN       = 1
 ENABLE_DRM          = 1
-ENABLE_WAYLAND      = 0
+ENABLE_WAYLAND      = 1
 
 DRM_DRIVERS         = intel nouveau
 WAYLAND_INTERFACES  = shm
