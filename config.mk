@@ -1,10 +1,5 @@
 # wld: config.mk
 
-PREFIX              = /usr/local
-LIBDIR              = $(PREFIX)/lib
-INCLUDEDIR          = $(PREFIX)/include
-PKGCONFIGDIR        = $(LIBDIR)/pkgconfig
-
 CC                  = gcc
 CFLAGS              = -pipe
 
