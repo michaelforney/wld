@@ -587,6 +587,8 @@ bool buffer_map(struct wld_buffer * base)
 {
     struct nouveau_buffer * buffer = nouveau_buffer(base);
 
+    /* If the buffer is tiled, it cannot be mapped into virtual memory in order
+     * to appear linear like intel can do with map_gtt. */
     if (buffer->bo->config.nvc0.tile_mode)
         return false;
 
