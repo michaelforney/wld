@@ -391,47 +391,31 @@ bool renderer_set_target(struct wld_renderer * base,
     return true;
 }
 
-static inline void nvc0_2d_dst(struct nouveau_renderer * renderer,
-                               struct nouveau_buffer * buffer, uint32_t format)
+static inline void nvc0_2d_use_buffer(struct nouveau_renderer * renderer,
+                                      struct nouveau_buffer * buffer,
+                                      uint16_t format_method, uint16_t format)
 {
+    uint32_t access = format == NV50_2D_SRC_FORMAT ? NOUVEAU_BO_RD
+                                                   : NOUVEAU_BO_WR;
+
+    nvc0_2d_inline(renderer->pushbuf, format_method, format);
 
     if (buffer->bo->config.nvc0.memtype)
     {
-        nvc0_2d(renderer->pushbuf, NV50_2D_DST_FORMAT, 5,
-                format, 0, buffer->bo->config.nvc0.tile_mode, 1, 0);
+        nvc0_2d(renderer->pushbuf, format_method + 0x04, 2,
+                0, buffer->bo->config.nvc0.tile_mode);
     }
     else
     {
-        nvc0_2d(renderer->pushbuf, NV50_2D_DST_FORMAT, 2, format, 1);
-        nvc0_2d(renderer->pushbuf, NV50_2D_DST_PITCH, 1, buffer->base.pitch);
+        nvc0_2d_inline(renderer->pushbuf, format_method + 0x04, 1);
+        nvc0_2d(renderer->pushbuf, format_method + 0x14, 1, buffer->base.pitch);
     }
 
-    nvc0_2d(renderer->pushbuf, NV50_2D_DST_WIDTH, 4,
+    nvc0_2d(renderer->pushbuf, format_method + 0x18, 4,
             buffer->base.width, buffer->base.height,
             buffer->bo->offset >> 32, buffer->bo->offset);
     nouveau_bufctx_refn(renderer->bufctx, 0, buffer->bo,
-                        NOUVEAU_BO_VRAM | NOUVEAU_BO_WR);
-}
-
-static inline void nvc0_2d_src(struct nouveau_renderer * renderer,
-                               struct nouveau_buffer * buffer, uint32_t format)
-{
-    if (buffer->bo->config.nvc0.memtype)
-    {
-        nvc0_2d(renderer->pushbuf, NV50_2D_SRC_FORMAT, 5,
-                format, 0, buffer->bo->config.nvc0.tile_mode, 1, 0);
-    }
-    else
-    {
-        nvc0_2d(renderer->pushbuf, NV50_2D_SRC_FORMAT, 2, format, 1);
-        nvc0_2d(renderer->pushbuf, NV50_2D_SRC_PITCH, 1, buffer->base.pitch);
-    }
-
-    nvc0_2d(renderer->pushbuf, NV50_2D_SRC_WIDTH, 4,
-            buffer->base.width, buffer->base.height,
-            buffer->bo->offset >> 32, buffer->bo->offset);
-    nouveau_bufctx_refn(renderer->bufctx, 0, buffer->bo,
-                        NOUVEAU_BO_VRAM | NOUVEAU_BO_RD);
+                        NOUVEAU_BO_VRAM | access);
 }
 
 void renderer_fill_rectangle(struct wld_renderer * base, uint32_t color,
@@ -447,7 +431,8 @@ void renderer_fill_rectangle(struct wld_renderer * base, uint32_t color,
     format = nvc0_format(renderer->target->base.format);
 
     nouveau_bufctx_reset(renderer->bufctx, 0);
-    nvc0_2d_dst(renderer, renderer->target, format);
+    nvc0_2d_use_buffer(renderer, renderer->target,
+                       NV50_2D_DST_FORMAT, format);
     nvc0_2d(renderer->pushbuf, NV50_2D_OPERATION, 1, NV50_2D_OPERATION_SRCCOPY);
     nvc0_2d(renderer->pushbuf, NV50_2D_DRAW_SHAPE, 3,
             NV50_2D_DRAW_SHAPE_RECTANGLES, format, color);
@@ -481,8 +466,9 @@ void renderer_copy_rectangle(struct wld_renderer * base,
     dst_format = nvc0_format(renderer->target->base.format);
 
     nouveau_bufctx_reset(renderer->bufctx, 0);
-    nvc0_2d_src(renderer, buffer, src_format);
-    nvc0_2d_dst(renderer, renderer->target, dst_format);
+    nvc0_2d_use_buffer(renderer, buffer, NV50_2D_SRC_FORMAT, src_format);
+    nvc0_2d_use_buffer(renderer, renderer->target,
+                       NV50_2D_DST_FORMAT, dst_format);
     nvc0_2d(renderer->pushbuf, NV50_2D_OPERATION, 1, NV50_2D_OPERATION_SRCCOPY);
     nouveau_pushbuf_bufctx(renderer->pushbuf, renderer->bufctx);
 
