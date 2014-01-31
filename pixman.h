@@ -26,9 +26,11 @@
 
 #include <stdint.h>
 
+#define WLD_PIXMAN_ID (0x01 << 24)
+
 enum wld_pixman_object_type
 {
-    WLD_PIXMAN_OBJECT_IMAGE = 0x00030000
+    WLD_PIXMAN_OBJECT_IMAGE = WLD_PIXMAN_ID
 };
 
 extern struct wld_context * wld_pixman_context;

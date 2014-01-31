@@ -56,7 +56,7 @@ bool wld_lookup_named_color(const char * name, uint32_t * color);
 
 enum wld_object_type
 {
-    WLD_OBJECT_DATA = 0x0
+    WLD_OBJECT_DATA
 };
 
 union wld_object

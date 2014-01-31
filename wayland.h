@@ -29,6 +29,8 @@
 struct wl_display;
 struct wl_surface;
 
+#define WLD_WAYLAND_ID (0x3 << 24)
+
 enum wld_wayland_interface_id
 {
     /**
@@ -47,7 +49,7 @@ enum wld_wayland_interface_id
 
 enum wld_wayland_object_type
 {
-    WLD_WAYLAND_OBJECT_BUFFER   = 0x00020000
+    WLD_WAYLAND_OBJECT_BUFFER = WLD_WAYLAND_ID
 };
 
 /**
