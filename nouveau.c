@@ -36,11 +36,19 @@
 #include <nouveau.h>
 #include <sys/mman.h>
 
+enum nv_architecture
+{
+    NV_ARCH_50 = 0x50,
+    NV_ARCH_C0 = 0xc0,
+    NV_ARCH_E0 = 0xe0
+};
+
 struct nouveau_context
 {
     struct wld_context base;
     struct nouveau_device * device;
     struct nouveau_client * client;
+    enum nv_architecture architecture;
 };
 
 struct nouveau_renderer
@@ -87,6 +95,31 @@ struct wld_context * driver_create_context(int drm_fd)
 
     if (nouveau_device_wrap(drm_fd, 0, &context->device) != 0)
         goto error1;
+
+    switch (context->device->chipset & ~0xf)
+    {
+        /* TODO: Support NV50
+        case 0x50:
+        case 0x80:
+        case 0x90:
+        case 0xa0:
+            context->architecture = NV_ARCH_50;
+            break;
+        */
+        case 0xc0:
+        case 0xd0:
+            context->architecture = NV_ARCH_C0;
+            break;
+        /* TODO: Support NVE0
+        case 0xe0:
+        case 0xf0:
+        case 0x100:
+            context->architecture = NV_ARCH_E0;
+            break;
+        */
+        default:
+            return NULL;
+    }
 
     if (nouveau_client_new(context->device, &context->client) != 0)
         goto error2;
