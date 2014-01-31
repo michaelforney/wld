@@ -483,7 +483,9 @@ void renderer_copy_rectangle(struct wld_renderer * base,
         return;
 
     nvc0_2d_inline(renderer->pushbuf, NV50_GRAPH_SERIALIZE, 0);
-    nvc0_2d_inline(renderer->pushbuf, NV50_2D_BLIT_CONTROL, 0);
+    nvc0_2d_inline(renderer->pushbuf, NV50_2D_BLIT_CONTROL,
+                   NV50_2D_BLIT_CONTROL_ORIGIN_CENTER
+                 | NV50_2D_BLIT_CONTROL_FILTER_POINT_SAMPLE);
     nvc0_2d(renderer->pushbuf, NV50_2D_BLIT_DST_X, 12,
             dst_x, dst_y, width, height, 0, 1, 0, 1, 0, src_x, 0, src_y);
 
