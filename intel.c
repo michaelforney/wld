@@ -40,7 +40,7 @@ struct intel_context
 struct intel_renderer
 {
     struct wld_renderer base;
-    struct intel_batch * batch;
+    struct intel_batch batch;
     struct intel_buffer * target;
 };
 
@@ -99,7 +99,7 @@ struct wld_renderer * context_create_renderer(struct wld_context * base)
     if (!(renderer = malloc(sizeof *renderer)))
         goto error0;
 
-    if (!(renderer->batch = intel_batch_new(context->bufmgr)))
+    if (!(intel_batch_initialize(&renderer->batch, context->bufmgr)))
         goto error1;
 
     renderer_initialize(&renderer->base, &renderer_impl);
@@ -234,7 +234,7 @@ void renderer_fill_rectangle(struct wld_renderer * base, uint32_t color,
 {
     struct intel_renderer * renderer = intel_renderer(base);
 
-    xy_color_blt(renderer->batch, renderer->target->bo,
+    xy_color_blt(&renderer->batch, renderer->target->bo,
                  renderer->target->base.pitch,
                  x, y, x + width, y + height, color);
 }
@@ -252,7 +252,7 @@ void renderer_copy_rectangle(struct wld_renderer * base,
 
     struct intel_buffer * buffer = intel_buffer(buffer_base);
 
-    xy_src_copy_blt(renderer->batch, buffer->bo, buffer->base.pitch,
+    xy_src_copy_blt(&renderer->batch, buffer->bo, buffer->base.pitch,
                     src_x, src_y,
                     renderer->target->bo, renderer->target->base.pitch,
                     dst_x, dst_y, width, height);
@@ -273,7 +273,7 @@ void renderer_draw_text(struct wld_renderer * base,
     uint8_t * byte;
     int32_t origin_x = x;
 
-    xy_setup_blt(renderer->batch, true, BLT_RASTER_OPERATION_SRC,
+    xy_setup_blt(&renderer->batch, true, BLT_RASTER_OPERATION_SRC,
                  0, color, renderer->target->bo, renderer->target->base.pitch);
 
     while ((ret = FcUtf8ToUcs4((FcChar8 *) text, &c, length)) > 0 && c != '\0')
@@ -301,7 +301,7 @@ void renderer_draw_text(struct wld_renderer * base,
         }
 
       retry:
-        ret = xy_text_immediate_blt(renderer->batch, renderer->target->bo,
+        ret = xy_text_immediate_blt(&renderer->batch, renderer->target->bo,
                                     origin_x + glyph->x, y + glyph->y,
                                     origin_x + glyph->x + glyph->bitmap.width,
                                     y + glyph->y + glyph->bitmap.rows,
@@ -310,8 +310,8 @@ void renderer_draw_text(struct wld_renderer * base,
 
         if (ret == INTEL_BATCH_NO_SPACE)
         {
-            intel_batch_flush(renderer->batch);
-            xy_setup_blt(renderer->batch, true,
+            intel_batch_flush(&renderer->batch);
+            xy_setup_blt(&renderer->batch, true,
                          BLT_RASTER_OPERATION_SRC, 0, color,
                          renderer->target->bo, renderer->target->base.pitch);
             goto retry;
@@ -329,14 +329,14 @@ void renderer_flush(struct wld_renderer * base)
 {
     struct intel_renderer * renderer = intel_renderer(base);
 
-    intel_batch_flush(renderer->batch);
+    intel_batch_flush(&renderer->batch);
 }
 
 void renderer_destroy(struct wld_renderer * base)
 {
     struct intel_renderer * renderer = intel_renderer(base);
 
-    intel_batch_destroy(renderer->batch);
+    intel_batch_finalize(&renderer->batch);
     free(renderer);
 }
 

@@ -25,6 +25,7 @@
 #define WLD_INTEL_BATCH_H
 
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <intel_bufmgr.h>
 
@@ -51,9 +52,10 @@ struct intel_batch
     uint32_t command_count;
 };
 
-struct intel_batch * intel_batch_new(drm_intel_bufmgr * bufmgr);
+bool intel_batch_initialize(struct intel_batch * batch,
+                            drm_intel_bufmgr * bufmgr);
 
-void intel_batch_destroy(struct intel_batch * batch);
+void intel_batch_finalize(struct intel_batch * batch);
 
 void intel_batch_flush(struct intel_batch * batch);
 

@@ -51,38 +51,30 @@ static const struct intel_device_info * device_info(int device_id)
     }
 }
 
-struct intel_batch * intel_batch_new(drm_intel_bufmgr * bufmgr)
+bool intel_batch_initialize(struct intel_batch * batch,
+                            drm_intel_bufmgr * bufmgr)
 {
-    struct intel_batch * batch;
     int device_id = drm_intel_bufmgr_gem_get_devid(bufmgr);
-
-    batch = malloc(sizeof *batch);
-
-    if (!batch)
-        goto error0;
 
     batch->command_count = 0;
     batch->device_info = device_info(device_id);
 
     if (!batch->device_info)
-        goto error1;
+        return false;
 
     /* Alignment argument (4096) is not used */
     batch->bo = drm_intel_bo_alloc(bufmgr, "batchbuffer",
                                    sizeof batch->commands, 4096);
 
-    return batch;
+    if (!batch->bo)
+        return false;
 
-  error1:
-    free(batch);
-  error0:
-    return NULL;
+    return true;
 }
 
-void intel_batch_destroy(struct intel_batch * batch)
+void intel_batch_finalize(struct intel_batch * batch)
 {
     drm_intel_bo_unreference(batch->bo);
-    free(batch);
 }
 
 void intel_batch_flush(struct intel_batch * batch)
