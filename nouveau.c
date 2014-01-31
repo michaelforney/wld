@@ -131,7 +131,7 @@ static inline void nv_add_data(struct nouveau_pushbuf * push,
     push->cur += count;
 }
 
-static uint32_t nvc0_format(uint32_t format)
+static inline uint32_t nvc0_format(uint32_t format)
 {
     switch (format)
     {
