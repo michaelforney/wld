@@ -23,10 +23,11 @@
 
 #include "drm-private.h"
 #include "drm.h"
+#include "intel/batch.h"
+#include "intel/blt.h"
 #include "wld-private.h"
 
 #include <unistd.h>
-#include <intelbatch.h>
 #include <intel_bufmgr.h>
 #include <i915_drm.h>
 

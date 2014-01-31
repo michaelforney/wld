@@ -34,8 +34,8 @@ ifeq ($(ENABLE_DRM),1)
     WLD_HEADERS += drm.h
 
     ifneq ($(findstring intel,$(DRM_DRIVERS)),)
-        WLD_REQUIRES_PRIVATE += libdrm_intel intelbatch
-        WLD_SOURCES += intel.c
+        WLD_REQUIRES_PRIVATE += libdrm_intel
+        WLD_SOURCES += intel.c intel/batch.c
         WLD_CPPFLAGS += -DWITH_DRM_INTEL=1
     endif
 
@@ -110,7 +110,7 @@ pkgconfig   = $(sort $(foreach pkg,$(1),$(if $($(pkg)_$(3)),$($(pkg)_$(3)), \
 .PHONY: all
 all: $(TARGETS)
 
-include protocol/local.mk
+include $(foreach dir,intel protocol,$(dir)/local.mk)
 
 .deps:
 	@mkdir "$@"
