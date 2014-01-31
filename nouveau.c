@@ -112,6 +112,18 @@ static inline bool ensure_space(struct nouveau_pushbuf * push, uint32_t count)
     return nouveau_pushbuf_space(push, count, 0, 0) == 0;
 }
 
+static inline void nv_add_dword(struct nouveau_pushbuf * push, uint32_t dword)
+{
+    *push->cur++ = dword;
+}
+
+static inline void nv_add_dwords_va(struct nouveau_pushbuf * push,
+                                    uint16_t count, va_list dwords)
+{
+    while (count--)
+        nv_add_dword(push, va_arg(dwords, uint32_t));
+}
+
 static uint32_t nvc0_format(uint32_t format)
 {
     switch (format)
@@ -124,22 +136,48 @@ static uint32_t nvc0_format(uint32_t format)
     return 0;
 }
 
-static inline void nvc0_command(struct nouveau_pushbuf * push,
-                                uint8_t subchannel, uint16_t method,
-                                uint8_t count, ...)
+enum
+{
+    NVC0_COMMAND_TYPE_INCREASING        = 1,
+    NVC0_COMMAND_TYPE_NON_INCREASING    = 3,
+    NVC0_COMMAND_TYPE_INLINE            = 4
+};
+
+enum
+{
+    NVC0_SUBCHANNEL_2D      = 3,
+};
+
+static inline uint32_t nvc0_command(uint8_t type, uint8_t subchannel,
+                                    uint16_t method, uint16_t count_or_value)
+{
+    return type << 29 | count_or_value << 16 | subchannel << 13 | method >> 2;
+}
+
+static inline void nvc0_inline(struct nouveau_pushbuf * push,
+                               uint8_t subchannel, uint16_t method,
+                               uint16_t value)
+{
+    nv_add_dword(push, nvc0_command(NVC0_COMMAND_TYPE_INLINE,
+                                    subchannel, method, value));
+}
+
+static inline void nvc0_methods(struct nouveau_pushbuf * push,
+                                uint8_t subchannel, uint16_t start_method,
+                                uint16_t count, ...)
 {
     va_list dwords;
+    nv_add_dword(push, nvc0_command(NVC0_COMMAND_TYPE_INCREASING,
+                                    subchannel, start_method, count));
     va_start(dwords, count);
-    *push->cur++ = 0x20000000 | count << 16 | subchannel << 13 | method >> 2;
-    while (count--)
-        *push->cur++ = va_arg(dwords, uint32_t);
+    nv_add_dwords_va(push, count, dwords);
     va_end(dwords);
 }
 
-#define NVC0_SUBCHANNEL_2D      3
-
 #define nvc0_2d(push, method, count, ...) \
-    nvc0_command(push, NVC0_SUBCHANNEL_2D, method, count, __VA_ARGS__)
+    nvc0_methods(push, NVC0_SUBCHANNEL_2D, method, count, __VA_ARGS__)
+#define nvc0_2d_inline(push, method, value) \
+    nvc0_inline(push, NVC0_SUBCHANNEL_2D, method, value)
 
 static bool nvc0_2d_initialize(struct nouveau_renderer * renderer)
 {
