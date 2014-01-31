@@ -46,17 +46,17 @@ static const struct drm_driver * find_driver(int fd)
     if (fstat(fd, &st) == -1)
         return NULL;
 
-    snprintf(path, sizeof path, "/sys/dev/char/%u:%u/",
-             major(st.st_rdev), minor(st.st_rdev));
-    path_part = path + strlen(path);
+    path_part = path + snprintf(path, sizeof path,
+                                "/sys/dev/char/%u:%u/device/",
+                                major(st.st_rdev), minor(st.st_rdev));
 
-    strcpy(path_part, "device/vendor");
+    strcpy(path_part, "vendor");
     file = fopen(path, "r");
     fgets(id, sizeof id, file);
     fclose(file);
     vendor_id = strtoul(id, NULL, 0);
 
-    strcpy(path_part, "device/device");
+    strcpy(path_part, "device");
     file = fopen(path, "r");
     fgets(id, sizeof id, file);
     fclose(file);
