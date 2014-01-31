@@ -273,7 +273,7 @@ void renderer_draw_text(struct wld_renderer * base,
     uint8_t * byte;
     int32_t origin_x = x;
 
-    xy_setup_blt(renderer->batch, true, INTEL_BLT_RASTER_OPERATION_SRC,
+    xy_setup_blt(renderer->batch, true, BLT_RASTER_OPERATION_SRC,
                  0, color, renderer->target->bo, renderer->target->base.pitch);
 
     while ((ret = FcUtf8ToUcs4((FcChar8 *) text, &c, length)) > 0 && c != '\0')
@@ -312,7 +312,7 @@ void renderer_draw_text(struct wld_renderer * base,
         {
             intel_batch_flush(renderer->batch);
             xy_setup_blt(renderer->batch, true,
-                         INTEL_BLT_RASTER_OPERATION_SRC, 0, color,
+                         BLT_RASTER_OPERATION_SRC, 0, color,
                          renderer->target->bo, renderer->target->base.pitch);
             goto retry;
         }
