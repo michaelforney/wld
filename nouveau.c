@@ -427,7 +427,7 @@ void renderer_fill_rectangle(struct wld_renderer * base, uint32_t color,
     struct nouveau_renderer * renderer = nouveau_renderer(base);
     uint32_t format;
 
-    if (!ensure_space(renderer->pushbuf, 22))
+    if (!ensure_space(renderer->pushbuf, 18))
         return;
 
     format = nvc0_format(renderer->target->base.format);
@@ -460,7 +460,7 @@ void renderer_copy_rectangle(struct wld_renderer * base,
     struct nouveau_buffer * buffer = nouveau_buffer(buffer_base);
     uint32_t src_format, dst_format;
 
-    if (!ensure_space(renderer->pushbuf, 39))
+    if (!ensure_space(renderer->pushbuf, 33))
         return;
 
     src_format = nvc0_format(buffer->base.format);
