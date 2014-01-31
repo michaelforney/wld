@@ -25,14 +25,14 @@ static struct wld_renderer * context_create_renderer
     (struct wld_context * context);
 static struct wld_buffer * context_create_buffer
     (struct wld_context * context,
-     uint32_t width, uint32_t height, uint32_t format);
+     uint32_t width, uint32_t height, uint32_t format, uint32_t flags);
 static struct wld_buffer * context_import_buffer
     (struct wld_context * context, uint32_t type, union wld_object object,
      uint32_t width, uint32_t height, uint32_t format, uint32_t pitch);
 #ifdef CONTEXT_IMPLEMENTS_CREATE_SURFACE
 static struct wld_surface * context_create_surface
     (struct wld_context * context,
-     uint32_t width, uint32_t height, uint32_t format);
+     uint32_t width, uint32_t height, uint32_t format, uint32_t flags);
 #endif
 static void context_destroy(struct wld_context * context);
 

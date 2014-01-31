@@ -160,7 +160,7 @@ struct wld_renderer * context_create_renderer(struct wld_context * context)
 
 struct wld_buffer * context_create_buffer(struct wld_context * base,
                                           uint32_t width, uint32_t height,
-                                          uint32_t format)
+                                          uint32_t format, uint32_t flags)
 {
     struct shm_context * context = shm_context(base);
     struct shm_buffer * buffer;

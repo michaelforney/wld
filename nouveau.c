@@ -290,34 +290,32 @@ static inline uint32_t roundup(uint32_t value, uint32_t alignment)
 
 struct wld_buffer * context_create_buffer(struct wld_context * base,
                                           uint32_t width, uint32_t height,
-                                          uint32_t format)
+                                          uint32_t format, uint32_t flags)
 {
     struct nouveau_context * context = nouveau_context(base);
     struct nouveau_buffer * buffer;
     uint32_t bpp = format_bytes_per_pixel(format),
-             pitch = roundup(width * bpp, 64), flags;
+             pitch = roundup(width * bpp, 64), bo_flags;
     union nouveau_bo_config config = { };
 
     if (!(buffer = new_buffer(context, width, height, format, pitch)))
         goto error0;
 
-    flags = NOUVEAU_BO_VRAM;
+    bo_flags = NOUVEAU_BO_VRAM;
 
-    /* FIXME: Only need CONTIG for scanout buffers */
-    flags |= NOUVEAU_BO_CONTIG;
+    if (flags & WLD_DRM_FLAG_SCANOUT)
+        bo_flags |= NOUVEAU_BO_CONTIG;
 
-    /* FIXME: Use tiling
-    if (height > 0x40)
+    if (height > 0x40 && !(flags & WLD_FLAG_MAP))
     {
         config.nvc0.tile_mode = 0x40;
         config.nvc0.memtype = 0xfe;
         height = roundup(height, 0x80);
     }
     else
-    */
-        flags |= NOUVEAU_BO_MAP;
+        bo_flags |= NOUVEAU_BO_MAP;
 
-    if (nouveau_bo_new(context->device, flags, 0, pitch * height,
+    if (nouveau_bo_new(context->device, bo_flags, 0, pitch * height,
                        &config, &buffer->bo) != 0)
     {
         goto error1;

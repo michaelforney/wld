@@ -45,6 +45,11 @@ enum wld_format
     WLD_FORMAT_ARGB8888 = __WLD_FOURCC('A', 'R', '2', '4')
 };
 
+enum wld_flags
+{
+    WLD_FLAG_MAP = 0x1 << 16
+};
+
 bool wld_lookup_named_color(const char * name, uint32_t * color);
 
 /**** WLD Context ****/
@@ -70,7 +75,7 @@ struct wld_renderer * wld_create_renderer(struct wld_context * context);
 
 struct wld_buffer * wld_create_buffer(struct wld_context * context,
                                       uint32_t width, uint32_t height,
-                                      uint32_t format);
+                                      uint32_t format, uint32_t flags);
 
 struct wld_buffer * wld_import_buffer(struct wld_context * context,
                                       uint32_t type, union wld_object object,
@@ -79,7 +84,7 @@ struct wld_buffer * wld_import_buffer(struct wld_context * context,
 
 struct wld_surface * wld_create_surface(struct wld_context * context,
                                         uint32_t width, uint32_t height,
-                                        uint32_t format);
+                                        uint32_t format, uint32_t flags);
 
 void wld_destroy_context(struct wld_context * context);
 

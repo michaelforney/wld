@@ -86,7 +86,7 @@ struct wld_context_impl
     struct wld_renderer * (* create_renderer)(struct wld_context * context);
     struct wld_buffer * (* create_buffer)(struct wld_context * context,
                                           uint32_t width, uint32_t height,
-                                          uint32_t format);
+                                          uint32_t format, uint32_t flags);
     struct wld_buffer * (* import_buffer)(struct wld_context * context,
                                           uint32_t type,
                                           union wld_object object,
@@ -94,7 +94,7 @@ struct wld_context_impl
                                           uint32_t format, uint32_t pitch);
     struct wld_surface * (* create_surface)(struct wld_context * context,
                                             uint32_t width, uint32_t height,
-                                            uint32_t format);
+                                            uint32_t format, uint32_t flags);
     void (* destroy)(struct wld_context * context);
 };
 
@@ -229,11 +229,11 @@ void default_copy_region(struct wld_renderer * renderer,
 
 struct wld_surface * default_create_surface(struct wld_context * context,
                                             uint32_t width, uint32_t height,
-                                            uint32_t format);
+                                            uint32_t format, uint32_t flags);
 
 struct wld_surface * buffered_surface_create(struct wld_context * context,
                                              uint32_t width, uint32_t height,
-                                             uint32_t format,
+                                             uint32_t format, uint32_t flags,
                                              struct wld_buffer_socket * socket);
 
 void context_initialize(struct wld_context * context,

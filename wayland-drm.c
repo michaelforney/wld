@@ -191,7 +191,7 @@ struct wld_renderer * context_create_renderer(struct wld_context * base)
 
 struct wld_buffer * context_create_buffer(struct wld_context * base,
                                           uint32_t width, uint32_t height,
-                                          uint32_t format)
+                                          uint32_t format, uint32_t flags)
 {
     struct drm_context * context = drm_context(base);
     struct wld_buffer * buffer;
@@ -202,7 +202,8 @@ struct wld_buffer * context_create_buffer(struct wld_context * base,
     if (!wld_wayland_drm_has_format(base, format))
         goto error0;
 
-    buffer = wld_create_buffer(context->driver_context, width, height, format);
+    buffer = wld_create_buffer(context->driver_context, width, height,
+                               format, flags);
 
     if (!buffer)
         goto error0;

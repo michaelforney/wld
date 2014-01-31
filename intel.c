@@ -131,7 +131,7 @@ static struct wld_buffer * new_buffer(uint32_t width, uint32_t height,
 
 struct wld_buffer * context_create_buffer(struct wld_context * base,
                                           uint32_t width, uint32_t height,
-                                          uint32_t format)
+                                          uint32_t format, uint32_t flags)
 {
     struct intel_context * context = intel_context(base);
     struct wld_buffer * buffer;

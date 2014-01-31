@@ -38,9 +38,9 @@ struct wld_renderer * wld_create_renderer(struct wld_context * context)
 EXPORT
 struct wld_buffer * wld_create_buffer(struct wld_context * context,
                                       uint32_t width, uint32_t height,
-                                      uint32_t format)
+                                      uint32_t format, uint32_t flags)
 {
-    return context->impl->create_buffer(context, width, height, format);
+    return context->impl->create_buffer(context, width, height, format, flags);
 }
 
 EXPORT
@@ -56,9 +56,9 @@ struct wld_buffer * wld_import_buffer(struct wld_context * context,
 EXPORT
 struct wld_surface * wld_create_surface(struct wld_context * context,
                                         uint32_t width, uint32_t height,
-                                        uint32_t format)
+                                        uint32_t format, uint32_t flags)
 {
-    return context->impl->create_surface(context, width, height, format);
+    return context->impl->create_surface(context, width, height, format, flags);
 }
 
 EXPORT

@@ -101,7 +101,7 @@ static struct wld_buffer * new_buffer(struct dumb_context * context,
 
 struct wld_buffer * context_create_buffer(struct wld_context * base,
                                           uint32_t width, uint32_t height,
-                                          uint32_t format)
+                                          uint32_t format, uint32_t flags)
 {
     struct dumb_context * context = dumb_context(base);
     struct wld_buffer * buffer;

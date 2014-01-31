@@ -34,6 +34,12 @@ enum wld_drm_object_type
     WLD_DRM_OBJECT_GEM_NAME = 0x00010002
 };
 
+enum wld_drm_flags
+{
+    WLD_DRM_FLAG_SCANOUT    = 0x1,
+    WLD_DRM_FLAG_TILED      = 0x2
+};
+
 /**
  * Create a new WLD context from an opened DRM device file descriptor.
  */

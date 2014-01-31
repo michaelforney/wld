@@ -44,11 +44,12 @@ struct buffered_surface
 
     uint32_t width, height;
     enum wld_format format;
+    uint32_t flags;
 };
 
 struct wld_surface * buffered_surface_create
     (struct wld_context * context, uint32_t width, uint32_t height,
-     uint32_t format, struct wld_buffer_socket * buffer_socket)
+     uint32_t format, uint32_t flags, struct wld_buffer_socket * buffer_socket)
 {
     struct buffered_surface * surface;
 
@@ -65,6 +66,7 @@ struct wld_surface * buffered_surface_create
     surface->width = width;
     surface->height = height;
     surface->format = format;
+    surface->flags = flags;
 
     return &surface->base;
 }
@@ -118,7 +120,7 @@ struct wld_buffer * surface_back(struct wld_surface * base)
 
     buffer = wld_create_buffer(surface->context,
                                surface->width, surface->height,
-                               surface->format);
+                               surface->format, surface->flags);
 
     if (!buffer)
         goto error0;

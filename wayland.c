@@ -158,7 +158,7 @@ struct wld_context * wld_wayland_create_context
 EXPORT
 struct wld_surface * wld_wayland_create_surface(struct wld_context * context,
                                                 uint32_t width, uint32_t height,
-                                                uint32_t format,
+                                                uint32_t format, uint32_t flags,
                                                 struct wl_surface * wl)
 {
     struct wayland_buffer_socket * socket;
@@ -172,7 +172,7 @@ struct wld_surface * wld_wayland_create_surface(struct wld_context * context,
     socket->queue = ((struct wayland_context *) context)->queue;
     socket->display = ((struct wayland_context *) context)->display;
     socket->surface = buffered_surface_create(context, width, height, format,
-                                              &socket->base);
+                                              flags, &socket->base);
 
     if (!socket->surface)
         goto error1;

@@ -105,7 +105,7 @@ static struct wld_buffer * new_buffer(pixman_image_t * image)
 
 struct wld_buffer * context_create_buffer(struct wld_context * context,
                                           uint32_t width, uint32_t height,
-                                          uint32_t format)
+                                          uint32_t format, uint32_t flags)
 {
     struct wld_buffer * buffer;
     pixman_image_t * image;
