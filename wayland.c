@@ -36,7 +36,7 @@ struct wayland_exporter
 
 struct wayland_buffer_socket
 {
-    struct wld_buffer_socket base;
+    struct buffer_socket base;
     struct wl_buffer_listener listener;
     struct wld_surface * surface;
     struct wl_surface * wl;
@@ -47,18 +47,18 @@ struct wayland_buffer_socket
 #include "interface/exporter.h"
 IMPL(wayland_exporter, wld_exporter)
 
-static bool buffer_socket_attach(struct wld_buffer_socket * socket,
+static bool buffer_socket_attach(struct buffer_socket * socket,
                                  struct buffer * buffer);
-static void buffer_socket_process(struct wld_buffer_socket * socket);
-static void buffer_socket_destroy(struct wld_buffer_socket * socket);
+static void buffer_socket_process(struct buffer_socket * socket);
+static void buffer_socket_destroy(struct buffer_socket * socket);
 
-static const struct wld_buffer_socket_impl wld_buffer_socket_impl = {
+static const struct buffer_socket_impl buffer_socket_impl = {
     .attach = &buffer_socket_attach,
     .process = &buffer_socket_process,
     .destroy = &buffer_socket_destroy
 };
 
-IMPL(wayland_buffer_socket, wld_buffer_socket)
+IMPL(wayland_buffer_socket, buffer_socket)
 
 static void sync_done(void * data, struct wl_callback * callback,
                       uint32_t msecs);
@@ -166,7 +166,7 @@ struct wld_surface * wld_wayland_create_surface(struct wld_context * context,
     if (!(socket = malloc(sizeof *socket)))
         goto error0;
 
-    socket->base.impl = &wld_buffer_socket_impl;
+    socket->base.impl = &buffer_socket_impl;
     socket->listener.release = &buffer_release;
     socket->wl = wl;
     socket->queue = ((struct wayland_context *) context)->queue;
@@ -240,8 +240,7 @@ void exporter_destroy(struct wld_exporter * base)
     free(exporter);
 }
 
-bool buffer_socket_attach(struct wld_buffer_socket * base,
-                          struct buffer * buffer)
+bool buffer_socket_attach(struct buffer_socket * base, struct buffer * buffer)
 {
     struct wayland_buffer_socket * socket = wayland_buffer_socket(base);
     struct wl_buffer * wl;
@@ -276,7 +275,7 @@ bool buffer_socket_attach(struct wld_buffer_socket * base,
     return true;
 }
 
-void buffer_socket_process(struct wld_buffer_socket * base)
+void buffer_socket_process(struct buffer_socket * base)
 {
     struct wayland_buffer_socket * socket = wayland_buffer_socket(base);
 
@@ -286,7 +285,7 @@ void buffer_socket_process(struct wld_buffer_socket * base)
     wl_display_dispatch_queue_pending(socket->display, socket->queue);
 }
 
-void buffer_socket_destroy(struct wld_buffer_socket * socket)
+void buffer_socket_destroy(struct buffer_socket * socket)
 {
     free(socket);
 }

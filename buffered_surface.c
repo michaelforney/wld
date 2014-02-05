@@ -40,7 +40,7 @@ struct buffered_surface
     struct buffer_entry * entries, * back;
     unsigned entries_size, entries_capacity;
 
-    struct wld_buffer_socket * buffer_socket;
+    struct buffer_socket * buffer_socket;
 
     uint32_t width, height;
     enum wld_format format;
@@ -49,7 +49,7 @@ struct buffered_surface
 
 struct wld_surface * buffered_surface_create
     (struct wld_context * context, uint32_t width, uint32_t height,
-     uint32_t format, uint32_t flags, struct wld_buffer_socket * buffer_socket)
+     uint32_t format, uint32_t flags, struct buffer_socket * buffer_socket)
 {
     struct buffered_surface * surface;
 

@@ -147,16 +147,16 @@ struct wld_surface_impl
     void (* destroy)(struct wld_surface * surface);
 };
 
-struct wld_buffer_socket
+struct buffer_socket
 {
-    const struct wld_buffer_socket_impl * impl;
+    const struct buffer_socket_impl * impl;
 };
 
-struct wld_buffer_socket_impl
+struct buffer_socket_impl
 {
-    bool (* attach)(struct wld_buffer_socket * socket, struct buffer * buffer);
-    void (* process)(struct wld_buffer_socket * socket);
-    void (* destroy)(struct wld_buffer_socket * socket);
+    bool (* attach)(struct buffer_socket * socket, struct buffer * buffer);
+    void (* process)(struct buffer_socket * socket);
+    void (* destroy)(struct buffer_socket * socket);
 };
 
 bool font_ensure_glyph(struct font * font, FT_UInt glyph_index);
@@ -222,7 +222,7 @@ struct wld_surface * default_create_surface(struct wld_context * context,
 struct wld_surface * buffered_surface_create(struct wld_context * context,
                                              uint32_t width, uint32_t height,
                                              uint32_t format, uint32_t flags,
-                                             struct wld_buffer_socket * socket);
+                                             struct buffer_socket * socket);
 
 void context_initialize(struct wld_context * context,
                         const struct wld_context_impl * impl);
