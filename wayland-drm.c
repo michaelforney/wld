@@ -189,12 +189,12 @@ struct wld_renderer * context_create_renderer(struct wld_context * base)
     return wld_create_renderer(context->driver_context);
 }
 
-struct wld_buffer * context_create_buffer(struct wld_context * base,
-                                          uint32_t width, uint32_t height,
-                                          uint32_t format, uint32_t flags)
+struct buffer * context_create_buffer(struct wld_context * base,
+                                      uint32_t width, uint32_t height,
+                                      uint32_t format, uint32_t flags)
 {
     struct drm_context * context = drm_context(base);
-    struct wld_buffer * buffer;
+    struct buffer * buffer;
     struct wld_exporter * exporter;
     union wld_object object;
     struct wl_buffer * wl;
@@ -202,17 +202,17 @@ struct wld_buffer * context_create_buffer(struct wld_context * base,
     if (!wld_wayland_drm_has_format(base, format))
         goto error0;
 
-    buffer = wld_create_buffer(context->driver_context, width, height,
-                               format, flags);
+    buffer = context->driver_context->impl->create_buffer
+        (context->driver_context, width, height, format, flags);
 
     if (!buffer)
         goto error0;
 
-    if (!wld_export(buffer, WLD_DRM_OBJECT_PRIME_FD, &object))
+    if (!wld_export(&buffer->base, WLD_DRM_OBJECT_PRIME_FD, &object))
         goto error1;
 
     wl = wl_drm_create_prime_buffer(context->wl, object.i, width, height,
-                                    format, 0, buffer->pitch, 0, 0, 0, 0);
+                                    format, 0, buffer->base.pitch, 0, 0, 0, 0);
     close(object.i);
 
     if (!wl)
@@ -221,23 +221,22 @@ struct wld_buffer * context_create_buffer(struct wld_context * base,
     if (!(exporter = wayland_create_exporter(wl)))
         goto error2;
 
-    wld_buffer_add_exporter(buffer, exporter);
+    wld_buffer_add_exporter(&buffer->base, exporter);
 
     return buffer;
 
   error2:
     wl_buffer_destroy(wl);
   error1:
-    wld_destroy_buffer(buffer);
+    wld_destroy_buffer(&buffer->base);
   error0:
     return NULL;
 }
 
-struct wld_buffer * context_import_buffer(struct wld_context * context,
-                                          uint32_t type,
-                                          union wld_object object,
-                                          uint32_t width, uint32_t height,
-                                          uint32_t format, uint32_t pitch)
+struct buffer * context_import_buffer(struct wld_context * context,
+                                      uint32_t type, union wld_object object,
+                                      uint32_t width, uint32_t height,
+                                      uint32_t format, uint32_t pitch)
 {
     return NULL;
 }

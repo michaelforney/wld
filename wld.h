@@ -178,14 +178,7 @@ struct wld_buffer
     uint32_t width, height, pitch;
     enum wld_format format;
     pixman_region32_t damage;
-
-    struct
-    {
-        void * data;
-        unsigned count;
-    } map;
-
-    struct wld_exporter * exporters;
+    void * map;
 };
 
 bool wld_map(struct wld_buffer * buffer);

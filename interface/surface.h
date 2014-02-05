@@ -23,10 +23,10 @@
 
 static pixman_region32_t * surface_damage(struct wld_surface * surface,
                                           pixman_region32_t * new_damage);
-static struct wld_buffer * surface_back(struct wld_surface * surface);
-static struct wld_buffer * surface_take(struct wld_surface * surface);
+static struct buffer * surface_back(struct wld_surface * surface);
+static struct buffer * surface_take(struct wld_surface * surface);
 static bool surface_release(struct wld_surface * surface,
-                            struct wld_buffer * buffer);
+                            struct buffer * buffer);
 static bool surface_swap(struct wld_surface * surface);
 static void surface_destroy(struct wld_surface * surface);
 

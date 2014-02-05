@@ -28,7 +28,7 @@ IMPL(buffered_surface, wld_surface)
 
 struct buffer_entry
 {
-    struct wld_buffer * buffer;
+    struct buffer * buffer;
     bool busy;
 };
 
@@ -75,15 +75,15 @@ pixman_region32_t * surface_damage(struct wld_surface * base,
                                    pixman_region32_t * new_damage)
 {
     struct buffered_surface * surface = buffered_surface(base);
-    struct wld_buffer * back_buffer;
+    struct buffer * back_buffer;
     unsigned index;
 
     if (pixman_region32_not_empty(new_damage))
     {
         for (index = 0; index < surface->entries_size; ++index)
         {
-            pixman_region32_union(&surface->entries[index].buffer->damage,
-                                  &surface->entries[index].buffer->damage,
+            pixman_region32_union(&surface->entries[index].buffer->base.damage,
+                                  &surface->entries[index].buffer->base.damage,
                                   new_damage);
         }
     }
@@ -91,10 +91,10 @@ pixman_region32_t * surface_damage(struct wld_surface * base,
     if (!(back_buffer = surface_back(base)))
         return NULL;
 
-    return &back_buffer->damage;
+    return &back_buffer->base.damage;
 }
 
-struct wld_buffer * surface_back(struct wld_surface * base)
+struct buffer * surface_back(struct wld_surface * base)
 {
     struct buffered_surface * surface = buffered_surface(base);
     unsigned index;
@@ -116,11 +116,11 @@ struct wld_buffer * surface_back(struct wld_surface * base)
     }
 
     /* If there are no free buffers, we need to allocate another one. */
-    struct wld_buffer * buffer;
+    struct buffer * buffer;
 
-    buffer = wld_create_buffer(surface->context,
-                               surface->width, surface->height,
-                               surface->format, surface->flags);
+    buffer = surface->context->impl->create_buffer
+        (surface->context, surface->width, surface->height,
+         surface->format, surface->flags);
 
     if (!buffer)
         goto error0;
@@ -149,27 +149,27 @@ struct wld_buffer * surface_back(struct wld_surface * base)
     return buffer;
 
   error1:
-    wld_destroy_buffer(buffer);
+    wld_destroy_buffer(&buffer->base);
   error0:
     return NULL;
 }
 
-struct wld_buffer * surface_take(struct wld_surface * base)
+struct buffer * surface_take(struct wld_surface * base)
 {
     struct buffered_surface * surface = buffered_surface(base);
-    struct wld_buffer * buffer;
+    struct buffer * buffer;
 
     if (!(buffer = surface_back(base)))
         return NULL;
 
     surface->back->busy = true;
     surface->back = NULL;
-    pixman_region32_clear(&buffer->damage);
+    pixman_region32_clear(&buffer->base.damage);
 
     return buffer;
 }
 
-bool surface_release(struct wld_surface * base, struct wld_buffer * buffer)
+bool surface_release(struct wld_surface * base, struct buffer * buffer)
 {
     struct buffered_surface * surface = buffered_surface(base);
     unsigned index;
@@ -189,7 +189,7 @@ bool surface_release(struct wld_surface * base, struct wld_buffer * buffer)
 bool surface_swap(struct wld_surface * base)
 {
     struct buffered_surface * surface = buffered_surface(base);
-    struct wld_buffer * buffer;
+    struct buffer * buffer;
 
     if (!surface->buffer_socket)
         return false;
@@ -202,7 +202,7 @@ bool surface_swap(struct wld_surface * base)
 
     surface->back->busy = true;
     surface->back = NULL;
-    pixman_region32_clear(&buffer->damage);
+    pixman_region32_clear(&buffer->base.damage);
 
     return true;
 }
@@ -216,7 +216,7 @@ void surface_destroy(struct wld_surface * base)
         surface->buffer_socket->impl->destroy(surface->buffer_socket);
 
     for (index = 0; index < surface->entries_size; ++index)
-        wld_destroy_buffer(surface->entries[index].buffer);
+        wld_destroy_buffer(&surface->entries[index].buffer->base);
 
     free(surface->entries);
     free(surface);

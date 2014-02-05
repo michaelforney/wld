@@ -23,20 +23,20 @@
 
 #include "wld-private.h"
 
-void buffer_initialize(struct wld_buffer * buffer,
+void buffer_initialize(struct buffer * buffer,
                        const struct wld_buffer_impl * impl,
                        uint32_t width, uint32_t height,
                        uint32_t format, uint32_t pitch)
 {
-    *((const struct wld_buffer_impl **) &buffer->impl) = impl;
-    buffer->width = width;
-    buffer->height = height;
-    buffer->format = format;
-    buffer->pitch = pitch;
-    buffer->map.data = NULL;
-    buffer->map.count = 0;
+    *((const struct wld_buffer_impl **) &buffer->base.impl) = impl;
+    buffer->base.width = width;
+    buffer->base.height = height;
+    buffer->base.format = format;
+    buffer->base.pitch = pitch;
+    buffer->base.map = NULL;
+    buffer->map_references = 0;
     buffer->exporters = NULL;
-    pixman_region32_init_rect(&buffer->damage, 0, 0, width, height);
+    pixman_region32_init_rect(&buffer->base.damage, 0, 0, width, height);
 }
 
 EXPORT
@@ -48,37 +48,42 @@ void wld_exporter_initialize(struct wld_exporter * exporter,
 }
 
 EXPORT
-bool wld_map(struct wld_buffer * buffer)
+bool wld_map(struct wld_buffer * base)
 {
-    if (buffer->map.count == 0 && !buffer->impl->map(buffer))
+    struct buffer * buffer = (void *) base;
+
+    if (buffer->map_references == 0 && !buffer->base.impl->map(buffer))
         return false;
 
-    ++buffer->map.count;
+    ++buffer->map_references;
     return true;
 }
 
 EXPORT
-bool wld_unmap(struct wld_buffer * buffer)
+bool wld_unmap(struct wld_buffer * base)
 {
-    if (buffer->map.count == 0
-        || (buffer->map.count == 1 && !buffer->impl->unmap(buffer)))
+    struct buffer * buffer = (void *) base;
+
+    if (buffer->map_references == 0
+        || (buffer->map_references == 1 && !buffer->base.impl->unmap(buffer)))
     {
         return false;
     }
 
-    --buffer->map.count;
+    --buffer->map_references;
     return true;
 }
 
 EXPORT
-bool wld_export(struct wld_buffer * buffer,
+bool wld_export(struct wld_buffer * base,
                 uint32_t type, union wld_object * object)
 {
+    struct buffer * buffer = (void *) base;
     struct wld_exporter * exporter;
 
     for (exporter = buffer->exporters; exporter; exporter = exporter->next)
     {
-        if (exporter->impl->export(exporter, buffer, type, object))
+        if (exporter->impl->export(exporter, &buffer->base, type, object))
             return true;
     }
 
@@ -86,22 +91,25 @@ bool wld_export(struct wld_buffer * buffer,
 }
 
 EXPORT
-void wld_buffer_add_exporter(struct wld_buffer * buffer,
+void wld_buffer_add_exporter(struct wld_buffer * base,
                              struct wld_exporter * exporter)
 {
+    struct buffer * buffer = (void *) base;
+
     exporter->next = buffer->exporters;
     buffer->exporters = exporter;
 }
 
 EXPORT
-void wld_destroy_buffer(struct wld_buffer * buffer)
+void wld_destroy_buffer(struct wld_buffer * base)
 {
+    struct buffer * buffer = (void *) base;
     struct wld_exporter * exporter, * next;
 
-    if (buffer->map.count > 0)
-        wld_unmap(buffer);
+    if (buffer->map_references > 0)
+        buffer->base.impl->unmap(buffer);
 
-    pixman_region32_fini(&buffer->damage);
+    pixman_region32_fini(&buffer->base.damage);
 
     for (exporter = buffer->exporters, next = exporter ? exporter->next : NULL;
          exporter; exporter = next, next = exporter ? exporter->next : NULL)
@@ -109,6 +117,6 @@ void wld_destroy_buffer(struct wld_buffer * buffer)
         exporter->impl->destroy(exporter);
     }
 
-    buffer->impl->destroy(buffer);
+    buffer->base.impl->destroy(buffer);
 }
 

@@ -39,8 +39,7 @@ void default_fill_region(struct wld_renderer * renderer, uint32_t color,
     }
 }
 
-void default_copy_region(struct wld_renderer * renderer,
-                         struct wld_buffer * buffer,
+void default_copy_region(struct wld_renderer * renderer, struct buffer * buffer,
                          int32_t dst_x, int32_t dst_y,
                          pixman_region32_t * region)
 {
@@ -76,14 +75,14 @@ EXPORT
 uint32_t wld_capabilities(struct wld_renderer * renderer,
                           struct wld_buffer * buffer)
 {
-    return renderer->impl->capabilities(renderer, buffer);
+    return renderer->impl->capabilities(renderer, (struct buffer *) buffer);
 }
 
 EXPORT
 bool wld_set_target_buffer(struct wld_renderer * renderer,
                            struct wld_buffer * buffer)
 {
-    if (!renderer->impl->set_target(renderer, buffer))
+    if (!renderer->impl->set_target(renderer, (struct buffer *) buffer))
         return false;
 
     renderer->target = buffer;
@@ -95,12 +94,12 @@ EXPORT
 bool wld_set_target_surface(struct wld_renderer * renderer,
                             struct wld_surface * surface)
 {
-    struct wld_buffer * back_buffer;
+    struct buffer * back_buffer;
 
     if (!(back_buffer = surface->impl->back(surface)))
         return false;
 
-    return wld_set_target_buffer(renderer, back_buffer);
+    return renderer->impl->set_target(renderer, back_buffer);
 }
 
 EXPORT
@@ -124,8 +123,8 @@ void wld_copy_rectangle(struct wld_renderer * renderer,
                         int32_t src_x, int32_t src_y,
                         uint32_t width, uint32_t height)
 {
-    renderer->impl->copy_rectangle(renderer, buffer, dst_x, dst_y, src_x, src_y,
-                                   width, height);
+    renderer->impl->copy_rectangle(renderer, (struct buffer *) buffer,
+                                   dst_x, dst_y, src_x, src_y, width, height);
 }
 
 EXPORT
@@ -133,7 +132,8 @@ void wld_copy_region(struct wld_renderer * renderer,
                      struct wld_buffer * buffer,
                      int32_t dst_x, int32_t dst_y, pixman_region32_t * region)
 {
-    renderer->impl->copy_region(renderer, buffer, dst_x, dst_y, region);
+    renderer->impl->copy_region(renderer, (struct buffer *) buffer,
+                                dst_x, dst_y, region);
 }
 
 EXPORT

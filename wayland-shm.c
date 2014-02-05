@@ -46,7 +46,7 @@ struct shm_context
 
 struct shm_buffer
 {
-    struct wld_buffer base;
+    struct buffer base;
     int fd;
 };
 
@@ -158,9 +158,9 @@ struct wld_renderer * context_create_renderer(struct wld_context * context)
     return wld_create_renderer(wld_pixman_context);
 }
 
-struct wld_buffer * context_create_buffer(struct wld_context * base,
-                                          uint32_t width, uint32_t height,
-                                          uint32_t format, uint32_t flags)
+struct buffer * context_create_buffer(struct wld_context * base,
+                                      uint32_t width, uint32_t height,
+                                      uint32_t format, uint32_t flags)
 {
     struct shm_context * context = shm_context(base);
     struct shm_buffer * buffer;
@@ -201,7 +201,7 @@ struct wld_buffer * context_create_buffer(struct wld_context * base,
     buffer_initialize(&buffer->base, &wld_buffer_impl,
                       width, height, format, pitch);
     buffer->fd = fd;
-    wld_buffer_add_exporter(&buffer->base, exporter);
+    wld_buffer_add_exporter(&buffer->base.base, exporter);
 
     return &buffer->base;
 
@@ -215,11 +215,10 @@ struct wld_buffer * context_create_buffer(struct wld_context * base,
     return NULL;
 }
 
-struct wld_buffer * context_import_buffer(struct wld_context * context,
-                                          uint32_t type,
-                                          union wld_object object,
-                                          uint32_t width, uint32_t height,
-                                          uint32_t format, uint32_t pitch)
+struct buffer * context_import_buffer(struct wld_context * context,
+                                      uint32_t type, union wld_object object,
+                                      uint32_t width, uint32_t height,
+                                      uint32_t format, uint32_t pitch)
 {
     return NULL;
 }
@@ -237,35 +236,38 @@ void context_destroy(struct wld_context * base)
 
 /**** Buffer ****/
 
-bool buffer_map(struct wld_buffer * base)
+bool buffer_map(struct buffer * base)
 {
-    struct shm_buffer * buffer = shm_buffer(base);
+    struct shm_buffer * buffer = shm_buffer(&base->base);
     void * data;
 
-    data = mmap(NULL, base->pitch * base->height, PROT_READ | PROT_WRITE,
-                MAP_SHARED, buffer->fd, 0);
+    data = mmap(NULL, buffer->base.base.pitch * buffer->base.base.height,
+                PROT_READ | PROT_WRITE, MAP_SHARED, buffer->fd, 0);
 
     if (data == MAP_FAILED)
         return false;
 
-    buffer->base.map.data = data;
+    buffer->base.base.map = data;
 
     return true;
 }
 
-bool buffer_unmap(struct wld_buffer * buffer)
+bool buffer_unmap(struct buffer * buffer)
 {
-    if (munmap(buffer->map.data, buffer->pitch * buffer->height) == -1)
+    if (munmap(buffer->base.map,
+               buffer->base.pitch * buffer->base.height) == -1)
+    {
         return false;
+    }
 
-    buffer->map.data = NULL;
+    buffer->base.map = NULL;
 
     return true;
 }
 
-void buffer_destroy(struct wld_buffer * base)
+void buffer_destroy(struct buffer * base)
 {
-    struct shm_buffer * buffer = shm_buffer(base);
+    struct shm_buffer * buffer = shm_buffer(&base->base);
 
     close(buffer->fd);
     free(buffer);

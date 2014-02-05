@@ -40,7 +40,7 @@ struct dumb_context
 
 struct dumb_buffer
 {
-    struct wld_buffer base;
+    struct buffer base;
     struct wld_exporter exporter;
     struct dumb_context * context;
     uint32_t handle;
@@ -79,10 +79,10 @@ struct wld_renderer * context_create_renderer(struct wld_context * context)
     return wld_create_renderer(wld_pixman_context);
 }
 
-static struct wld_buffer * new_buffer(struct dumb_context * context,
-                                      uint32_t width, uint32_t height,
-                                      uint32_t format, uint32_t handle,
-                                      unsigned long pitch)
+static struct buffer * new_buffer(struct dumb_context * context,
+                                  uint32_t width, uint32_t height,
+                                  uint32_t format, uint32_t handle,
+                                  unsigned long pitch)
 {
     struct dumb_buffer * buffer;
 
@@ -94,17 +94,17 @@ static struct wld_buffer * new_buffer(struct dumb_context * context,
     buffer->context = context;
     buffer->handle = handle;
     wld_exporter_initialize(&buffer->exporter, &wld_exporter_impl);
-    wld_buffer_add_exporter(&buffer->base, &buffer->exporter);
+    wld_buffer_add_exporter(&buffer->base.base, &buffer->exporter);
 
     return &buffer->base;
 }
 
-struct wld_buffer * context_create_buffer(struct wld_context * base,
-                                          uint32_t width, uint32_t height,
-                                          uint32_t format, uint32_t flags)
+struct buffer * context_create_buffer(struct wld_context * base,
+                                      uint32_t width, uint32_t height,
+                                      uint32_t format, uint32_t flags)
 {
     struct dumb_context * context = dumb_context(base);
-    struct wld_buffer * buffer;
+    struct buffer * buffer;
     struct drm_mode_create_dumb create_dumb = {
         .height = height, .width = width,
         .bpp = format_bytes_per_pixel(format) * 8,
@@ -133,11 +133,10 @@ struct wld_buffer * context_create_buffer(struct wld_context * base,
     return NULL;
 }
 
-struct wld_buffer * context_import_buffer(struct wld_context * base,
-                                          uint32_t type,
-                                          union wld_object object,
-                                          uint32_t width, uint32_t height,
-                                          uint32_t format, uint32_t pitch)
+struct buffer * context_import_buffer(struct wld_context * base,
+                                      uint32_t type, union wld_object object,
+                                      uint32_t width, uint32_t height,
+                                      uint32_t format, uint32_t pitch)
 {
     struct dumb_context * context = dumb_context(base);
     uint32_t handle;
@@ -174,9 +173,9 @@ void context_destroy(struct wld_context * base)
 
 /**** Buffer ****/
 
-bool buffer_map(struct wld_buffer * base)
+bool buffer_map(struct buffer * base)
 {
-    struct dumb_buffer * buffer = dumb_buffer(base);
+    struct dumb_buffer * buffer = dumb_buffer(&base->base);
     struct drm_mode_map_dumb map_dumb = { .handle = buffer->handle };
     void * data;
 
@@ -186,30 +185,34 @@ bool buffer_map(struct wld_buffer * base)
         return false;
     }
 
-    data = mmap(NULL, base->pitch * base->height, PROT_READ | PROT_WRITE,
-                MAP_SHARED, buffer->context->fd, map_dumb.offset);
+    data = mmap(NULL, buffer->base.base.pitch * buffer->base.base.height,
+                PROT_READ | PROT_WRITE, MAP_SHARED,
+                buffer->context->fd, map_dumb.offset);
 
     if (data == MAP_FAILED)
         return false;
 
-    buffer->base.map.data = data;
+    buffer->base.base.map = data;
 
     return true;
 }
 
-bool buffer_unmap(struct wld_buffer * buffer)
+bool buffer_unmap(struct buffer * buffer)
 {
-    if (munmap(buffer->map.data, buffer->pitch * buffer->height) == -1)
+    if (munmap(buffer->base.map,
+               buffer->base.pitch * buffer->base.height) == -1)
+    {
         return false;
+    }
 
-    buffer->map.data = NULL;
+    buffer->base.map = NULL;
 
     return true;
 }
 
-void buffer_destroy(struct wld_buffer * base)
+void buffer_destroy(struct buffer * base)
 {
-    struct dumb_buffer * buffer = dumb_buffer(base);
+    struct dumb_buffer * buffer = dumb_buffer(&base->base);
     struct drm_mode_destroy_dumb destroy_dumb = {
         .handle = buffer->handle
     };

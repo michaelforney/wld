@@ -40,7 +40,7 @@ struct pixman_renderer
 
 struct pixman_buffer
 {
-    struct wld_buffer base;
+    struct buffer base;
     pixman_image_t * image;
 };
 
@@ -85,7 +85,7 @@ struct wld_renderer * context_create_renderer(struct wld_context * context)
     return NULL;
 }
 
-static struct wld_buffer * new_buffer(pixman_image_t * image)
+static struct buffer * new_buffer(pixman_image_t * image)
 {
     struct pixman_buffer * buffer;
 
@@ -97,17 +97,17 @@ static struct wld_buffer * new_buffer(pixman_image_t * image)
                       pixman_image_get_height(image),
                       format_pixman_to_wld(pixman_image_get_format(image)),
                       pixman_image_get_stride(image));
-    buffer->base.map.data = pixman_image_get_data(image);
+    buffer->base.base.map = pixman_image_get_data(image);
     buffer->image = image;
 
     return &buffer->base;
 }
 
-struct wld_buffer * context_create_buffer(struct wld_context * context,
-                                          uint32_t width, uint32_t height,
-                                          uint32_t format, uint32_t flags)
+struct buffer * context_create_buffer(struct wld_context * context,
+                                      uint32_t width, uint32_t height,
+                                      uint32_t format, uint32_t flags)
 {
-    struct wld_buffer * buffer;
+    struct buffer * buffer;
     pixman_image_t * image;
 
     image = pixman_image_create_bits(format_wld_to_pixman(format),
@@ -127,13 +127,12 @@ struct wld_buffer * context_create_buffer(struct wld_context * context,
     return NULL;
 }
 
-struct wld_buffer * context_import_buffer(struct wld_context * context,
-                                          uint32_t type,
-                                          union wld_object object,
-                                          uint32_t width, uint32_t height,
-                                          uint32_t format, uint32_t pitch)
+struct buffer * context_import_buffer(struct wld_context * context,
+                                      uint32_t type, union wld_object object,
+                                      uint32_t width, uint32_t height,
+                                      uint32_t format, uint32_t pitch)
 {
-    struct wld_buffer * buffer;
+    struct buffer * buffer;
     pixman_image_t * image;
 
     switch (type)
@@ -165,7 +164,7 @@ void context_destroy(struct wld_context * context)
 }
 
 uint32_t renderer_capabilities(struct wld_renderer * renderer,
-                               struct wld_buffer * buffer)
+                               struct buffer * buffer)
 {
     /* The pixman renderer can read and write to any buffer using it's map
      * implementation. */
@@ -174,30 +173,30 @@ uint32_t renderer_capabilities(struct wld_renderer * renderer,
 
 static void destroy_image(pixman_image_t * image, void * data)
 {
-    struct wld_buffer * buffer = data;
+    struct buffer * buffer = data;
 
-    wld_unmap(buffer);
+    wld_unmap(&buffer->base);
 }
 
-static pixman_image_t * pixman_image(struct wld_buffer * buffer)
+static pixman_image_t * pixman_image(struct buffer * buffer)
 {
-    if (buffer->impl == &wld_buffer_impl)
-        return pixman_image_ref(pixman_buffer(buffer)->image);
+    if (buffer->base.impl == &wld_buffer_impl)
+        return pixman_image_ref(pixman_buffer(&buffer->base)->image);
 
     union wld_object object;
 
-    if (wld_export(buffer, WLD_PIXMAN_OBJECT_IMAGE, &object))
+    if (wld_export(&buffer->base, WLD_PIXMAN_OBJECT_IMAGE, &object))
         return object.ptr;
 
     struct pixman_exporter * exporter;
     pixman_image_t * image;
 
-    if (!wld_map(buffer))
+    if (!wld_map(&buffer->base))
         goto error0;
 
-    image = pixman_image_create_bits(format_wld_to_pixman(buffer->format),
-                                     buffer->width, buffer->height,
-                                     buffer->map.data, buffer->pitch);
+    image = pixman_image_create_bits(format_wld_to_pixman(buffer->base.format),
+                                     buffer->base.width, buffer->base.height,
+                                     buffer->base.map, buffer->base.pitch);
 
     if (!image)
         goto error1;
@@ -207,7 +206,7 @@ static pixman_image_t * pixman_image(struct wld_buffer * buffer)
 
     wld_exporter_initialize(&exporter->base, &wld_exporter_impl);
     exporter->image = image;
-    wld_buffer_add_exporter(buffer, &exporter->base);
+    wld_buffer_add_exporter(&buffer->base, &exporter->base);
     pixman_image_set_destroy_function(image, &destroy_image, buffer);
 
     return pixman_image_ref(image);
@@ -215,13 +214,12 @@ static pixman_image_t * pixman_image(struct wld_buffer * buffer)
   error2:
     pixman_image_unref(image);
   error1:
-    wld_unmap(buffer);
+    wld_unmap(&buffer->base);
   error0:
     return NULL;
 }
 
-bool renderer_set_target(struct wld_renderer * base,
-                         struct wld_buffer * buffer)
+bool renderer_set_target(struct wld_renderer * base, struct buffer * buffer)
 {
     struct pixman_renderer * renderer = pixman_renderer(base);
 
@@ -260,8 +258,7 @@ void renderer_fill_region(struct wld_renderer * base, uint32_t color,
                             &pixman_color, num_boxes, boxes);
 }
 
-void renderer_copy_rectangle(struct wld_renderer * base,
-                             struct wld_buffer * buffer,
+void renderer_copy_rectangle(struct wld_renderer * base, struct buffer * buffer,
                              int32_t dst_x, int32_t dst_y,
                              int32_t src_x, int32_t src_y,
                              uint32_t width, uint32_t height)
@@ -275,8 +272,7 @@ void renderer_copy_rectangle(struct wld_renderer * base,
                              src_x, src_y, 0, 0, dst_x, dst_y, width, height);
 }
 
-void renderer_copy_region(struct wld_renderer * base,
-                          struct wld_buffer * buffer,
+void renderer_copy_region(struct wld_renderer * base, struct buffer * buffer,
                           int32_t dst_x, int32_t dst_y,
                           pixman_region32_t * region)
 {
@@ -408,19 +404,19 @@ void renderer_destroy(struct wld_renderer * base)
     free(renderer);
 }
 
-bool buffer_map(struct wld_buffer * buffer)
+bool buffer_map(struct buffer * buffer)
 {
     return true;
 }
 
-bool buffer_unmap(struct wld_buffer * buffer)
+bool buffer_unmap(struct buffer * buffer)
 {
     return true;
 }
 
-void buffer_destroy(struct wld_buffer * base)
+void buffer_destroy(struct buffer * base)
 {
-    struct pixman_buffer * buffer = pixman_buffer(base);
+    struct pixman_buffer * buffer = pixman_buffer(&base->base);
 
     pixman_image_unref(buffer->image);
     free(buffer);

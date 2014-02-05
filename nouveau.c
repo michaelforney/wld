@@ -64,7 +64,7 @@ struct nouveau_renderer
 
 struct nouveau_buffer
 {
-    struct wld_buffer base;
+    struct buffer base;
     struct wld_exporter exporter;
     struct nouveau_context * context;
     struct nouveau_bo * bo;
@@ -311,7 +311,7 @@ static struct nouveau_buffer * new_buffer(struct nouveau_context * context,
                         width, height, format, pitch);
     buffer->context = context;
     wld_exporter_initialize(&buffer->exporter, &wld_exporter_impl);
-    wld_buffer_add_exporter(&buffer->base, &buffer->exporter);
+    wld_buffer_add_exporter(&buffer->base.base, &buffer->exporter);
 
     return buffer;
 }
@@ -321,9 +321,9 @@ static inline uint32_t roundup(uint32_t value, uint32_t alignment)
     return (value + alignment - 1) & ~(alignment - 1);
 }
 
-struct wld_buffer * context_create_buffer(struct wld_context * base,
-                                          uint32_t width, uint32_t height,
-                                          uint32_t format, uint32_t flags)
+struct buffer * context_create_buffer(struct wld_context * base,
+                                      uint32_t width, uint32_t height,
+                                      uint32_t format, uint32_t flags)
 {
     struct nouveau_context * context = nouveau_context(base);
     struct nouveau_buffer * buffer;
@@ -362,9 +362,10 @@ struct wld_buffer * context_create_buffer(struct wld_context * base,
     return NULL;
 }
 
-struct wld_buffer * context_import_buffer
-    (struct wld_context * base, uint32_t type, union wld_object object,
-     uint32_t width, uint32_t height, uint32_t format, uint32_t pitch)
+struct buffer * context_import_buffer(struct wld_context * base,
+                                      uint32_t type, union wld_object object,
+                                      uint32_t width, uint32_t height,
+                                      uint32_t format, uint32_t pitch)
 {
     struct nouveau_context * context = (void *) base;
     struct nouveau_buffer * buffer;
@@ -410,23 +411,22 @@ void context_destroy(struct wld_context * base)
 
 /**** Renderer ****/
 uint32_t renderer_capabilities(struct wld_renderer * renderer,
-                               struct wld_buffer * buffer)
+                               struct buffer * buffer)
 {
-    if (buffer->impl == &wld_buffer_impl)
+    if (buffer->base.impl == &wld_buffer_impl)
         return WLD_CAPABILITY_READ | WLD_CAPABILITY_WRITE;
 
     return 0;
 }
 
-bool renderer_set_target(struct wld_renderer * base,
-                         struct wld_buffer * buffer)
+bool renderer_set_target(struct wld_renderer * base, struct buffer * buffer)
 {
     struct nouveau_renderer * renderer = nouveau_renderer(base);
 
-    if (buffer && buffer->impl != &wld_buffer_impl)
+    if (buffer && buffer->base.impl != &wld_buffer_impl)
         return false;
 
-    renderer->target = buffer ? nouveau_buffer(buffer) : NULL;
+    renderer->target = buffer ? nouveau_buffer(&buffer->base) : NULL;
 
     return true;
 }
@@ -448,11 +448,12 @@ static inline void nvc0_2d_use_buffer(struct nouveau_renderer * renderer,
     else
     {
         nvc0_2d_inline(renderer->pushbuf, format_method + 0x04, 1);
-        nvc0_2d(renderer->pushbuf, format_method + 0x14, 1, buffer->base.pitch);
+        nvc0_2d(renderer->pushbuf, format_method + 0x14, 1,
+                buffer->base.base.pitch);
     }
 
     nvc0_2d(renderer->pushbuf, format_method + 0x18, 4,
-            buffer->base.width, buffer->base.height,
+            buffer->base.base.width, buffer->base.base.height,
             buffer->bo->offset >> 32, buffer->bo->offset);
     nouveau_bufctx_refn(renderer->bufctx, 0, buffer->bo,
                         NOUVEAU_BO_VRAM | access);
@@ -469,7 +470,7 @@ void renderer_fill_rectangle(struct wld_renderer * base, uint32_t color,
     if (!ensure_space(renderer->pushbuf, 18))
         return;
 
-    format = nvc0_format(dst->base.format);
+    format = nvc0_format(dst->base.base.format);
 
     nouveau_bufctx_reset(renderer->bufctx, 0);
     nvc0_2d_use_buffer(renderer, dst, NV50_2D_DST_FORMAT, format);
@@ -485,25 +486,25 @@ void renderer_fill_rectangle(struct wld_renderer * base, uint32_t color,
 }
 
 void renderer_copy_rectangle(struct wld_renderer * base,
-                             struct wld_buffer * buffer_base,
+                             struct buffer * buffer_base,
                              int32_t dst_x, int32_t dst_y,
                              int32_t src_x, int32_t src_y,
                              uint32_t width, uint32_t height)
 {
     struct nouveau_renderer * renderer = nouveau_renderer(base);
 
-    if (buffer_base->impl != &wld_buffer_impl)
+    if (buffer_base->base.impl != &wld_buffer_impl)
         return;
 
-    struct nouveau_buffer * src = nouveau_buffer(buffer_base),
+    struct nouveau_buffer * src = nouveau_buffer(&buffer_base->base),
                           * dst = renderer->target;
     uint32_t src_format, dst_format;
 
     if (!ensure_space(renderer->pushbuf, 33))
         return;
 
-    src_format = nvc0_format(src->base.format);
-    dst_format = nvc0_format(dst->base.format);
+    src_format = nvc0_format(src->base.base.format);
+    dst_format = nvc0_format(dst->base.base.format);
 
     nouveau_bufctx_reset(renderer->bufctx, 0);
     nvc0_2d_use_buffer(renderer, src, NV50_2D_SRC_FORMAT, src_format);
@@ -540,7 +541,7 @@ void renderer_draw_text(struct wld_renderer * base,
     if (!ensure_space(renderer->pushbuf, 17))
         return;
 
-    format = nvc0_format(dst->base.format);
+    format = nvc0_format(dst->base.base.format);
 
     nouveau_bufctx_reset(renderer->bufctx, 0);
     nvc0_2d_use_buffer(renderer, dst, NV50_2D_DST_FORMAT, format);
@@ -616,9 +617,9 @@ void renderer_destroy(struct wld_renderer * base)
 }
 
 /**** Buffer ****/
-bool buffer_map(struct wld_buffer * base)
+bool buffer_map(struct buffer * base)
 {
-    struct nouveau_buffer * buffer = nouveau_buffer(base);
+    struct nouveau_buffer * buffer = nouveau_buffer(&base->base);
 
     /* If the buffer is tiled, it cannot be mapped into virtual memory in order
      * to appear linear like intel can do with map_gtt. */
@@ -631,27 +632,27 @@ bool buffer_map(struct wld_buffer * base)
         return false;
     }
 
-    base->map.data = buffer->bo->map;
+    buffer->base.base.map = buffer->bo->map;
 
     return true;
 }
 
-bool buffer_unmap(struct wld_buffer * base)
+bool buffer_unmap(struct buffer * base)
 {
-    struct nouveau_buffer * buffer = nouveau_buffer(base);
+    struct nouveau_buffer * buffer = nouveau_buffer(&base->base);
 
     if (munmap(buffer->bo->map, buffer->bo->size) == -1)
         return false;
 
     buffer->bo->map = NULL;
-    base->map.data = NULL;
+    base->base.map = NULL;
 
     return true;
 }
 
-void buffer_destroy(struct wld_buffer * base)
+void buffer_destroy(struct buffer * base)
 {
-    struct nouveau_buffer * buffer = (void *) base;
+    struct nouveau_buffer * buffer = nouveau_buffer(&base->base);
 
     nouveau_bo_ref(NULL, &buffer->bo);
     free(buffer);

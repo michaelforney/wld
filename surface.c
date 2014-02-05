@@ -46,14 +46,14 @@ pixman_region32_t * wld_surface_damage(struct wld_surface * surface,
 EXPORT
 struct wld_buffer * wld_surface_take(struct wld_surface * surface)
 {
-    return surface->impl->take(surface);
+    return &surface->impl->take(surface)->base;
 }
 
 EXPORT
 void wld_surface_release(struct wld_surface * surface,
                          struct wld_buffer * buffer)
 {
-    surface->impl->release(surface, buffer);
+    surface->impl->release(surface, (struct buffer *) buffer);
 }
 
 EXPORT

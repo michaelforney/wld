@@ -46,7 +46,7 @@ struct intel_renderer
 
 struct intel_buffer
 {
-    struct wld_buffer base;
+    struct buffer base;
     struct wld_exporter exporter;
     drm_intel_bo * bo;
 };
@@ -112,9 +112,9 @@ struct wld_renderer * context_create_renderer(struct wld_context * base)
     return NULL;
 }
 
-static struct wld_buffer * new_buffer(uint32_t width, uint32_t height,
-                                      uint32_t format, uint32_t pitch,
-                                      drm_intel_bo * bo)
+static struct buffer * new_buffer(uint32_t width, uint32_t height,
+                                  uint32_t format, uint32_t pitch,
+                                  drm_intel_bo * bo)
 {
     struct intel_buffer * buffer;
 
@@ -125,17 +125,17 @@ static struct wld_buffer * new_buffer(uint32_t width, uint32_t height,
                       width, height, format, pitch);
     buffer->bo = bo;
     wld_exporter_initialize(&buffer->exporter, &wld_exporter_impl);
-    wld_buffer_add_exporter(&buffer->base, &buffer->exporter);
+    wld_buffer_add_exporter(&buffer->base.base, &buffer->exporter);
 
     return &buffer->base;
 }
 
-struct wld_buffer * context_create_buffer(struct wld_context * base,
-                                          uint32_t width, uint32_t height,
-                                          uint32_t format, uint32_t flags)
+struct buffer * context_create_buffer(struct wld_context * base,
+                                      uint32_t width, uint32_t height,
+                                      uint32_t format, uint32_t flags)
 {
     struct intel_context * context = intel_context(base);
-    struct wld_buffer * buffer;
+    struct buffer * buffer;
     drm_intel_bo * bo;
     uint32_t tiling_mode = width >= 128 ? I915_TILING_X : I915_TILING_NONE;
     unsigned long pitch;
@@ -157,14 +157,13 @@ struct wld_buffer * context_create_buffer(struct wld_context * base,
     return NULL;
 }
 
-struct wld_buffer * context_import_buffer(struct wld_context * base,
-                                          uint32_t type,
-                                          union wld_object object,
-                                          uint32_t width, uint32_t height,
-                                          uint32_t format, uint32_t pitch)
+struct buffer * context_import_buffer(struct wld_context * base,
+                                      uint32_t type, union wld_object object,
+                                      uint32_t width, uint32_t height,
+                                      uint32_t format, uint32_t pitch)
 {
     struct intel_context * context = intel_context(base);
-    struct wld_buffer * buffer;
+    struct buffer * buffer;
     drm_intel_bo * bo;
 
     switch (type)
@@ -207,23 +206,22 @@ void context_destroy(struct wld_context * base)
 
 /**** Renderer ****/
 uint32_t renderer_capabilities(struct wld_renderer * renderer,
-                               struct wld_buffer * buffer)
+                               struct buffer * buffer)
 {
-    if (buffer->impl == &wld_buffer_impl)
+    if (buffer->base.impl == &wld_buffer_impl)
         return WLD_CAPABILITY_READ | WLD_CAPABILITY_WRITE;
 
     return 0;
 }
 
-bool renderer_set_target(struct wld_renderer * base,
-                         struct wld_buffer * buffer)
+bool renderer_set_target(struct wld_renderer * base, struct buffer * buffer)
 {
     struct intel_renderer * renderer = intel_renderer(base);
 
-    if (buffer && buffer->impl != &wld_buffer_impl)
+    if (buffer && buffer->base.impl != &wld_buffer_impl)
         return false;
 
-    renderer->target = buffer ? intel_buffer(buffer) : NULL;
+    renderer->target = buffer ? intel_buffer(&buffer->base) : NULL;
 
     return true;
 }
@@ -235,27 +233,27 @@ void renderer_fill_rectangle(struct wld_renderer * base, uint32_t color,
     struct intel_renderer * renderer = intel_renderer(base);
     struct intel_buffer * dst = renderer->target;
 
-    xy_color_blt(&renderer->batch, dst->bo, dst->base.pitch,
+    xy_color_blt(&renderer->batch, dst->bo, dst->base.base.pitch,
                  x, y, x + width, y + height, color);
 }
 
 void renderer_copy_rectangle(struct wld_renderer * base,
-                             struct wld_buffer * buffer_base,
+                             struct buffer * buffer_base,
                              int32_t dst_x, int32_t dst_y,
                              int32_t src_x, int32_t src_y,
                              uint32_t width, uint32_t height)
 {
     struct intel_renderer * renderer = intel_renderer(base);
 
-    if (buffer_base->impl != &wld_buffer_impl)
+    if (buffer_base->base.impl != &wld_buffer_impl)
         return;
 
-    struct intel_buffer * src = intel_buffer(buffer_base),
+    struct intel_buffer * src = intel_buffer(&buffer_base->base),
                         * dst = renderer->target;
 
     xy_src_copy_blt(&renderer->batch,
-                    src->bo, src->base.pitch, src_x, src_y,
-                    dst->bo, dst->base.pitch, dst_x, dst_y, width, height);
+                    src->bo, src->base.base.pitch, src_x, src_y,
+                    dst->bo, dst->base.base.pitch, dst_x, dst_y, width, height);
 }
 
 void renderer_draw_text(struct wld_renderer * base,
@@ -275,7 +273,7 @@ void renderer_draw_text(struct wld_renderer * base,
     int32_t origin_x = x;
 
     xy_setup_blt(&renderer->batch, true, BLT_RASTER_OPERATION_SRC,
-                 0, color, dst->bo, dst->base.pitch);
+                 0, color, dst->bo, dst->base.base.pitch);
 
     while ((ret = FcUtf8ToUcs4((FcChar8 *) text, &c, length)) > 0 && c != '\0')
     {
@@ -313,7 +311,7 @@ void renderer_draw_text(struct wld_renderer * base,
         {
             intel_batch_flush(&renderer->batch);
             xy_setup_blt(&renderer->batch, true, BLT_RASTER_OPERATION_SRC,
-                         0, color, dst->bo, dst->base.pitch);
+                         0, color, dst->bo, dst->base.base.pitch);
             goto retry;
         }
 
@@ -341,33 +339,33 @@ void renderer_destroy(struct wld_renderer * base)
 }
 
 /**** Buffer ****/
-bool buffer_map(struct wld_buffer * base)
+bool buffer_map(struct buffer * base)
 {
-    struct intel_buffer * buffer = intel_buffer(base);
+    struct intel_buffer * buffer = intel_buffer(&base->base);
 
     if (drm_intel_gem_bo_map_gtt(buffer->bo) != 0)
         return false;
 
-    buffer->base.map.data = buffer->bo->virtual;
+    buffer->base.base.map = buffer->bo->virtual;
 
     return true;
 }
 
-bool buffer_unmap(struct wld_buffer * base)
+bool buffer_unmap(struct buffer * base)
 {
-    struct intel_buffer * buffer = intel_buffer(base);
+    struct intel_buffer * buffer = intel_buffer(&base->base);
 
     if (drm_intel_gem_bo_unmap_gtt(buffer->bo) != 0)
         return false;
 
-    buffer->base.map.data = NULL;
+    buffer->base.base.map = NULL;
 
     return true;
 }
 
-void buffer_destroy(struct wld_buffer * base)
+void buffer_destroy(struct buffer * base)
 {
-    struct intel_buffer * buffer = intel_buffer(base);
+    struct intel_buffer * buffer = intel_buffer(&base->base);
 
     drm_intel_bo_unreference(buffer->bo);
     free(buffer);

@@ -48,7 +48,7 @@ struct wayland_buffer_socket
 IMPL(wayland_exporter, wld_exporter)
 
 static bool buffer_socket_attach(struct wld_buffer_socket * socket,
-                                 struct wld_buffer * buffer);
+                                 struct buffer * buffer);
 static void buffer_socket_process(struct wld_buffer_socket * socket);
 static void buffer_socket_destroy(struct wld_buffer_socket * socket);
 
@@ -241,13 +241,13 @@ void exporter_destroy(struct wld_exporter * base)
 }
 
 bool buffer_socket_attach(struct wld_buffer_socket * base,
-                          struct wld_buffer * buffer)
+                          struct buffer * buffer)
 {
     struct wayland_buffer_socket * socket = wayland_buffer_socket(base);
     struct wl_buffer * wl;
     union wld_object object;
 
-    if (!wld_export(buffer, WLD_WAYLAND_OBJECT_BUFFER, &object))
+    if (!wld_export(&buffer->base, WLD_WAYLAND_OBJECT_BUFFER, &object))
         return false;
 
     wl = object.ptr;
@@ -257,12 +257,12 @@ bool buffer_socket_attach(struct wld_buffer_socket * base,
 
     wl_surface_attach(socket->wl, wl, 0, 0);
 
-    if (pixman_region32_not_empty(&buffer->damage))
+    if (pixman_region32_not_empty(&buffer->base.damage))
     {
         pixman_box32_t * box;
         int num_boxes;
 
-        box = pixman_region32_rectangles(&buffer->damage, &num_boxes);
+        box = pixman_region32_rectangles(&buffer->base.damage, &num_boxes);
 
         while (num_boxes--)
         {
