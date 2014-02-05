@@ -49,7 +49,7 @@ static void renderer_draw_text(struct wld_renderer * renderer,
 static void renderer_flush(struct wld_renderer * renderer);
 static void renderer_destroy(struct wld_renderer * renderer);
 
-static const struct wld_renderer_impl renderer_impl = {
+static const struct wld_renderer_impl wld_renderer_impl = {
     .capabilities = &renderer_capabilities,
     .set_target = &renderer_set_target,
     .fill_rectangle = &renderer_fill_rectangle,

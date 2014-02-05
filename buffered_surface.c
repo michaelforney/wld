@@ -24,7 +24,7 @@
 #include "wld-private.h"
 
 #include "interface/surface.h"
-IMPL(buffered, surface)
+IMPL(buffered_surface, wld_surface)
 
 struct buffer_entry
 {
@@ -56,7 +56,7 @@ struct wld_surface * buffered_surface_create
     if (!(surface = malloc(sizeof *surface)))
         return NULL;
 
-    surface_initialize(&surface->base, &surface_impl);
+    surface_initialize(&surface->base, &wld_surface_impl);
     surface->context = context;
     surface->entries = NULL;
     surface->back = NULL;

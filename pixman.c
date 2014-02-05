@@ -55,11 +55,11 @@ struct pixman_exporter
 #include "interface/renderer.h"
 #include "interface/buffer.h"
 #include "interface/exporter.h"
-IMPL(pixman, renderer)
-IMPL(pixman, buffer)
-IMPL(pixman, exporter)
+IMPL(pixman_renderer, wld_renderer)
+IMPL(pixman_buffer, wld_buffer)
+IMPL(pixman_exporter, wld_exporter)
 
-static struct wld_context context = { .impl = &context_impl };
+static struct wld_context context = { .impl = &wld_context_impl };
 
 EXPORT
 struct wld_context * wld_pixman_context = &context;
@@ -74,7 +74,7 @@ struct wld_renderer * context_create_renderer(struct wld_context * context)
     if (!(renderer->glyph_cache = pixman_glyph_cache_create()))
         goto error1;
 
-    renderer_initialize(&renderer->base, &renderer_impl);
+    renderer_initialize(&renderer->base, &wld_renderer_impl);
     renderer->target = NULL;
 
     return &renderer->base;
@@ -92,7 +92,7 @@ static struct wld_buffer * new_buffer(pixman_image_t * image)
     if (!(buffer = malloc(sizeof *buffer)))
         return NULL;
 
-    buffer_initialize(&buffer->base, &buffer_impl,
+    buffer_initialize(&buffer->base, &wld_buffer_impl,
                       pixman_image_get_width(image),
                       pixman_image_get_height(image),
                       format_pixman_to_wld(pixman_image_get_format(image)),
@@ -181,7 +181,7 @@ static void destroy_image(pixman_image_t * image, void * data)
 
 static pixman_image_t * pixman_image(struct wld_buffer * buffer)
 {
-    if (buffer->impl == &buffer_impl)
+    if (buffer->impl == &wld_buffer_impl)
         return pixman_image_ref(pixman_buffer(buffer)->image);
 
     union wld_object object;
@@ -205,7 +205,7 @@ static pixman_image_t * pixman_image(struct wld_buffer * buffer)
     if (!(exporter = malloc(sizeof *exporter)))
         goto error2;
 
-    exporter_initialize(&exporter->base, &exporter_impl);
+    exporter_initialize(&exporter->base, &wld_exporter_impl);
     exporter->image = image;
     buffer_add_exporter(buffer, &exporter->base);
     pixman_image_set_destroy_function(image, &destroy_image, buffer);

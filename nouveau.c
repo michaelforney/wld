@@ -76,9 +76,9 @@ struct nouveau_buffer
 #define DRM_DRIVER_NAME nouveau
 #include "interface/drm.h"
 #include "interface/exporter.h"
-IMPL(nouveau, context)
-IMPL(nouveau, renderer)
-IMPL(nouveau, buffer)
+IMPL(nouveau_context, wld_context)
+IMPL(nouveau_renderer, wld_renderer)
+IMPL(nouveau_buffer, wld_buffer)
 
 /**** DRM driver ****/
 bool driver_device_supported(uint32_t vendor_id, uint32_t device_id)
@@ -124,7 +124,7 @@ struct wld_context * driver_create_context(int drm_fd)
     if (nouveau_client_new(context->device, &context->client) != 0)
         goto error2;
 
-    context_initialize(&context->base, &context_impl);
+    context_initialize(&context->base, &wld_context_impl);
 
     return &context->base;
 
@@ -281,7 +281,7 @@ struct wld_renderer * context_create_renderer(struct wld_context * base)
     if (!nvc0_2d_initialize(renderer))
         goto error4;
 
-    renderer_initialize(&renderer->base, &renderer_impl);
+    renderer_initialize(&renderer->base, &wld_renderer_impl);
     renderer->target = NULL;
 
     return &renderer->base;
@@ -307,10 +307,10 @@ static struct nouveau_buffer * new_buffer(struct nouveau_context * context,
     if (!(buffer = malloc(sizeof *buffer)))
         return NULL;
 
-    buffer_initialize(&buffer->base, &buffer_impl,
+    buffer_initialize(&buffer->base, &wld_buffer_impl,
                         width, height, format, pitch);
     buffer->context = context;
-    exporter_initialize(&buffer->exporter, &exporter_impl);
+    exporter_initialize(&buffer->exporter, &wld_exporter_impl);
     buffer_add_exporter(&buffer->base, &buffer->exporter);
 
     return buffer;
@@ -412,7 +412,7 @@ void context_destroy(struct wld_context * base)
 uint32_t renderer_capabilities(struct wld_renderer * renderer,
                                struct wld_buffer * buffer)
 {
-    if (buffer->impl == &buffer_impl)
+    if (buffer->impl == &wld_buffer_impl)
         return WLD_CAPABILITY_READ | WLD_CAPABILITY_WRITE;
 
     return 0;
@@ -423,7 +423,7 @@ bool renderer_set_target(struct wld_renderer * base,
 {
     struct nouveau_renderer * renderer = nouveau_renderer(base);
 
-    if (buffer && buffer->impl != &buffer_impl)
+    if (buffer && buffer->impl != &wld_buffer_impl)
         return false;
 
     renderer->target = buffer ? nouveau_buffer(buffer) : NULL;
@@ -492,7 +492,7 @@ void renderer_copy_rectangle(struct wld_renderer * base,
 {
     struct nouveau_renderer * renderer = nouveau_renderer(base);
 
-    if (buffer_base->impl != &buffer_impl)
+    if (buffer_base->impl != &wld_buffer_impl)
         return;
 
     struct nouveau_buffer * buffer = nouveau_buffer(buffer_base);

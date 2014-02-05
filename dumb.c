@@ -51,10 +51,10 @@ struct dumb_buffer
 #include "interface/exporter.h"
 #define DRM_DRIVER_NAME dumb
 #include "interface/drm.h"
-IMPL(dumb, context)
-IMPL(dumb, buffer)
+IMPL(dumb_context, wld_context)
+IMPL(dumb_buffer, wld_buffer)
 
-const struct wld_context_impl * dumb_context_impl = &context_impl;
+const struct wld_context_impl * dumb_context_impl = &wld_context_impl;
 
 bool driver_device_supported(uint32_t vendor_id, uint32_t device_id)
 {
@@ -68,7 +68,7 @@ struct wld_context * driver_create_context(int drm_fd)
     if (!(context = malloc(sizeof *context)))
         return NULL;
 
-    context_initialize(&context->base, &context_impl);
+    context_initialize(&context->base, &wld_context_impl);
     context->fd = drm_fd;
 
     return &context->base;
@@ -89,11 +89,11 @@ static struct wld_buffer * new_buffer(struct dumb_context * context,
     if (!(buffer = malloc(sizeof *buffer)))
         return NULL;
 
-    buffer_initialize(&buffer->base, &buffer_impl,
+    buffer_initialize(&buffer->base, &wld_buffer_impl,
                       width, height, format, pitch);
     buffer->context = context;
     buffer->handle = handle;
-    exporter_initialize(&buffer->exporter, &exporter_impl);
+    exporter_initialize(&buffer->exporter, &wld_exporter_impl);
     buffer_add_exporter(&buffer->base, &buffer->exporter);
 
     return &buffer->base;

@@ -50,7 +50,7 @@ struct drm_context
 };
 
 #include "interface/context.h"
-IMPL(drm, context);
+IMPL(drm_context, wld_context)
 
 static void registry_global(void * data, struct wl_registry * registry,
                             uint32_t name, const char * interface,
@@ -89,7 +89,7 @@ struct wld_context * wld_wayland_drm_create_context(struct wl_display * display,
     if (!(context = malloc(sizeof *context)))
         goto error0;
 
-    context_initialize(&context->base.base, &context_impl);
+    context_initialize(&context->base.base, &wld_context_impl);
     context->base.display = display;
     context->base.queue = queue;
     context->wl = NULL;

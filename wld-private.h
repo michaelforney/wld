@@ -44,12 +44,11 @@
 #define EXPORT __attribute__((visibility("default")))
 #define CONTAINER_OF(ptr, type, member) \
     ((type *)((uintptr_t) ptr - offsetof(type, member)))
-#define IMPL(name, type)                                                    \
-    static inline struct name ## _ ## type * name ## _ ## type              \
-        (struct wld_ ## type * type)                                        \
+#define IMPL(impl_type, base_type)                                          \
+    static inline struct impl_type * impl_type(struct base_type * object)   \
     {                                                                       \
-        assert(type->impl == &type ## _impl);                               \
-        return (struct name ## _ ## type *) type;                           \
+        assert(object->impl == &base_type ## _impl);                        \
+        return (struct impl_type *) object;                                 \
     }
 
 struct wld_font_context

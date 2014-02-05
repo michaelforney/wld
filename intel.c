@@ -57,9 +57,9 @@ struct intel_buffer
 #include "interface/exporter.h"
 #define DRM_DRIVER_NAME intel
 #include "interface/drm.h"
-IMPL(intel, context)
-IMPL(intel, renderer)
-IMPL(intel, buffer)
+IMPL(intel_context, wld_context)
+IMPL(intel_renderer, wld_renderer)
+IMPL(intel_buffer, wld_buffer)
 
 /**** DRM driver ****/
 bool driver_device_supported(uint32_t vendor_id, uint32_t device_id)
@@ -76,7 +76,7 @@ struct wld_context * driver_create_context(int drm_fd)
     if (!context)
         goto error0;
 
-    context_initialize(&context->base, &context_impl);
+    context_initialize(&context->base, &wld_context_impl);
     context->bufmgr = drm_intel_bufmgr_gem_init(drm_fd, INTEL_BATCH_SIZE);
 
     if (!context->bufmgr)
@@ -102,7 +102,7 @@ struct wld_renderer * context_create_renderer(struct wld_context * base)
     if (!(intel_batch_initialize(&renderer->batch, context->bufmgr)))
         goto error1;
 
-    renderer_initialize(&renderer->base, &renderer_impl);
+    renderer_initialize(&renderer->base, &wld_renderer_impl);
 
     return &renderer->base;
 
@@ -121,10 +121,10 @@ static struct wld_buffer * new_buffer(uint32_t width, uint32_t height,
     if (!(buffer = malloc(sizeof *buffer)))
         return NULL;
 
-    buffer_initialize(&buffer->base, &buffer_impl,
+    buffer_initialize(&buffer->base, &wld_buffer_impl,
                       width, height, format, pitch);
     buffer->bo = bo;
-    exporter_initialize(&buffer->exporter, &exporter_impl);
+    exporter_initialize(&buffer->exporter, &wld_exporter_impl);
     buffer_add_exporter(&buffer->base, &buffer->exporter);
 
     return &buffer->base;
@@ -209,7 +209,7 @@ void context_destroy(struct wld_context * base)
 uint32_t renderer_capabilities(struct wld_renderer * renderer,
                                struct wld_buffer * buffer)
 {
-    if (buffer->impl == &buffer_impl)
+    if (buffer->impl == &wld_buffer_impl)
         return WLD_CAPABILITY_READ | WLD_CAPABILITY_WRITE;
 
     return 0;
@@ -220,7 +220,7 @@ bool renderer_set_target(struct wld_renderer * base,
 {
     struct intel_renderer * renderer = intel_renderer(base);
 
-    if (buffer && buffer->impl != &buffer_impl)
+    if (buffer && buffer->impl != &wld_buffer_impl)
         return false;
 
     renderer->target = buffer ? intel_buffer(buffer) : NULL;
@@ -247,7 +247,7 @@ void renderer_copy_rectangle(struct wld_renderer * base,
 {
     struct intel_renderer * renderer = intel_renderer(base);
 
-    if (buffer_base->impl != &buffer_impl)
+    if (buffer_base->impl != &wld_buffer_impl)
         return;
 
     struct intel_buffer * buffer = intel_buffer(buffer_base);

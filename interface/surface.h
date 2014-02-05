@@ -30,7 +30,7 @@ static bool surface_release(struct wld_surface * surface,
 static bool surface_swap(struct wld_surface * surface);
 static void surface_destroy(struct wld_surface * surface);
 
-static const struct wld_surface_impl surface_impl = {
+static const struct wld_surface_impl wld_surface_impl = {
     .damage = &surface_damage,
     .back = &surface_back,
     .take = &surface_take,

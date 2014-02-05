@@ -45,20 +45,20 @@ struct wayland_buffer_socket
 };
 
 #include "interface/exporter.h"
-IMPL(wayland, exporter)
+IMPL(wayland_exporter, wld_exporter)
 
 static bool buffer_socket_attach(struct wld_buffer_socket * socket,
                                  struct wld_buffer * buffer);
 static void buffer_socket_process(struct wld_buffer_socket * socket);
 static void buffer_socket_destroy(struct wld_buffer_socket * socket);
 
-static const struct wld_buffer_socket_impl buffer_socket_impl = {
+static const struct wld_buffer_socket_impl wld_buffer_socket_impl = {
     .attach = &buffer_socket_attach,
     .process = &buffer_socket_process,
     .destroy = &buffer_socket_destroy
 };
 
-IMPL(wayland, buffer_socket)
+IMPL(wayland_buffer_socket, wld_buffer_socket)
 
 static void sync_done(void * data, struct wl_callback * callback,
                       uint32_t msecs);
@@ -166,7 +166,7 @@ struct wld_surface * wld_wayland_create_surface(struct wld_context * context,
     if (!(socket = malloc(sizeof *socket)))
         goto error0;
 
-    socket->base.impl = &buffer_socket_impl;
+    socket->base.impl = &wld_buffer_socket_impl;
     socket->listener.release = &buffer_release;
     socket->wl = wl;
     socket->queue = ((struct wayland_context *) context)->queue;
@@ -212,7 +212,7 @@ struct wld_exporter * wayland_create_exporter(struct wl_buffer * buffer)
     if (!(exporter = malloc(sizeof *exporter)))
         return NULL;
 
-    exporter_initialize(&exporter->base, &exporter_impl);
+    exporter_initialize(&exporter->base, &wld_exporter_impl);
     exporter->buffer = buffer;
 
     return &exporter->base;

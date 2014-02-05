@@ -36,7 +36,7 @@ static struct wld_surface * context_create_surface
 #endif
 static void context_destroy(struct wld_context * context);
 
-static const struct wld_context_impl context_impl = {
+static const struct wld_context_impl wld_context_impl = {
     .create_renderer = &context_create_renderer,
     .create_buffer = &context_create_buffer,
     .import_buffer = &context_import_buffer,

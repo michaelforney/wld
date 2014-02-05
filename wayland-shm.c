@@ -52,8 +52,8 @@ struct shm_buffer
 
 #include "interface/context.h"
 #include "interface/buffer.h"
-IMPL(shm, context)
-IMPL(shm, buffer)
+IMPL(shm_context, wld_context)
+IMPL(shm_buffer, wld_buffer)
 
 static void registry_global(void * data, struct wl_registry * registry,
                             uint32_t name, const char * interface,
@@ -98,7 +98,7 @@ struct wld_context * wld_wayland_shm_create_context
     if (!(context = malloc(sizeof *context)))
         goto error0;
 
-    context_initialize(&context->base.base, &context_impl);
+    context_initialize(&context->base.base, &wld_context_impl);
     context->base.display = display;
     context->base.queue = queue;
     context->wl = NULL;
@@ -198,7 +198,7 @@ struct wld_buffer * context_create_buffer(struct wld_context * base,
     if (!(exporter = wayland_create_exporter(wl)))
         goto error3;
 
-    buffer_initialize(&buffer->base, &buffer_impl,
+    buffer_initialize(&buffer->base, &wld_buffer_impl,
                       width, height, format, pitch);
     buffer->fd = fd;
     buffer_add_exporter(&buffer->base, exporter);

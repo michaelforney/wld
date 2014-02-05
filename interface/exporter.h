@@ -26,7 +26,7 @@ static bool exporter_export(struct wld_exporter * exporter,
                             struct wld_buffer * buffer,
                             uint32_t type, union wld_object * object);
 
-static const struct wld_exporter_impl exporter_impl = {
+static const struct wld_exporter_impl wld_exporter_impl = {
     .destroy = &exporter_destroy,
     .export = &exporter_export
 };
