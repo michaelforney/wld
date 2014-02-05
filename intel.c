@@ -233,9 +233,9 @@ void renderer_fill_rectangle(struct wld_renderer * base, uint32_t color,
                              uint32_t width, uint32_t height)
 {
     struct intel_renderer * renderer = intel_renderer(base);
+    struct intel_buffer * dst = renderer->target;
 
-    xy_color_blt(&renderer->batch, renderer->target->bo,
-                 renderer->target->base.pitch,
+    xy_color_blt(&renderer->batch, dst->bo, dst->base.pitch,
                  x, y, x + width, y + height, color);
 }
 
@@ -250,12 +250,12 @@ void renderer_copy_rectangle(struct wld_renderer * base,
     if (buffer_base->impl != &wld_buffer_impl)
         return;
 
-    struct intel_buffer * buffer = intel_buffer(buffer_base);
+    struct intel_buffer * src = intel_buffer(buffer_base),
+                        * dst = renderer->target;
 
-    xy_src_copy_blt(&renderer->batch, buffer->bo, buffer->base.pitch,
-                    src_x, src_y,
-                    renderer->target->bo, renderer->target->base.pitch,
-                    dst_x, dst_y, width, height);
+    xy_src_copy_blt(&renderer->batch,
+                    src->bo, src->base.pitch, src_x, src_y,
+                    dst->bo, dst->base.pitch, dst_x, dst_y, width, height);
 }
 
 void renderer_draw_text(struct wld_renderer * base,
@@ -264,6 +264,7 @@ void renderer_draw_text(struct wld_renderer * base,
                         struct wld_extents * extents)
 {
     struct intel_renderer * renderer = intel_renderer(base);
+    struct intel_buffer * dst = renderer->target;
     int ret;
     struct glyph * glyph;
     uint32_t row;
@@ -274,7 +275,7 @@ void renderer_draw_text(struct wld_renderer * base,
     int32_t origin_x = x;
 
     xy_setup_blt(&renderer->batch, true, BLT_RASTER_OPERATION_SRC,
-                 0, color, renderer->target->bo, renderer->target->base.pitch);
+                 0, color, dst->bo, dst->base.pitch);
 
     while ((ret = FcUtf8ToUcs4((FcChar8 *) text, &c, length)) > 0 && c != '\0')
     {
@@ -301,7 +302,7 @@ void renderer_draw_text(struct wld_renderer * base,
         }
 
       retry:
-        ret = xy_text_immediate_blt(&renderer->batch, renderer->target->bo,
+        ret = xy_text_immediate_blt(&renderer->batch, dst->bo,
                                     origin_x + glyph->x, y + glyph->y,
                                     origin_x + glyph->x + glyph->bitmap.width,
                                     y + glyph->y + glyph->bitmap.rows,
@@ -311,9 +312,8 @@ void renderer_draw_text(struct wld_renderer * base,
         if (ret == INTEL_BATCH_NO_SPACE)
         {
             intel_batch_flush(&renderer->batch);
-            xy_setup_blt(&renderer->batch, true,
-                         BLT_RASTER_OPERATION_SRC, 0, color,
-                         renderer->target->bo, renderer->target->base.pitch);
+            xy_setup_blt(&renderer->batch, true, BLT_RASTER_OPERATION_SRC,
+                         0, color, dst->bo, dst->base.pitch);
             goto retry;
         }
 

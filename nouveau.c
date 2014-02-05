@@ -463,16 +463,16 @@ void renderer_fill_rectangle(struct wld_renderer * base, uint32_t color,
                              uint32_t width, uint32_t height)
 {
     struct nouveau_renderer * renderer = nouveau_renderer(base);
+    struct nouveau_buffer * dst = renderer->target;
     uint32_t format;
 
     if (!ensure_space(renderer->pushbuf, 18))
         return;
 
-    format = nvc0_format(renderer->target->base.format);
+    format = nvc0_format(dst->base.format);
 
     nouveau_bufctx_reset(renderer->bufctx, 0);
-    nvc0_2d_use_buffer(renderer, renderer->target,
-                       NV50_2D_DST_FORMAT, format);
+    nvc0_2d_use_buffer(renderer, dst, NV50_2D_DST_FORMAT, format);
     nvc0_2d(renderer->pushbuf, NV50_2D_DRAW_SHAPE, 3,
             NV50_2D_DRAW_SHAPE_RECTANGLES, format, color);
     nouveau_pushbuf_bufctx(renderer->pushbuf, renderer->bufctx);
@@ -495,19 +495,19 @@ void renderer_copy_rectangle(struct wld_renderer * base,
     if (buffer_base->impl != &wld_buffer_impl)
         return;
 
-    struct nouveau_buffer * buffer = nouveau_buffer(buffer_base);
+    struct nouveau_buffer * src = nouveau_buffer(buffer_base),
+                          * dst = renderer->target;
     uint32_t src_format, dst_format;
 
     if (!ensure_space(renderer->pushbuf, 33))
         return;
 
-    src_format = nvc0_format(buffer->base.format);
-    dst_format = nvc0_format(renderer->target->base.format);
+    src_format = nvc0_format(src->base.format);
+    dst_format = nvc0_format(dst->base.format);
 
     nouveau_bufctx_reset(renderer->bufctx, 0);
-    nvc0_2d_use_buffer(renderer, buffer, NV50_2D_SRC_FORMAT, src_format);
-    nvc0_2d_use_buffer(renderer, renderer->target,
-                       NV50_2D_DST_FORMAT, dst_format);
+    nvc0_2d_use_buffer(renderer, src, NV50_2D_SRC_FORMAT, src_format);
+    nvc0_2d_use_buffer(renderer, dst, NV50_2D_DST_FORMAT, dst_format);
     nouveau_pushbuf_bufctx(renderer->pushbuf, renderer->bufctx);
 
     if (nouveau_pushbuf_validate(renderer->pushbuf) != 0)
@@ -529,6 +529,7 @@ void renderer_draw_text(struct wld_renderer * base,
                         struct wld_extents * extents)
 {
     struct nouveau_renderer * renderer = nouveau_renderer(base);
+    struct nouveau_buffer * dst = renderer->target;
     uint32_t format;
     int ret;
     struct glyph * glyph;
@@ -539,11 +540,10 @@ void renderer_draw_text(struct wld_renderer * base,
     if (!ensure_space(renderer->pushbuf, 17))
         return;
 
-    format = nvc0_format(renderer->target->base.format);
+    format = nvc0_format(dst->base.format);
 
     nouveau_bufctx_reset(renderer->bufctx, 0);
-    nvc0_2d_use_buffer(renderer, renderer->target,
-                       NV50_2D_DST_FORMAT, format);
+    nvc0_2d_use_buffer(renderer, dst, NV50_2D_DST_FORMAT, format);
     nvc0_2d_inline(renderer->pushbuf, NV50_2D_SIFC_BITMAP_ENABLE, 1);
     nvc0_2d(renderer->pushbuf, NV50_2D_SIFC_BITMAP_FORMAT, 6,
             NV50_2D_SIFC_BITMAP_FORMAT_I1,
