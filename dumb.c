@@ -48,7 +48,6 @@ struct dumb_buffer
 
 #include "interface/context.h"
 #include "interface/buffer.h"
-#include "interface/exporter.h"
 #define DRM_DRIVER_NAME dumb
 #include "interface/drm.h"
 IMPL(dumb_context, wld_context)
@@ -79,6 +78,39 @@ struct wld_renderer * context_create_renderer(struct wld_context * context)
     return wld_create_renderer(wld_pixman_context);
 }
 
+static bool export(struct wld_exporter * exporter, struct wld_buffer * base,
+                   uint32_t type, union wld_object * object)
+{
+    struct dumb_buffer * buffer = dumb_buffer(base);
+
+    switch (type)
+    {
+        case WLD_DRM_OBJECT_HANDLE:
+            object->u32 = buffer->handle;
+            return true;
+        case WLD_DRM_OBJECT_PRIME_FD:
+            if (drmPrimeHandleToFD(buffer->context->fd, buffer->handle,
+                                   DRM_CLOEXEC, &object->i) != 0)
+            {
+                return false;
+            }
+
+            return true;
+        case WLD_DRM_OBJECT_GEM_NAME:
+        {
+            struct drm_gem_flink flink = { .handle = buffer->handle };
+
+            if (drmIoctl(buffer->context->fd, DRM_IOCTL_GEM_FLINK, &flink) != 0)
+                return false;
+
+            object->u32 = flink.name;
+            return true;
+        }
+        default:
+            return false;
+    }
+}
+
 static struct buffer * new_buffer(struct dumb_context * context,
                                   uint32_t width, uint32_t height,
                                   uint32_t format, uint32_t handle,
@@ -93,7 +125,7 @@ static struct buffer * new_buffer(struct dumb_context * context,
                       width, height, format, pitch);
     buffer->context = context;
     buffer->handle = handle;
-    wld_exporter_initialize(&buffer->exporter, &wld_exporter_impl);
+    buffer->exporter.export = &export;
     wld_buffer_add_exporter(&buffer->base.base, &buffer->exporter);
 
     return &buffer->base;
@@ -219,44 +251,5 @@ void buffer_destroy(struct buffer * base)
 
     drmIoctl(buffer->context->fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_dumb);
     free(buffer);
-}
-
-/**** Exporter ****/
-
-bool exporter_export(struct wld_exporter * exporter, struct wld_buffer * base,
-                     uint32_t type, union wld_object * object)
-{
-    struct dumb_buffer * buffer = dumb_buffer(base);
-
-    switch (type)
-    {
-        case WLD_DRM_OBJECT_HANDLE:
-            object->u32 = buffer->handle;
-            return true;
-        case WLD_DRM_OBJECT_PRIME_FD:
-            if (drmPrimeHandleToFD(buffer->context->fd, buffer->handle,
-                                   DRM_CLOEXEC, &object->i) != 0)
-            {
-                return false;
-            }
-
-            return true;
-        case WLD_DRM_OBJECT_GEM_NAME:
-        {
-            struct drm_gem_flink flink = { .handle = buffer->handle };
-
-            if (drmIoctl(buffer->context->fd, DRM_IOCTL_GEM_FLINK, &flink) != 0)
-                return false;
-
-            object->u32 = flink.name;
-            return true;
-        }
-        default:
-            return false;
-    }
-}
-
-void exporter_destroy(struct wld_exporter * exporter)
-{
 }
 

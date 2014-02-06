@@ -28,10 +28,11 @@
 #include <stdlib.h>
 #include <wayland-client.h>
 
-struct wayland_exporter
+struct wayland_buffer
 {
-    struct wld_exporter base;
-    struct wl_buffer * buffer;
+    struct wld_exporter exporter;
+    struct wld_destructor destructor;
+    struct wl_buffer * wl;
 };
 
 struct wayland_buffer_socket
@@ -43,9 +44,6 @@ struct wayland_buffer_socket
     struct wl_display * display;
     struct wl_event_queue * queue;
 };
-
-#include "interface/exporter.h"
-IMPL(wayland_exporter, wld_exporter)
 
 static bool buffer_socket_attach(struct buffer_socket * socket,
                                  struct buffer * buffer);
@@ -205,39 +203,45 @@ int wayland_roundtrip(struct wl_display * display,
     return ret;
 }
 
-struct wld_exporter * wayland_create_exporter(struct wl_buffer * buffer)
+static bool buffer_export(struct wld_exporter * exporter,
+                          struct wld_buffer * buffer,
+                          uint32_t type, union wld_object * object)
 {
-    struct wayland_exporter * exporter;
-
-    if (!(exporter = malloc(sizeof *exporter)))
-        return NULL;
-
-    wld_exporter_initialize(&exporter->base, &wld_exporter_impl);
-    exporter->buffer = buffer;
-
-    return &exporter->base;
-}
-
-bool exporter_export(struct wld_exporter * base, struct wld_buffer * buffer,
-                     uint32_t type, union wld_object * object)
-{
-    struct wayland_exporter * exporter = wayland_exporter(base);
+    struct wayland_buffer * wayland_buffer
+        = CONTAINER_OF(exporter, struct wayland_buffer, exporter);
 
     switch (type)
     {
         case WLD_WAYLAND_OBJECT_BUFFER:
-            object->ptr = exporter->buffer;
+            object->ptr = wayland_buffer->wl;
             return true;
         default: return false;
     }
 }
 
-void exporter_destroy(struct wld_exporter * base)
+static void buffer_destroy(struct wld_destructor * destructor)
 {
-    struct wayland_exporter * exporter = wayland_exporter(base);
+    struct wayland_buffer * wayland_buffer
+        = CONTAINER_OF(destructor, struct wayland_buffer, destructor);
 
-    wl_buffer_destroy(exporter->buffer);
-    free(exporter);
+    wl_buffer_destroy(wayland_buffer->wl);
+    free(wayland_buffer);
+}
+
+bool wayland_buffer_add_exporter(struct buffer * buffer, struct wl_buffer * wl)
+{
+    struct wayland_buffer * wayland_buffer;
+
+    if (!(wayland_buffer = malloc(sizeof *wayland_buffer)))
+        return false;
+
+    wayland_buffer->wl = wl;
+    wayland_buffer->exporter.export = &buffer_export;
+    wld_buffer_add_exporter(&buffer->base, &wayland_buffer->exporter);
+    wayland_buffer->destructor.destroy = &buffer_destroy;
+    wld_buffer_add_destructor(&buffer->base, &wayland_buffer->destructor);
+
+    return true;
 }
 
 bool buffer_socket_attach(struct buffer_socket * base, struct buffer * buffer)

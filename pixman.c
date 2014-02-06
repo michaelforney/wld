@@ -44,9 +44,10 @@ struct pixman_buffer
     pixman_image_t * image;
 };
 
-struct pixman_exporter
+struct pixman_map
 {
-    struct wld_exporter base;
+    struct wld_exporter exporter;
+    struct wld_destructor destructor;
     pixman_image_t * image;
 };
 
@@ -54,10 +55,8 @@ struct pixman_exporter
 #define RENDERER_IMPLEMENTS_REGION
 #include "interface/renderer.h"
 #include "interface/buffer.h"
-#include "interface/exporter.h"
 IMPL(pixman_renderer, wld_renderer)
 IMPL(pixman_buffer, wld_buffer)
-IMPL(pixman_exporter, wld_exporter)
 
 static struct wld_context context = { .impl = &wld_context_impl };
 
@@ -178,6 +177,31 @@ static void destroy_image(pixman_image_t * image, void * data)
     wld_unmap(&buffer->base);
 }
 
+bool map_export(struct wld_exporter * exporter, struct wld_buffer * buffer,
+                uint32_t type, union wld_object * object)
+{
+    struct pixman_map * map
+        = CONTAINER_OF(exporter, struct pixman_map, exporter);
+
+    switch (type)
+    {
+        case WLD_PIXMAN_OBJECT_IMAGE:
+            object->ptr = pixman_image_ref(map->image);
+            return true;
+        default:
+            return false;
+    }
+}
+
+void map_destroy(struct wld_destructor * destructor)
+{
+    struct pixman_map * map
+        = CONTAINER_OF(destructor, struct pixman_map, destructor);
+
+    pixman_image_unref(map->image);
+    free(map);
+}
+
 static pixman_image_t * pixman_image(struct buffer * buffer)
 {
     if (buffer->base.impl == &wld_buffer_impl)
@@ -188,7 +212,7 @@ static pixman_image_t * pixman_image(struct buffer * buffer)
     if (wld_export(&buffer->base, WLD_PIXMAN_OBJECT_IMAGE, &object))
         return object.ptr;
 
-    struct pixman_exporter * exporter;
+    struct pixman_map * map;
     pixman_image_t * image;
 
     if (!wld_map(&buffer->base))
@@ -201,12 +225,14 @@ static pixman_image_t * pixman_image(struct buffer * buffer)
     if (!image)
         goto error1;
 
-    if (!(exporter = malloc(sizeof *exporter)))
+    if (!(map = malloc(sizeof *map)))
         goto error2;
 
-    wld_exporter_initialize(&exporter->base, &wld_exporter_impl);
-    exporter->image = image;
-    wld_buffer_add_exporter(&buffer->base, &exporter->base);
+    map->image = image;
+    map->exporter.export = &map_export;
+    wld_buffer_add_exporter(&buffer->base, &map->exporter);
+    map->destructor.destroy = &map_destroy;
+    wld_buffer_add_destructor(&buffer->base, &map->destructor);
     pixman_image_set_destroy_function(image, &destroy_image, buffer);
 
     return pixman_image_ref(image);
@@ -420,29 +446,5 @@ void buffer_destroy(struct buffer * base)
 
     pixman_image_unref(buffer->image);
     free(buffer);
-}
-
-/**** Exporter ****/
-bool exporter_export(struct wld_exporter * base, struct wld_buffer * buffer,
-                     uint32_t type, union wld_object * object)
-{
-    struct pixman_exporter * exporter = pixman_exporter(base);
-
-    switch (type)
-    {
-        case WLD_PIXMAN_OBJECT_IMAGE:
-            object->ptr = pixman_image_ref(exporter->image);
-            return true;
-        default:
-            return false;
-    }
-}
-
-void exporter_destroy(struct wld_exporter * base)
-{
-    struct pixman_exporter * exporter = pixman_exporter(base);
-
-    pixman_image_unref(exporter->image);
-    free(exporter);
 }
 

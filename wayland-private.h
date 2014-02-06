@@ -26,6 +26,7 @@
 
 #include "wld.h"
 
+struct buffer;
 struct wl_display;
 struct wl_event_queue;
 struct wl_buffer;
@@ -57,7 +58,7 @@ extern const struct wld_wayland_interface wayland_shm_interface;
 int wayland_roundtrip(struct wl_display * display,
                       struct wl_event_queue * queue);
 
-struct wld_exporter * wayland_create_exporter(struct wl_buffer * buffer);
+bool wayland_buffer_add_exporter(struct buffer * buffer, struct wl_buffer * wl);
 
 #endif
 

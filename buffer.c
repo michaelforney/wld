@@ -37,15 +37,8 @@ void buffer_initialize(struct buffer * buffer,
     buffer->references = 1;
     buffer->map_references = 0;
     buffer->exporters = NULL;
+    buffer->destructors = NULL;
     pixman_region32_init_rect(&buffer->base.damage, 0, 0, width, height);
-}
-
-EXPORT
-void wld_exporter_initialize(struct wld_exporter * exporter,
-                             const struct wld_exporter_impl * impl)
-{
-    *((const struct wld_exporter_impl **) &exporter->impl) = impl;
-    exporter->next = NULL;
 }
 
 EXPORT
@@ -84,7 +77,7 @@ bool wld_export(struct wld_buffer * base,
 
     for (exporter = buffer->exporters; exporter; exporter = exporter->next)
     {
-        if (exporter->impl->export(exporter, &buffer->base, type, object))
+        if (exporter->export(exporter, &buffer->base, type, object))
             return true;
     }
 
@@ -102,6 +95,16 @@ void wld_buffer_add_exporter(struct wld_buffer * base,
 }
 
 EXPORT
+void wld_buffer_add_destructor(struct wld_buffer * base,
+                               struct wld_destructor * destructor)
+{
+    struct buffer * buffer = (void *) base;
+
+    destructor->next = buffer->destructors;
+    buffer->destructors = destructor;
+}
+
+EXPORT
 void wld_buffer_reference(struct wld_buffer * base)
 {
     struct buffer * buffer = (void *) base;
@@ -113,7 +116,7 @@ EXPORT
 void wld_buffer_unreference(struct wld_buffer * base)
 {
     struct buffer * buffer = (void *) base;
-    struct wld_exporter * exporter, * next;
+    struct wld_destructor * destructor, * next;
 
     if (--buffer->references > 0)
         return;
@@ -123,10 +126,10 @@ void wld_buffer_unreference(struct wld_buffer * base)
 
     pixman_region32_fini(&buffer->base.damage);
 
-    for (exporter = buffer->exporters, next = exporter ? exporter->next : NULL;
-         exporter; exporter = next, next = exporter ? exporter->next : NULL)
+    for (destructor = buffer->destructors; destructor; destructor = next)
     {
-        exporter->impl->destroy(exporter);
+        next = destructor->next;
+        destructor->destroy(destructor);
     }
 
     buffer->base.impl->destroy(buffer);

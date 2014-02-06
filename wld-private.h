@@ -127,6 +127,7 @@ struct buffer
 
     unsigned references, map_references;
     struct wld_exporter * exporters;
+    struct wld_destructor * destructors;
 };
 
 struct wld_buffer_impl

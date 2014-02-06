@@ -195,7 +195,6 @@ struct buffer * context_create_buffer(struct wld_context * base,
 {
     struct drm_context * context = drm_context(base);
     struct buffer * buffer;
-    struct wld_exporter * exporter;
     union wld_object object;
     struct wl_buffer * wl;
 
@@ -218,10 +217,8 @@ struct buffer * context_create_buffer(struct wld_context * base,
     if (!wl)
         goto error1;
 
-    if (!(exporter = wayland_create_exporter(wl)))
+    if (!wayland_buffer_add_exporter(buffer, wl))
         goto error2;
-
-    wld_buffer_add_exporter(&buffer->base, exporter);
 
     return buffer;
 

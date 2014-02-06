@@ -75,7 +75,6 @@ struct nouveau_buffer
 #include "interface/buffer.h"
 #define DRM_DRIVER_NAME nouveau
 #include "interface/drm.h"
-#include "interface/exporter.h"
 IMPL(nouveau_context, wld_context)
 IMPL(nouveau_renderer, wld_renderer)
 IMPL(nouveau_buffer, wld_buffer)
@@ -298,6 +297,29 @@ struct wld_renderer * context_create_renderer(struct wld_context * base)
     return NULL;
 }
 
+static bool export(struct wld_exporter * exporter, struct wld_buffer * base,
+                   uint32_t type, union wld_object * object)
+{
+    struct nouveau_buffer * buffer = nouveau_buffer(base);
+
+    switch (type)
+    {
+        case WLD_DRM_OBJECT_HANDLE:
+            object->u32 = buffer->bo->handle;
+            return true;
+        case WLD_DRM_OBJECT_PRIME_FD:
+            if (nouveau_bo_set_prime(buffer->bo, &object->i) != 0)
+                return false;
+            return true;
+        case WLD_DRM_OBJECT_GEM_NAME:
+            if (nouveau_bo_name_get(buffer->bo, &object->u32) != 0)
+                return false;
+            return true;
+        default:
+            return false;
+    }
+}
+
 static struct nouveau_buffer * new_buffer(struct nouveau_context * context,
                                           uint32_t width, uint32_t height,
                                           uint32_t format, uint32_t pitch)
@@ -310,7 +332,7 @@ static struct nouveau_buffer * new_buffer(struct nouveau_context * context,
     buffer_initialize(&buffer->base, &wld_buffer_impl,
                         width, height, format, pitch);
     buffer->context = context;
-    wld_exporter_initialize(&buffer->exporter, &wld_exporter_impl);
+    buffer->exporter.export = &export;
     wld_buffer_add_exporter(&buffer->base.base, &buffer->exporter);
 
     return buffer;
@@ -656,33 +678,5 @@ void buffer_destroy(struct buffer * base)
 
     nouveau_bo_ref(NULL, &buffer->bo);
     free(buffer);
-}
-
-/**** Exporter ****/
-bool exporter_export(struct wld_exporter * exporter, struct wld_buffer * base,
-                     uint32_t type, union wld_object * object)
-{
-    struct nouveau_buffer * buffer = nouveau_buffer(base);
-
-    switch (type)
-    {
-        case WLD_DRM_OBJECT_HANDLE:
-            object->u32 = buffer->bo->handle;
-            return true;
-        case WLD_DRM_OBJECT_PRIME_FD:
-            if (nouveau_bo_set_prime(buffer->bo, &object->i) != 0)
-                return false;
-            return true;
-        case WLD_DRM_OBJECT_GEM_NAME:
-            if (nouveau_bo_name_get(buffer->bo, &object->u32) != 0)
-                return false;
-            return true;
-        default:
-            return false;
-    }
-}
-
-void exporter_destroy(struct wld_exporter * exporter)
-{
 }
 

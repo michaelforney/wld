@@ -157,19 +157,16 @@ static inline void wld_font_text_extents(struct wld_font * font,
 
 struct wld_exporter
 {
-    const struct wld_exporter_impl * const impl;
+    bool (* export)(struct wld_exporter * exporter, struct wld_buffer * buffer,
+                    uint32_t type, union wld_object * object);
     struct wld_exporter * next;
 };
 
-struct wld_exporter_impl
+struct wld_destructor
 {
-    bool (* export)(struct wld_exporter * exporter, struct wld_buffer * buffer,
-                    uint32_t type, union wld_object * object);
-    void (* destroy)(struct wld_exporter * exporter);
+    void (* destroy)(struct wld_destructor * destructor);
+    struct wld_destructor * next;
 };
-
-void wld_exporter_initialize(struct wld_exporter * exporter,
-                             const struct wld_exporter_impl * impl);
 
 struct wld_buffer
 {
@@ -189,6 +186,9 @@ bool wld_export(struct wld_buffer * buffer,
 
 void wld_buffer_add_exporter(struct wld_buffer * buffer,
                              struct wld_exporter * exporter);
+
+void wld_buffer_add_destructor(struct wld_buffer * buffer,
+                               struct wld_destructor * destructor);
 
 /**
  * Increase the reference count of a buffer.

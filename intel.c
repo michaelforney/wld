@@ -54,7 +54,6 @@ struct intel_buffer
 #include "interface/context.h"
 #include "interface/renderer.h"
 #include "interface/buffer.h"
-#include "interface/exporter.h"
 #define DRM_DRIVER_NAME intel
 #include "interface/drm.h"
 IMPL(intel_context, wld_context)
@@ -112,6 +111,29 @@ struct wld_renderer * context_create_renderer(struct wld_context * base)
     return NULL;
 }
 
+static bool export(struct wld_exporter * exporter, struct wld_buffer * base,
+                   uint32_t type, union wld_object * object)
+{
+    struct intel_buffer * buffer = intel_buffer(base);
+
+    switch (type)
+    {
+        case WLD_DRM_OBJECT_HANDLE:
+            object->u32 = buffer->bo->handle;
+            return true;
+        case WLD_DRM_OBJECT_PRIME_FD:
+            if (drm_intel_bo_gem_export_to_prime(buffer->bo, &object->i) != 0)
+                return false;
+            return true;
+        case WLD_DRM_OBJECT_GEM_NAME:
+            if (drm_intel_bo_flink(buffer->bo, &object->u32) != 0)
+                return false;
+            return true;
+        default:
+            return false;
+    }
+}
+
 static struct buffer * new_buffer(uint32_t width, uint32_t height,
                                   uint32_t format, uint32_t pitch,
                                   drm_intel_bo * bo)
@@ -124,7 +146,7 @@ static struct buffer * new_buffer(uint32_t width, uint32_t height,
     buffer_initialize(&buffer->base, &wld_buffer_impl,
                       width, height, format, pitch);
     buffer->bo = bo;
-    wld_exporter_initialize(&buffer->exporter, &wld_exporter_impl);
+    buffer->exporter.export = &export;
     wld_buffer_add_exporter(&buffer->base.base, &buffer->exporter);
 
     return &buffer->base;
@@ -369,33 +391,5 @@ void buffer_destroy(struct buffer * base)
 
     drm_intel_bo_unreference(buffer->bo);
     free(buffer);
-}
-
-/**** Exporter ****/
-bool exporter_export(struct wld_exporter * exporter, struct wld_buffer * base,
-                     uint32_t type, union wld_object * object)
-{
-    struct intel_buffer * buffer = intel_buffer(base);
-
-    switch (type)
-    {
-        case WLD_DRM_OBJECT_HANDLE:
-            object->u32 = buffer->bo->handle;
-            return true;
-        case WLD_DRM_OBJECT_PRIME_FD:
-            if (drm_intel_bo_gem_export_to_prime(buffer->bo, &object->i) != 0)
-                return false;
-            return true;
-        case WLD_DRM_OBJECT_GEM_NAME:
-            if (drm_intel_bo_flink(buffer->bo, &object->u32) != 0)
-                return false;
-            return true;
-        default:
-            return false;
-    }
-}
-
-void exporter_destroy(struct wld_exporter * exporter)
-{
 }
 

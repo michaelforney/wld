@@ -164,7 +164,6 @@ struct buffer * context_create_buffer(struct wld_context * base,
 {
     struct shm_context * context = shm_context(base);
     struct shm_buffer * buffer;
-    struct wld_exporter * exporter;
     char name[] = "/tmp/wld-XXXXXX";
     uint32_t pitch = width * format_bytes_per_pixel(format);
     size_t size = pitch * height;
@@ -195,13 +194,12 @@ struct buffer * context_create_buffer(struct wld_context * base,
     if (!wl)
         goto error2;
 
-    if (!(exporter = wayland_create_exporter(wl)))
-        goto error3;
-
     buffer_initialize(&buffer->base, &wld_buffer_impl,
                       width, height, format, pitch);
     buffer->fd = fd;
-    wld_buffer_add_exporter(&buffer->base.base, exporter);
+
+    if (!(wayland_buffer_add_exporter(&buffer->base, wl)))
+        goto error3;
 
     return &buffer->base;
 
