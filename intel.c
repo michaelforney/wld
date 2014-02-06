@@ -124,8 +124,8 @@ static struct wld_buffer * new_buffer(uint32_t width, uint32_t height,
     buffer_initialize(&buffer->base, &wld_buffer_impl,
                       width, height, format, pitch);
     buffer->bo = bo;
-    exporter_initialize(&buffer->exporter, &wld_exporter_impl);
-    buffer_add_exporter(&buffer->base, &buffer->exporter);
+    wld_exporter_initialize(&buffer->exporter, &wld_exporter_impl);
+    wld_buffer_add_exporter(&buffer->base, &buffer->exporter);
 
     return &buffer->base;
 }

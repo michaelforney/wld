@@ -212,7 +212,7 @@ struct wld_exporter * wayland_create_exporter(struct wl_buffer * buffer)
     if (!(exporter = malloc(sizeof *exporter)))
         return NULL;
 
-    exporter_initialize(&exporter->base, &wld_exporter_impl);
+    wld_exporter_initialize(&exporter->base, &wld_exporter_impl);
     exporter->buffer = buffer;
 
     return &exporter->base;

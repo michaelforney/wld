@@ -221,7 +221,7 @@ struct wld_buffer * context_create_buffer(struct wld_context * base,
     if (!(exporter = wayland_create_exporter(wl)))
         goto error2;
 
-    buffer_add_exporter(buffer, exporter);
+    wld_buffer_add_exporter(buffer, exporter);
 
     return buffer;
 

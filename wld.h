@@ -155,6 +155,22 @@ static inline void wld_font_text_extents(struct wld_font * font,
 
 /**** Buffers ****/
 
+struct wld_exporter
+{
+    const struct wld_exporter_impl * const impl;
+    struct wld_exporter * next;
+};
+
+struct wld_exporter_impl
+{
+    bool (* export)(struct wld_exporter * exporter, struct wld_buffer * buffer,
+                    uint32_t type, union wld_object * object);
+    void (* destroy)(struct wld_exporter * exporter);
+};
+
+void wld_exporter_initialize(struct wld_exporter * exporter,
+                             const struct wld_exporter_impl * impl);
+
 struct wld_buffer
 {
     const struct wld_buffer_impl * const impl;
@@ -180,6 +196,9 @@ bool wld_unmap(struct wld_buffer * buffer);
 
 bool wld_export(struct wld_buffer * buffer,
                 uint32_t type, union wld_object * object);
+
+void wld_buffer_add_exporter(struct wld_buffer * buffer,
+                             struct wld_exporter * exporter);
 
 /**
  * Destroy a buffer.

@@ -201,7 +201,7 @@ struct wld_buffer * context_create_buffer(struct wld_context * base,
     buffer_initialize(&buffer->base, &wld_buffer_impl,
                       width, height, format, pitch);
     buffer->fd = fd;
-    buffer_add_exporter(&buffer->base, exporter);
+    wld_buffer_add_exporter(&buffer->base, exporter);
 
     return &buffer->base;
 

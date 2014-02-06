@@ -143,19 +143,6 @@ struct wld_surface_impl
     void (* destroy)(struct wld_surface * surface);
 };
 
-struct wld_exporter
-{
-    const struct wld_exporter_impl * const impl;
-    struct wld_exporter * next;
-};
-
-struct wld_exporter_impl
-{
-    bool (* export)(struct wld_exporter * exporter, struct wld_buffer * buffer,
-                    uint32_t type, union wld_object * object);
-    void (* destroy)(struct wld_exporter * exporter);
-};
-
 struct wld_buffer_socket
 {
     const struct wld_buffer_socket_impl * impl;
@@ -245,12 +232,6 @@ void buffer_initialize(struct wld_buffer * buffer,
                        const struct wld_buffer_impl * impl,
                        uint32_t width, uint32_t height,
                        uint32_t format, uint32_t pitch);
-
-void buffer_add_exporter(struct wld_buffer * buffer,
-                         struct wld_exporter * exporter);
-
-void exporter_initialize(struct wld_exporter * exporter,
-                         const struct wld_exporter_impl * impl);
 
 void surface_initialize(struct wld_surface * surface,
                         const struct wld_surface_impl * impl);

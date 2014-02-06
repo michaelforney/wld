@@ -40,15 +40,9 @@ void buffer_initialize(struct wld_buffer * buffer,
     pixman_region32_init_rect(&buffer->damage, 0, 0, width, height);
 }
 
-void buffer_add_exporter(struct wld_buffer * buffer,
-                         struct wld_exporter * exporter)
-{
-    exporter->next = buffer->exporters;
-    buffer->exporters = exporter;
-}
-
-void exporter_initialize(struct wld_exporter * exporter,
-                         const struct wld_exporter_impl * impl)
+EXPORT
+void wld_exporter_initialize(struct wld_exporter * exporter,
+                             const struct wld_exporter_impl * impl)
 {
     *((const struct wld_exporter_impl **) &exporter->impl) = impl;
     exporter->next = NULL;
@@ -90,6 +84,14 @@ bool wld_export(struct wld_buffer * buffer,
     }
 
     return false;
+}
+
+EXPORT
+void wld_buffer_add_exporter(struct wld_buffer * buffer,
+                             struct wld_exporter * exporter)
+{
+    exporter->next = buffer->exporters;
+    buffer->exporters = exporter;
 }
 
 EXPORT

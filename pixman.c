@@ -205,9 +205,9 @@ static pixman_image_t * pixman_image(struct wld_buffer * buffer)
     if (!(exporter = malloc(sizeof *exporter)))
         goto error2;
 
-    exporter_initialize(&exporter->base, &wld_exporter_impl);
+    wld_exporter_initialize(&exporter->base, &wld_exporter_impl);
     exporter->image = image;
-    buffer_add_exporter(buffer, &exporter->base);
+    wld_buffer_add_exporter(buffer, &exporter->base);
     pixman_image_set_destroy_function(image, &destroy_image, buffer);
 
     return pixman_image_ref(image);

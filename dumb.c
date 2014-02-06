@@ -93,8 +93,8 @@ static struct wld_buffer * new_buffer(struct dumb_context * context,
                       width, height, format, pitch);
     buffer->context = context;
     buffer->handle = handle;
-    exporter_initialize(&buffer->exporter, &wld_exporter_impl);
-    buffer_add_exporter(&buffer->base, &buffer->exporter);
+    wld_exporter_initialize(&buffer->exporter, &wld_exporter_impl);
+    wld_buffer_add_exporter(&buffer->base, &buffer->exporter);
 
     return &buffer->base;
 }

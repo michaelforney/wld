@@ -310,8 +310,8 @@ static struct nouveau_buffer * new_buffer(struct nouveau_context * context,
     buffer_initialize(&buffer->base, &wld_buffer_impl,
                         width, height, format, pitch);
     buffer->context = context;
-    exporter_initialize(&buffer->exporter, &wld_exporter_impl);
-    buffer_add_exporter(&buffer->base, &buffer->exporter);
+    wld_exporter_initialize(&buffer->exporter, &wld_exporter_impl);
+    wld_buffer_add_exporter(&buffer->base, &buffer->exporter);
 
     return buffer;
 }
