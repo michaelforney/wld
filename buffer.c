@@ -35,7 +35,6 @@ void buffer_initialize(struct wld_buffer * buffer,
     buffer->pitch = pitch;
     buffer->map.data = NULL;
     buffer->map.count = 0;
-    buffer->destroy_data = NULL;
     buffer->exporters = NULL;
     pixman_region32_init_rect(&buffer->damage, 0, 0, width, height);
 }
@@ -101,9 +100,6 @@ void wld_destroy_buffer(struct wld_buffer * buffer)
 
     if (buffer->map.count > 0)
         wld_unmap(buffer);
-
-    if (buffer->destroy_data)
-        buffer->destroy_data(buffer->data);
 
     pixman_region32_fini(&buffer->damage);
 

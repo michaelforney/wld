@@ -179,9 +179,6 @@ struct wld_buffer
     enum wld_format format;
     pixman_region32_t damage;
 
-    void * data;
-    void (* destroy_data)(void * data);
-
     struct
     {
         void * data;
