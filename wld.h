@@ -29,6 +29,8 @@
 #include <pixman.h>
 #include <fontconfig/fontconfig.h>
 
+#define WLD_USER_ID (0xff << 24)
+
 #define __WLD_FOURCC(a, b, c, d) ( (a)          \
                                  | ((b) << 8)   \
                                  | ((c) << 16)  \
