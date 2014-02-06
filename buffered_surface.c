@@ -149,7 +149,7 @@ struct buffer * surface_back(struct wld_surface * base)
     return buffer;
 
   error1:
-    wld_destroy_buffer(&buffer->base);
+    wld_buffer_unreference(&buffer->base);
   error0:
     return NULL;
 }
@@ -216,7 +216,7 @@ void surface_destroy(struct wld_surface * base)
         surface->buffer_socket->impl->destroy(surface->buffer_socket);
 
     for (index = 0; index < surface->entries_size; ++index)
-        wld_destroy_buffer(&surface->entries[index].buffer->base);
+        wld_buffer_unreference(&surface->entries[index].buffer->base);
 
     free(surface->entries);
     free(surface);

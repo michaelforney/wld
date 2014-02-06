@@ -125,7 +125,7 @@ struct buffer
 {
     struct wld_buffer base;
 
-    unsigned map_references;
+    unsigned references, map_references;
     struct wld_exporter * exporters;
 };
 

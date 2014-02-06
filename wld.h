@@ -191,9 +191,16 @@ void wld_buffer_add_exporter(struct wld_buffer * buffer,
                              struct wld_exporter * exporter);
 
 /**
- * Destroy a buffer.
+ * Increase the reference count of a buffer.
  */
-void wld_destroy_buffer(struct wld_buffer * buffer);
+void wld_buffer_reference(struct wld_buffer * buffer);
+
+/**
+ * Decrease the reference count of a buffer.
+ *
+ * When the reference count drops to zero, the buffer will be destroyed.
+ */
+void wld_buffer_unreference(struct wld_buffer * buffer);
 
 /**** Surfaces ****/
 

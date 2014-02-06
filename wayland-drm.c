@@ -228,7 +228,7 @@ struct buffer * context_create_buffer(struct wld_context * base,
   error2:
     wl_buffer_destroy(wl);
   error1:
-    wld_destroy_buffer(&buffer->base);
+    wld_buffer_unreference(&buffer->base);
   error0:
     return NULL;
 }

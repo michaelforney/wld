@@ -34,6 +34,7 @@ void buffer_initialize(struct buffer * buffer,
     buffer->base.format = format;
     buffer->base.pitch = pitch;
     buffer->base.map = NULL;
+    buffer->references = 1;
     buffer->map_references = 0;
     buffer->exporters = NULL;
     pixman_region32_init_rect(&buffer->base.damage, 0, 0, width, height);
@@ -101,10 +102,21 @@ void wld_buffer_add_exporter(struct wld_buffer * base,
 }
 
 EXPORT
-void wld_destroy_buffer(struct wld_buffer * base)
+void wld_buffer_reference(struct wld_buffer * base)
+{
+    struct buffer * buffer = (void *) base;
+
+    ++buffer->references;
+}
+
+EXPORT
+void wld_buffer_unreference(struct wld_buffer * base)
 {
     struct buffer * buffer = (void *) base;
     struct wld_exporter * exporter, * next;
+
+    if (--buffer->references > 0)
+        return;
 
     if (buffer->map_references > 0)
         buffer->base.impl->unmap(buffer);
