@@ -121,9 +121,6 @@ void wld_buffer_unreference(struct wld_buffer * base)
     if (--buffer->references > 0)
         return;
 
-    if (buffer->map_references > 0)
-        buffer->base.impl->unmap(buffer);
-
     pixman_region32_fini(&buffer->base.damage);
 
     for (destructor = buffer->destructors; destructor; destructor = next)
@@ -131,6 +128,9 @@ void wld_buffer_unreference(struct wld_buffer * base)
         next = destructor->next;
         destructor->destroy(destructor);
     }
+
+    if (buffer->map_references > 0)
+        buffer->base.impl->unmap(buffer);
 
     buffer->base.impl->destroy(buffer);
 }
