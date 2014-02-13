@@ -62,6 +62,9 @@ static const struct drm_driver * find_driver(int fd)
     fclose(file);
     device_id = strtoul(id, NULL, 0);
 
+    if (getenv("WLD_DRM_DUMB"))
+        return &dumb_drm_driver;
+
     for (index = 0; index < ARRAY_LENGTH(drivers); ++index)
     {
         DEBUG("Trying DRM driver `%s'\n", drivers[index]->name);
