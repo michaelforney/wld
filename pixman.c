@@ -336,7 +336,7 @@ void renderer_draw_text(struct wld_renderer * base,
     uint32_t c;
     struct glyph * glyph;
     FT_UInt glyph_index;
-    pixman_glyph_t glyphs[strlen(text)];
+    pixman_glyph_t glyphs[length == -1 ? strlen(text) : length];
     uint32_t index = 0, origin_x = 0;
     pixman_color_t pixman_color = PIXMAN_COLOR(color);
     pixman_image_t * solid;
