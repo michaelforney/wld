@@ -92,7 +92,7 @@ WLD_PACKAGE_LIBS   ?= $(call pkgconfig,$(WLD_PACKAGES),libs,LIBS)
 CLEAN_FILES += $(WLD_STATIC_OBJECTS) $(WLD_SHARED_OBJECTS)
 
 FINAL_CFLAGS = $(CFLAGS) -fvisibility=hidden -std=c99
-FINAL_CPPFLAGS = $(CPPFLAGS) -D_XOPEN_SOURCE=700 -D_BSD_SOURCE
+FINAL_CPPFLAGS = $(CPPFLAGS) -D_XOPEN_SOURCE=700
 
 # Warning/error flags
 FINAL_CFLAGS += -Werror=implicit-function-declaration -Werror=implicit-int \
