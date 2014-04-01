@@ -24,6 +24,8 @@
 #include "drm.h"
 #include "drm-private.h"
 
+#include <sys/sysmacros.h>
+
 const static struct drm_driver * drivers[] = {
 #if WITH_DRM_INTEL
     &intel_drm_driver,
