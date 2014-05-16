@@ -14,11 +14,11 @@ VERSION_MAJOR   := 0
 VERSION_MINOR   := 0
 VERSION         := $(VERSION_MAJOR).$(VERSION_MINOR)
 
-WLD_LIB         := libwld.so
-WLD_LIB_MAJOR   := $(WLD_LIB).$(VERSION_MAJOR)
-WLD_LIB_MINOR   := $(WLD_LIB_MAJOR).$(VERSION_MINOR)
+WLD_LIB_LINK    := libwld.so
+WLD_LIB_SONAME  := $(WLD_LIB_LINK).$(VERSION_MAJOR)
+WLD_LIB         := $(WLD_LIB_LINK).$(VERSION)
 
-TARGETS         := wld.pc libwld.a $(WLD_LIB) $(WLD_LIB_MAJOR) $(WLD_LIB_MINOR)
+TARGETS         := wld.pc libwld.a $(WLD_LIB) $(WLD_LIB_LINK) $(WLD_LIB_SONAME)
 CLEAN_FILES     := $(TARGETS)
 
 WLD_REQUIRES = fontconfig pixman-1
@@ -141,10 +141,10 @@ wld.pc: wld.pc.in
 libwld.a: $(WLD_STATIC_OBJECTS)
 	$(call quiet,AR) cr $@ $^
 
-$(WLD_LIB_MINOR): $(WLD_SHARED_OBJECTS)
-	$(link) $(WLD_PACKAGE_LIBS) -shared -Wl,-soname,$(WLD_LIB_MAJOR),-no-undefined
+$(WLD_LIB): $(WLD_SHARED_OBJECTS)
+	$(link) $(WLD_PACKAGE_LIBS) -shared -Wl,-soname,$(WLD_LIB_SONAME),-no-undefined
 
-$(WLD_LIB_MAJOR) $(WLD_LIB): $(WLD_LIB_MINOR)
+$(WLD_LIB_SONAME) $(WLD_LIB_LINK): $(WLD_LIB)
 	$(call quiet,SYM,ln -sf) $< $@
 
 $(foreach dir,LIB PKGCONFIG,$(DESTDIR)$($(dir)DIR)) $(DESTDIR)$(INCLUDEDIR)/wld:
@@ -155,9 +155,9 @@ install: $(TARGETS) | $(foreach dir,LIB PKGCONFIG,$(DESTDIR)$($(dir)DIR)) $(DEST
 	install -m0644 wld.pc "$(DESTDIR)$(PKGCONFIGDIR)"
 	install -m0644 $(WLD_HEADERS) "$(DESTDIR)$(INCLUDEDIR)/wld"
 	install -m0644 libwld.a "$(DESTDIR)$(LIBDIR)"
-	install -m0755 $(WLD_LIB_MINOR) "$(DESTDIR)$(LIBDIR)"
-	ln -sf $(WLD_LIB_MINOR) "$(DESTDIR)$(LIBDIR)/$(WLD_LIB_MAJOR)"
-	ln -sf $(WLD_LIB_MINOR) "$(DESTDIR)$(LIBDIR)/$(WLD_LIB)"
+	install -m0755 $(WLD_LIB) "$(DESTDIR)$(LIBDIR)"
+	ln -sf $(WLD_LIB) "$(DESTDIR)$(LIBDIR)/$(WLD_LIB_LINK)"
+	ln -sf $(WLD_LIB) "$(DESTDIR)$(LIBDIR)/$(WLD_LIB_SONAME)"
 
 .PHONY: clean
 clean:
