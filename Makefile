@@ -18,8 +18,8 @@ WLD_LIB_LINK    := libwld.so
 WLD_LIB_SONAME  := $(WLD_LIB_LINK).$(VERSION_MAJOR)
 WLD_LIB         := $(WLD_LIB_LINK).$(VERSION)
 
-TARGETS         := wld.pc libwld.a $(WLD_LIB) $(WLD_LIB_LINK) $(WLD_LIB_SONAME)
-CLEAN_FILES     := $(TARGETS)
+TARGETS         := wld.pc
+CLEAN_FILES     :=
 
 WLD_REQUIRES = fontconfig pixman-1
 WLD_REQUIRES_PRIVATE = freetype2
@@ -89,8 +89,6 @@ WLD_PACKAGES        = $(WLD_REQUIRES) $(WLD_REQUIRES_PRIVATE)
 WLD_PACKAGE_CFLAGS ?= $(call pkgconfig,$(WLD_PACKAGES),cflags,CFLAGS)
 WLD_PACKAGE_LIBS   ?= $(call pkgconfig,$(WLD_PACKAGES),libs,LIBS)
 
-CLEAN_FILES += $(WLD_STATIC_OBJECTS) $(WLD_SHARED_OBJECTS)
-
 FINAL_CFLAGS = $(CFLAGS) -fvisibility=hidden -std=c99
 FINAL_CPPFLAGS = $(CPPFLAGS) -D_XOPEN_SOURCE=700
 
@@ -105,6 +103,18 @@ ifeq ($(ENABLE_DEBUG),1)
 else
     FINAL_CPPFLAGS += -DNDEBUG
 endif
+
+ifeq ($(ENABLE_STATIC),1)
+    TARGETS += libwld.a
+    CLEAN_FILES += $(WLD_STATIC_OBJECTS)
+endif
+
+ifeq ($(ENABLE_SHARED),1)
+    TARGETS += $(WLD_LIB) $(WLD_LIB_LINK) $(WLD_LIB_SONAME)
+    CLEAN_FILES += $(WLD_SHARED_OBJECTS)
+endif
+
+CLEAN_FILES += $(TARGETS)
 
 compile     = $(call quiet,CC) $(FINAL_CPPFLAGS) $(FINAL_CFLAGS) -c -o $@ $< \
               -MMD -MP -MF .deps/$(basename $<).d -MT $(basename $@).o -MT $(basename $@).lo
@@ -150,14 +160,25 @@ $(WLD_LIB_SONAME) $(WLD_LIB_LINK): $(WLD_LIB)
 $(foreach dir,LIB PKGCONFIG,$(DESTDIR)$($(dir)DIR)) $(DESTDIR)$(INCLUDEDIR)/wld:
 	mkdir -p "$@"
 
+.PHONY: install-wld.pc
+install-wld.pc: wld.pc | $(DESTDIR)$(PKGCONFIGDIR)
+	install -m 644 $< "$(DESTDIR)$(PKGCONFIGDIR)"
+
+.PHONY: install-libwld.a
+install-libwld.a: libwld.a | $(DESTDIR)$(LIBDIR)
+	install -m 644 $< "$(DESTDIR)$(LIBDIR)"
+
+.PHONY: install-$(WLD_LIB)
+install-$(WLD_LIB): $(WLD_LIB) | $(DESTDIR)$(LIBDIR)
+	install -m 755 $< "$(DESTDIR)$(LIBDIR)"
+
+.PHONY: install-$(WLD_LIB_LINK) install-$(WLD_LIB_SONAME)
+install-$(WLD_LIB_LINK) install-$(WLD_LIB_SONAME): install-$(WLD_LIB) | $(DESTDIR)$(LIBDIR)
+	ln -sf $(WLD_LIB) "$(DESTDIR)$(LIBDIR)/${@:install-%=%}"
+
 .PHONY: install
-install: $(TARGETS) | $(foreach dir,LIB PKGCONFIG,$(DESTDIR)$($(dir)DIR)) $(DESTDIR)$(INCLUDEDIR)/wld
-	install -m0644 wld.pc "$(DESTDIR)$(PKGCONFIGDIR)"
-	install -m0644 $(WLD_HEADERS) "$(DESTDIR)$(INCLUDEDIR)/wld"
-	install -m0644 libwld.a "$(DESTDIR)$(LIBDIR)"
-	install -m0755 $(WLD_LIB) "$(DESTDIR)$(LIBDIR)"
-	ln -sf $(WLD_LIB) "$(DESTDIR)$(LIBDIR)/$(WLD_LIB_LINK)"
-	ln -sf $(WLD_LIB) "$(DESTDIR)$(LIBDIR)/$(WLD_LIB_SONAME)"
+install: $(TARGETS:%=install-%) | $(foreach dir,LIB PKGCONFIG,$(DESTDIR)$($(dir)DIR)) $(DESTDIR)$(INCLUDEDIR)/wld
+	install -m 644 $(WLD_HEADERS) "$(DESTDIR)$(INCLUDEDIR)/wld"
 
 .PHONY: clean
 clean:
