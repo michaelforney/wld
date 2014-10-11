@@ -125,10 +125,6 @@ static bool export(struct wld_exporter * exporter, struct wld_buffer * base,
             if (drm_intel_bo_gem_export_to_prime(buffer->bo, &object->i) != 0)
                 return false;
             return true;
-        case WLD_DRM_OBJECT_GEM_NAME:
-            if (drm_intel_bo_flink(buffer->bo, &object->u32) != 0)
-                return false;
-            return true;
         default:
             return false;
     }
@@ -197,10 +193,6 @@ struct buffer * context_import_buffer(struct wld_context * base,
                                                     object.i, size);
             break;
         }
-        case WLD_DRM_OBJECT_GEM_NAME:
-            bo = drm_intel_bo_gem_create_from_name(context->bufmgr, "buffer",
-                                                   object.u32);
-            break;
         default: bo = NULL;
     };
 

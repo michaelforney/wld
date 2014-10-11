@@ -96,16 +96,6 @@ static bool export(struct wld_exporter * exporter, struct wld_buffer * base,
             }
 
             return true;
-        case WLD_DRM_OBJECT_GEM_NAME:
-        {
-            struct drm_gem_flink flink = { .handle = buffer->handle };
-
-            if (drmIoctl(buffer->context->fd, DRM_IOCTL_GEM_FLINK, &flink) != 0)
-                return false;
-
-            object->u32 = flink.name;
-            return true;
-        }
         default:
             return false;
     }
@@ -179,16 +169,6 @@ struct buffer * context_import_buffer(struct wld_context * base,
             if (drmPrimeFDToHandle(context->fd, object.i, &handle) != 0)
                 return NULL;
             break;
-        case WLD_DRM_OBJECT_GEM_NAME:
-        {
-            struct drm_gem_open gem_open = { .name = object.u32 };
-
-            if (drmIoctl(context->fd, DRM_IOCTL_GEM_OPEN, &gem_open) != 0)
-                return NULL;
-
-            handle = gem_open.handle;
-            break;
-        }
         default: return NULL;
     }
 

@@ -33,7 +33,6 @@ enum wld_drm_object_type
 {
     WLD_DRM_OBJECT_HANDLE = WLD_DRM_ID,
     WLD_DRM_OBJECT_PRIME_FD,
-    WLD_DRM_OBJECT_GEM_NAME
 };
 
 enum wld_drm_flags

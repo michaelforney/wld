@@ -311,10 +311,6 @@ static bool export(struct wld_exporter * exporter, struct wld_buffer * base,
             if (nouveau_bo_set_prime(buffer->bo, &object->i) != 0)
                 return false;
             return true;
-        case WLD_DRM_OBJECT_GEM_NAME:
-            if (nouveau_bo_name_get(buffer->bo, &object->u32) != 0)
-                return false;
-            return true;
         default:
             return false;
     }
@@ -401,10 +397,6 @@ struct buffer * context_import_buffer(struct wld_context * base,
             {
                 goto error0;
             }
-            break;
-        case WLD_DRM_OBJECT_GEM_NAME:
-            if (nouveau_bo_name_ref(context->device, object.u32, &bo) != 0)
-                goto error0;
             break;
         default: goto error0;
     }
