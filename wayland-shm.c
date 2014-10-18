@@ -114,7 +114,7 @@ struct wld_context * wld_wayland_shm_create_context
     wl_proxy_set_queue((struct wl_proxy *) context->registry, queue);
 
     /* Wait for wl_shm global. */
-    wayland_roundtrip(display, queue);
+    wl_display_roundtrip_queue(display, queue);
 
     if (!context->wl)
     {
@@ -125,7 +125,7 @@ struct wld_context * wld_wayland_shm_create_context
     wl_shm_add_listener(context->wl, &shm_listener, context);
 
     /* Wait for SHM formats. */
-    wayland_roundtrip(display, queue);
+    wl_display_roundtrip_queue(display, queue);
 
     return &context->base.base;
 

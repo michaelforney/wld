@@ -104,7 +104,7 @@ struct wld_context * wld_wayland_drm_create_context(struct wl_display * display,
     wl_proxy_set_queue((struct wl_proxy *) context->registry, queue);
 
     /* Wait for wl_drm global. */
-    wayland_roundtrip(display, queue);
+    wl_display_roundtrip_queue(display, queue);
 
     if (!context->wl)
     {
@@ -115,7 +115,7 @@ struct wld_context * wld_wayland_drm_create_context(struct wl_display * display,
     wl_drm_add_listener(context->wl, &drm_listener, context);
 
     /* Wait for DRM capabilities and device. */
-    wayland_roundtrip(display, queue);
+    wl_display_roundtrip_queue(display, queue);
 
     if (!(context->capabilities & WL_DRM_CAPABILITY_PRIME))
     {
@@ -130,7 +130,7 @@ struct wld_context * wld_wayland_drm_create_context(struct wl_display * display,
     }
 
     /* Wait for DRM authentication. */
-    wayland_roundtrip(display, queue);
+    wl_display_roundtrip_queue(display, queue);
 
     if (!context->authenticated)
     {

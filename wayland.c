@@ -183,26 +183,6 @@ struct wld_surface * wld_wayland_create_surface(struct wld_context * context,
     return NULL;
 }
 
-int wayland_roundtrip(struct wl_display * display,
-                      struct wl_event_queue * queue)
-{
-    struct wl_callback * callback;
-    bool done = false;
-    int ret = 0;
-
-    callback = wl_display_sync(display);
-    wl_callback_add_listener(callback, &sync_listener, &done);
-    wl_proxy_set_queue((struct wl_proxy *) callback, queue);
-
-    while (!done && ret >= 0)
-        ret = wl_display_dispatch_queue(display, queue);
-
-    if (ret == -1 && !done)
-        wl_callback_destroy(callback);
-
-    return ret;
-}
-
 static bool buffer_export(struct wld_exporter * exporter,
                           struct wld_buffer * buffer,
                           uint32_t type, union wld_object * object)
