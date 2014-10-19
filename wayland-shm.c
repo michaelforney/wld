@@ -23,7 +23,6 @@
 
 #define _GNU_SOURCE /* Required for mkostemp */
 
-#include "wayland-shm.h"
 #include "wayland.h"
 #include "wayland-private.h"
 #include "wld-private.h"
@@ -50,8 +49,10 @@ struct shm_buffer
     int fd;
 };
 
+#define WAYLAND_IMPL_NAME shm
 #include "interface/context.h"
 #include "interface/buffer.h"
+#include "interface/wayland.h"
 IMPL(shm_context, wld_context)
 IMPL(shm_buffer, wld_buffer)
 
@@ -62,10 +63,6 @@ static void registry_global_remove(void * data, struct wl_registry * registry,
                                    uint32_t name);
 
 static void shm_format(void * data, struct wl_shm * wl, uint32_t format);
-
-const struct wld_wayland_interface wayland_shm_interface = {
-    .create_context = &wld_wayland_shm_create_context,
-};
 
 const static struct wl_registry_listener registry_listener = {
     .global = &registry_global,
@@ -89,9 +86,8 @@ static inline uint32_t format_wld_to_shm(uint32_t format)
     }
 }
 
-EXPORT
-struct wld_context * wld_wayland_shm_create_context
-    (struct wl_display * display, struct wl_event_queue * queue)
+struct wayland_context * wayland_create_context(struct wl_display * display,
+                                                struct wl_event_queue * queue)
 {
     struct shm_context * context;
 
@@ -99,8 +95,6 @@ struct wld_context * wld_wayland_shm_create_context
         goto error0;
 
     context_initialize(&context->base.base, &wld_context_impl);
-    context->base.display = display;
-    context->base.queue = queue;
     context->wl = NULL;
     wl_array_init(&context->formats);
 
@@ -127,7 +121,7 @@ struct wld_context * wld_wayland_shm_create_context
     /* Wait for SHM formats. */
     wl_display_roundtrip_queue(display, queue);
 
-    return &context->base.base;
+    return &context->base;
 
   error2:
     wl_registry_destroy(context->registry);
@@ -138,15 +132,15 @@ struct wld_context * wld_wayland_shm_create_context
     return NULL;
 }
 
-EXPORT
-bool wld_shm_has_format(struct wld_context * base, uint32_t format)
+bool wayland_has_format(struct wld_context * base, uint32_t format)
 {
     struct shm_context * context = shm_context(base);
     uint32_t * supported_format;
+    uint32_t shm_format = format_wld_to_shm(format);
 
     wl_array_for_each(supported_format, &context->formats)
     {
-        if (*supported_format == format)
+        if (*supported_format == shm_format)
             return true;
     }
 
@@ -170,6 +164,9 @@ struct buffer * context_create_buffer(struct wld_context * base,
     int fd;
     struct wl_shm_pool * pool;
     struct wl_buffer * wl;
+
+    if (!wayland_has_format(base, format))
+        goto error0;
 
     if (!(buffer = malloc(sizeof *buffer)))
         goto error0;

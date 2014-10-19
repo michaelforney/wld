@@ -63,13 +63,11 @@ ifeq ($(ENABLE_WAYLAND),1)
 
     ifneq ($(findstring shm,$(WAYLAND_INTERFACES)),)
         WLD_SOURCES += wayland-shm.c
-        WLD_HEADERS += wayland-shm.h
         WLD_CPPFLAGS += -DWITH_WAYLAND_SHM=1
     endif
 
     ifneq ($(findstring drm,$(WAYLAND_INTERFACES)),)
         WLD_SOURCES += wayland-drm.c protocol/wayland-drm-protocol.c
-        WLD_HEADERS += wayland-drm.h
         WLD_CPPFLAGS += -DWITH_WAYLAND_DRM=1
     endif
 endif

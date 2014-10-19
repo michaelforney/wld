@@ -1,6 +1,6 @@
-/* wld: wayland-shm.h
+/* wld: interface/wayland.h
  *
- * Copyright (c) 2013, 2014 Michael Forney
+ * Copyright (c) 2014 Michael Forney
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,28 +21,21 @@
  * SOFTWARE.
  */
 
-#ifndef WLD_WAYLAND_SHM_H
-#define WLD_WAYLAND_SHM_H
-
-#include <stdbool.h>
-#include <stdint.h>
-
-struct wl_display;
-struct wl_event_queue;
-
-/**
- * Create a new WLD context which creates Wayland buffers through the wl_shm
- * interface, backed by Pixman images.
- */
-struct wld_context * wld_wayland_shm_create_context
-    (struct wl_display * display, struct wl_event_queue * queue);
-
-/**
- * Check if the wl_shm global has the specified pixel format.
- *
- * @see enum wld_format
- */
-bool wld_wayland_shm_has_format(struct wld_context * context, uint32_t format);
-
+#ifndef WAYLAND_IMPL_NAME
+#   error you must define WAYLAND_IMPL_NAME before including interface/wayland.h
 #endif
+
+static struct wayland_context * wayland_create_context
+    (struct wl_display * display, struct wl_event_queue * queue);
+static bool wayland_has_format(struct wld_context * context, uint32_t format);
+
+#define EXPAND(f, x) f(x)
+#define VAR(name) name ## _wayland_impl
+const struct wayland_impl EXPAND(VAR, WAYLAND_IMPL_NAME) = {
+    .create_context = &wayland_create_context,
+    .has_format = &wayland_has_format,
+    //.create_surface = &wayland_create_surface,
+};
+#undef VAR
+#undef EXPAND
 

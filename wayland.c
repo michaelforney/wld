@@ -67,13 +67,13 @@ static const struct wl_callback_listener sync_listener = {
 
 static void buffer_release(void * data, struct wl_buffer * buffer);
 
-const static struct wld_wayland_interface * interfaces[] = {
+const static struct wayland_impl * impls[] = {
 #if WITH_WAYLAND_DRM
-    [WLD_DRM] = &wayland_drm_interface,
+    [WLD_DRM] = &drm_wayland_impl,
 #endif
 
 #if WITH_WAYLAND_SHM
-    [WLD_SHM] = &wayland_shm_interface
+    [WLD_SHM] = &shm_wayland_impl,
 #endif
 };
 
@@ -93,10 +93,10 @@ EXPORT
 struct wld_context * wld_wayland_create_context
     (struct wl_display * display, enum wld_wayland_interface_id id, ...)
 {
-    struct wld_context * context = NULL;
+    struct wayland_context * context = NULL;
     struct wl_event_queue * queue;
-    va_list requested_interfaces;
-    bool interfaces_tried[ARRAY_LENGTH(interfaces)] = {0};
+    va_list requested_impls;
+    bool impls_tried[ARRAY_LENGTH(impls)] = {0};
     const char * interface_string;
 
     if (!(queue = wl_display_create_queue(display)))
@@ -106,8 +106,8 @@ struct wld_context * wld_wayland_create_context
     {
         id = interface_id(interface_string);
 
-        if ((context = interfaces[id]->create_context(display, queue)))
-            return context;
+        if ((context = impls[id]->create_context(display, queue)))
+            return &context->base;
 
         fprintf(stderr, "Could not create context for Wayland interface '%s'\n",
                 interface_string);
@@ -115,42 +115,47 @@ struct wld_context * wld_wayland_create_context
         return NULL;
     }
 
-    va_start(requested_interfaces, id);
+    va_start(requested_impls, id);
 
     while (id >= 0)
     {
-        if (interfaces_tried[id] || !interfaces[id])
+        if (impls_tried[id] || !impls[id])
             continue;
 
-        if ((context = interfaces[id]->create_context(display, queue)))
-            break;
+        if ((context = impls[id]->create_context(display, queue)))
+            goto done;
 
-        interfaces_tried[id] = true;
-        id = va_arg(requested_interfaces, enum wld_wayland_interface_id);
+        impls_tried[id] = true;
+        id = va_arg(requested_impls, enum wld_wayland_interface_id);
     }
 
-    va_end(requested_interfaces);
+    va_end(requested_impls);
 
-    /* If the user specified WLD_ANY, try any remaining interfaces. */
+    /* If the user specified WLD_ANY, try any remaining implementations. */
     if (!context && id == WLD_ANY)
     {
-        for (id = 0; id < ARRAY_LENGTH(interfaces); ++id)
+        for (id = 0; id < ARRAY_LENGTH(impls); ++id)
         {
-            if (interfaces_tried[id] || !interfaces[id])
+            if (impls_tried[id] || !impls[id])
                 continue;
 
-            if ((context = interfaces[id]->create_context(display, queue)))
+            if ((context = impls[id]->create_context(display, queue)))
                 break;
         }
     }
 
     if (!context)
     {
-        DEBUG("Could not initialize any of the specified interfaces\n");
+        DEBUG("Could not initialize any of the specified implementations\n");
         return NULL;
     }
 
-    return context;
+  done:
+    context->impl = impls[id];
+    context->display = display;
+    context->queue = queue;
+
+    return &context->base;
 }
 
 EXPORT
@@ -181,6 +186,14 @@ struct wld_surface * wld_wayland_create_surface(struct wld_context * context,
     free(socket);
   error0:
     return NULL;
+}
+
+EXPORT
+bool wld_wayland_has_format(struct wld_context * base, uint32_t format)
+{
+    struct wayland_context * context = (void *) base;
+
+    return context->impl->has_format(base, format);
 }
 
 static bool buffer_export(struct wld_exporter * exporter,

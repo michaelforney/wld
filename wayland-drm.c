@@ -21,7 +21,6 @@
  * SOFTWARE.
  */
 
-#include "wayland-drm.h"
 #include "wayland.h"
 #include "drm.h"
 #include "protocol/wayland-drm-client-protocol.h"
@@ -35,8 +34,6 @@
 #include <fcntl.h>
 #include <xf86drm.h>
 
-#include <stdio.h>
-
 struct drm_context
 {
     struct wayland_context base;
@@ -49,7 +46,9 @@ struct drm_context
     bool authenticated;
 };
 
+#define WAYLAND_IMPL_NAME drm
 #include "interface/context.h"
+#include "interface/wayland.h"
 IMPL(drm_context, wld_context)
 
 static void registry_global(void * data, struct wl_registry * registry,
@@ -64,10 +63,6 @@ static void drm_authenticated(void * data, struct wl_drm * wl);
 static void drm_capabilities(void * data, struct wl_drm * wl,
                              uint32_t capabilities);
 
-const struct wld_wayland_interface wayland_drm_interface = {
-    .create_context = &wld_wayland_drm_create_context,
-};
-
 const static struct wl_registry_listener registry_listener = {
     .global = &registry_global,
     .global_remove = &registry_global_remove
@@ -80,9 +75,8 @@ const static struct wl_drm_listener drm_listener = {
     .capabilities = &drm_capabilities
 };
 
-EXPORT
-struct wld_context * wld_wayland_drm_create_context(struct wl_display * display,
-                                                    struct wl_event_queue * queue)
+struct wayland_context * wayland_create_context(struct wl_display * display,
+                                                struct wl_event_queue * queue)
 {
     struct drm_context * context;
 
@@ -90,8 +84,6 @@ struct wld_context * wld_wayland_drm_create_context(struct wl_display * display,
         goto error0;
 
     context_initialize(&context->base.base, &wld_context_impl);
-    context->base.display = display;
-    context->base.queue = queue;
     context->wl = NULL;
     context->fd = -1;
     context->capabilities = 0;
@@ -144,7 +136,7 @@ struct wld_context * wld_wayland_drm_create_context(struct wl_display * display,
         goto error4;
     }
 
-    return &context->base.base;
+    return &context->base;
 
   error4:
     close(context->fd);
@@ -159,8 +151,7 @@ struct wld_context * wld_wayland_drm_create_context(struct wl_display * display,
     return NULL;
 }
 
-EXPORT
-bool wld_wayland_drm_has_format(struct wld_context * base, uint32_t format)
+bool wayland_has_format(struct wld_context * base, uint32_t format)
 {
     struct drm_context * context = drm_context(base);
     uint32_t * supported_format;
@@ -198,7 +189,7 @@ struct buffer * context_create_buffer(struct wld_context * base,
     union wld_object object;
     struct wl_buffer * wl;
 
-    if (!wld_wayland_drm_has_format(base, format))
+    if (!wayland_has_format(base, format))
         goto error0;
 
     buffer = context->driver_context->impl->create_buffer

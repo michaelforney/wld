@@ -24,6 +24,7 @@
 #ifndef WLD_WAYLAND_H
 #define WLD_WAYLAND_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 struct wl_display;
@@ -71,6 +72,13 @@ struct wld_surface * wld_wayland_create_surface(struct wld_context * context,
                                                 uint32_t width, uint32_t height,
                                                 uint32_t format, uint32_t flags,
                                                 struct wl_surface * surface);
+
+/**
+ * Check if the wayland implementation supports a particular pixel format.
+ *
+ * @see enum wld_format
+ */
+bool wld_wayland_has_format(struct wld_context * context, uint32_t format);
 
 #endif
 
