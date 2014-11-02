@@ -30,8 +30,8 @@
 #include "drm.h"
 #include "pixman.h"
 #include "nouveau/nv_object.xml.h"
-#include "nouveau/nv50_2d.xml.h"
-#include "nouveau/nv50_defs.xml.h"
+#include "nouveau/g80_2d.xml.h"
+#include "nouveau/g80_defs.xml.h"
 
 #include <nouveau.h>
 #include <sys/mman.h>
@@ -169,7 +169,7 @@ static inline uint32_t nvc0_format(uint32_t format)
     {
         case WLD_FORMAT_XRGB8888:
         case WLD_FORMAT_ARGB8888:
-            return NV50_SURFACE_FORMAT_BGRA8_UNORM;
+            return G80_SURFACE_FORMAT_BGRA8_UNORM;
     }
 
     return 0;
@@ -177,14 +177,14 @@ static inline uint32_t nvc0_format(uint32_t format)
 
 enum
 {
-    NVC0_COMMAND_TYPE_INCREASING        = 1,
-    NVC0_COMMAND_TYPE_NON_INCREASING    = 3,
-    NVC0_COMMAND_TYPE_INLINE            = 4
+    GF100_COMMAND_TYPE_INCREASING       = 1,
+    GF100_COMMAND_TYPE_NON_INCREASING   = 3,
+    GF100_COMMAND_TYPE_INLINE           = 4
 };
 
 enum
 {
-    NVC0_SUBCHANNEL_2D      = 3,
+    GF100_SUBCHANNEL_2D = 3,
 };
 
 static inline uint32_t nvc0_command(uint8_t type, uint8_t subchannel,
@@ -197,7 +197,7 @@ static inline void nvc0_inline(struct nouveau_pushbuf * push,
                                uint8_t subchannel, uint16_t method,
                                uint16_t value)
 {
-    nv_add_dword(push, nvc0_command(NVC0_COMMAND_TYPE_INLINE,
+    nv_add_dword(push, nvc0_command(GF100_COMMAND_TYPE_INLINE,
                                     subchannel, method, value));
 }
 
@@ -206,7 +206,7 @@ static inline void nvc0_methods(struct nouveau_pushbuf * push,
                                 uint16_t count, ...)
 {
     va_list dwords;
-    nv_add_dword(push, nvc0_command(NVC0_COMMAND_TYPE_INCREASING,
+    nv_add_dword(push, nvc0_command(GF100_COMMAND_TYPE_INCREASING,
                                     subchannel, start_method, count));
     va_start(dwords, count);
     nv_add_dwords_va(push, count, dwords);
@@ -214,15 +214,15 @@ static inline void nvc0_methods(struct nouveau_pushbuf * push,
 }
 
 #define nvc0_2d(push, method, count, ...) \
-    nvc0_methods(push, NVC0_SUBCHANNEL_2D, method, count, __VA_ARGS__)
+    nvc0_methods(push, GF100_SUBCHANNEL_2D, method, count, __VA_ARGS__)
 #define nvc0_2d_inline(push, method, value) \
-    nvc0_inline(push, NVC0_SUBCHANNEL_2D, method, value)
+    nvc0_inline(push, GF100_SUBCHANNEL_2D, method, value)
 
 static bool nvc0_2d_initialize(struct nouveau_renderer * renderer)
 {
     int ret;
 
-    ret = nouveau_object_new(renderer->channel, NVC0_2D, NVC0_2D, NULL, 0,
+    ret = nouveau_object_new(renderer->channel, GF100_2D, GF100_2D, NULL, 0,
                              &renderer->nvc0_2d);
 
     if (ret != 0)
@@ -231,12 +231,12 @@ static bool nvc0_2d_initialize(struct nouveau_renderer * renderer)
     if (!ensure_space(renderer->pushbuf, 5))
         goto error1;
 
-    nvc0_2d(renderer->pushbuf, NV01_SUBCHAN_OBJECT, 1,
+    nvc0_2d(renderer->pushbuf, NV1_SUBCHAN_OBJECT, 1,
             renderer->nvc0_2d->handle);
-    nvc0_2d_inline(renderer->pushbuf, NV50_2D_OPERATION,
-                   NV50_2D_OPERATION_SRCCOPY_AND);
-    nvc0_2d_inline(renderer->pushbuf, NV50_2D_UNK0884, 0x3f);
-    nvc0_2d_inline(renderer->pushbuf, NV50_2D_UNK0888, 1);
+    nvc0_2d_inline(renderer->pushbuf, G80_2D_OPERATION,
+                   G80_2D_OPERATION_SRCCOPY_AND);
+    nvc0_2d_inline(renderer->pushbuf, G80_2D_UNK0884, 0x3f);
+    nvc0_2d_inline(renderer->pushbuf, G80_2D_UNK0888, 1);
 
     return true;
 
@@ -449,8 +449,8 @@ static inline void nvc0_2d_use_buffer(struct nouveau_renderer * renderer,
                                       struct nouveau_buffer * buffer,
                                       uint16_t format_method, uint16_t format)
 {
-    uint32_t access = format == NV50_2D_SRC_FORMAT ? NOUVEAU_BO_RD
-                                                   : NOUVEAU_BO_WR;
+    uint32_t access = format == G80_2D_SRC_FORMAT ? NOUVEAU_BO_RD
+                                                  : NOUVEAU_BO_WR;
 
     nvc0_2d_inline(renderer->pushbuf, format_method, format);
 
@@ -487,15 +487,15 @@ void renderer_fill_rectangle(struct wld_renderer * base, uint32_t color,
     format = nvc0_format(dst->base.base.format);
 
     nouveau_bufctx_reset(renderer->bufctx, 0);
-    nvc0_2d_use_buffer(renderer, dst, NV50_2D_DST_FORMAT, format);
-    nvc0_2d(renderer->pushbuf, NV50_2D_DRAW_SHAPE, 3,
-            NV50_2D_DRAW_SHAPE_RECTANGLES, format, color);
+    nvc0_2d_use_buffer(renderer, dst, G80_2D_DST_FORMAT, format);
+    nvc0_2d(renderer->pushbuf, G80_2D_DRAW_SHAPE, 3,
+            G80_2D_DRAW_SHAPE_RECTANGLES, format, color);
     nouveau_pushbuf_bufctx(renderer->pushbuf, renderer->bufctx);
 
     if (nouveau_pushbuf_validate(renderer->pushbuf) != 0)
         return;
 
-    nvc0_2d(renderer->pushbuf, NV50_2D_DRAW_POINT32_X(0), 4,
+    nvc0_2d(renderer->pushbuf, G80_2D_DRAW_POINT32_X(0), 4,
             x, y, x + width, y + height);
 }
 
@@ -521,18 +521,18 @@ void renderer_copy_rectangle(struct wld_renderer * base,
     dst_format = nvc0_format(dst->base.base.format);
 
     nouveau_bufctx_reset(renderer->bufctx, 0);
-    nvc0_2d_use_buffer(renderer, src, NV50_2D_SRC_FORMAT, src_format);
-    nvc0_2d_use_buffer(renderer, dst, NV50_2D_DST_FORMAT, dst_format);
+    nvc0_2d_use_buffer(renderer, src, G80_2D_SRC_FORMAT, src_format);
+    nvc0_2d_use_buffer(renderer, dst, G80_2D_DST_FORMAT, dst_format);
     nouveau_pushbuf_bufctx(renderer->pushbuf, renderer->bufctx);
 
     if (nouveau_pushbuf_validate(renderer->pushbuf) != 0)
         return;
 
-    nvc0_2d_inline(renderer->pushbuf, NV50_GRAPH_SERIALIZE, 0);
-    nvc0_2d_inline(renderer->pushbuf, NV50_2D_BLIT_CONTROL,
-                   NV50_2D_BLIT_CONTROL_ORIGIN_CENTER
-                 | NV50_2D_BLIT_CONTROL_FILTER_POINT_SAMPLE);
-    nvc0_2d(renderer->pushbuf, NV50_2D_BLIT_DST_X, 12,
+    nvc0_2d_inline(renderer->pushbuf, G80_GRAPH_SERIALIZE, 0);
+    nvc0_2d_inline(renderer->pushbuf, G80_2D_BLIT_CONTROL,
+                   G80_2D_BLIT_CONTROL_ORIGIN_CENTER
+                 | G80_2D_BLIT_CONTROL_FILTER_POINT_SAMPLE);
+    nvc0_2d(renderer->pushbuf, G80_2D_BLIT_DST_X, 12,
             dst_x, dst_y, width, height, 0, 1, 0, 1, 0, src_x, 0, src_y);
 
     renderer_flush(base);
@@ -558,12 +558,12 @@ void renderer_draw_text(struct wld_renderer * base,
     format = nvc0_format(dst->base.base.format);
 
     nouveau_bufctx_reset(renderer->bufctx, 0);
-    nvc0_2d_use_buffer(renderer, dst, NV50_2D_DST_FORMAT, format);
-    nvc0_2d_inline(renderer->pushbuf, NV50_2D_SIFC_BITMAP_ENABLE, 1);
-    nvc0_2d(renderer->pushbuf, NV50_2D_SIFC_BITMAP_FORMAT, 6,
-            NV50_2D_SIFC_BITMAP_FORMAT_I1,
+    nvc0_2d_use_buffer(renderer, dst, G80_2D_DST_FORMAT, format);
+    nvc0_2d_inline(renderer->pushbuf, G80_2D_SIFC_BITMAP_ENABLE, 1);
+    nvc0_2d(renderer->pushbuf, G80_2D_SIFC_BITMAP_FORMAT, 6,
+            G80_2D_SIFC_BITMAP_FORMAT_I1,
             0,          /* SIFC_FORMAT */
-            NV50_2D_SIFC_BITMAP_LINE_PACK_MODE_ALIGN_BYTE,
+            G80_2D_SIFC_BITMAP_LINE_PACK_MODE_ALIGN_BYTE,
             0, color,   /* SIFC_BITMAP_COLOR_BIT0, SIFC_BITMAP_COLOR_BIT1 */
             0           /* SIFC_BITMAP_WRITE_BIT0_ENABLE */
     );
@@ -594,16 +594,16 @@ void renderer_draw_text(struct wld_renderer * base,
         if (!ensure_space(renderer->pushbuf, 12 + count))
             return;
 
-        nvc0_2d(renderer->pushbuf, NV50_2D_SIFC_WIDTH, 10,
+        nvc0_2d(renderer->pushbuf, G80_2D_SIFC_WIDTH, 10,
                 /* Use the pitch instead of width to ensure the correct
                  * alignment is used. */
                 glyph->bitmap.pitch * 8, glyph->bitmap.rows,
                 0, 1, 0, 1,
                 0, origin_x + glyph->x, 0, y + glyph->y);
         nv_add_dword(renderer->pushbuf,
-                     nvc0_command(NVC0_COMMAND_TYPE_NON_INCREASING,
-                                  NVC0_SUBCHANNEL_2D,
-                                  NV50_2D_SIFC_DATA, count));
+                     nvc0_command(GF100_COMMAND_TYPE_NON_INCREASING,
+                                  GF100_SUBCHANNEL_2D,
+                                  G80_2D_SIFC_DATA, count));
         nv_add_data(renderer->pushbuf, glyph->bitmap.buffer, count);
 
       advance:
