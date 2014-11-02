@@ -285,7 +285,10 @@ void registry_global_remove(void * data, struct wl_registry * registry,
 void shm_format(void * data, struct wl_shm * wl, uint32_t format)
 {
     struct shm_context * context = data;
+    uint32_t * added_format;
 
-    *((uint32_t *) wl_array_add(&context->formats, sizeof format)) = format;
+    if (!(added_format = wl_array_add(&context->formats, sizeof format)))
+        return;
+    *added_format = format;
 }
 
