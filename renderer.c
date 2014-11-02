@@ -137,10 +137,10 @@ void wld_copy_region(struct wld_renderer * renderer,
 }
 
 EXPORT
-void wld_draw_text_n(struct wld_renderer * renderer,
-                     struct wld_font * font_base, uint32_t color,
-                     int32_t x, int32_t y, const char * text, int32_t length,
-                     struct wld_extents * extents)
+void wld_draw_text(struct wld_renderer * renderer,
+                   struct wld_font * font_base, uint32_t color,
+                   int32_t x, int32_t y, const char * text, uint32_t length,
+                   struct wld_extents * extents)
 {
     struct font * font = (void *) font_base;
 

@@ -115,7 +115,7 @@ struct wld_renderer_impl
                          pixman_region32_t * region);
     void (* draw_text)(struct wld_renderer * renderer,
                        struct font * font, uint32_t color,
-                       int32_t x, int32_t y, const char * text, int32_t length,
+                       int32_t x, int32_t y, const char * text, uint32_t length,
                        struct wld_extents * extents);
     void (* flush)(struct wld_renderer * renderer);
     void (* destroy)(struct wld_renderer * renderer);

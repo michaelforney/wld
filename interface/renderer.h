@@ -44,7 +44,7 @@ static void renderer_copy_region(struct wld_renderer * base,
 static void renderer_draw_text(struct wld_renderer * renderer,
                                struct font * font, uint32_t color,
                                int32_t x, int32_t y,
-                               const char * text, int32_t length,
+                               const char * text, uint32_t length,
                                struct wld_extents * extents);
 static void renderer_flush(struct wld_renderer * renderer);
 static void renderer_destroy(struct wld_renderer * renderer);

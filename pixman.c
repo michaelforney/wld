@@ -328,15 +328,15 @@ static inline uint8_t reverse(uint8_t byte)
 
 void renderer_draw_text(struct wld_renderer * base,
                         struct font * font, uint32_t color,
-                        int32_t x, int32_t y, const char * text, int32_t length,
-                        struct wld_extents * extents)
+                        int32_t x, int32_t y, const char * text,
+                        uint32_t length, struct wld_extents * extents)
 {
     struct pixman_renderer * renderer = pixman_renderer(base);
     int ret;
     uint32_t c;
     struct glyph * glyph;
     FT_UInt glyph_index;
-    pixman_glyph_t glyphs[length == -1 ? strlen(text) : length];
+    pixman_glyph_t glyphs[length == -1 ? (length = strlen(text)) : length];
     uint32_t index = 0, origin_x = 0;
     pixman_color_t pixman_color = PIXMAN_COLOR(color);
     pixman_image_t * solid;

@@ -267,22 +267,15 @@ void wld_copy_region(struct wld_renderer * renderer,
 /**
  * Draw a UTF-8 text string to the given buffer.
  *
- * @param length    The maximum number of bytes in the string to process
+ * @param length    The maximum number of bytes in the string to process. If
+ *                  length is -1, then draw until a NULL byte is found.
  * @param extents   If not NULL, will be initialized to the extents of the
  *                  drawn text
  */
-void wld_draw_text_n(struct wld_renderer * renderer,
-                     struct wld_font * font, uint32_t color,
-                     int32_t x, int32_t y, const char * text, int32_t length,
-                     struct wld_extents * extents);
-
-static inline void wld_draw_text(struct wld_renderer * renderer,
-                                 struct wld_font * font, uint32_t color,
-                                 int32_t x, int32_t y, const char * text,
-                                 struct wld_extents * extents)
-{
-    wld_draw_text_n(renderer, font, color, x, y, text, INT32_MAX, extents);
-}
+void wld_draw_text(struct wld_renderer * renderer,
+                   struct wld_font * font, uint32_t color,
+                   int32_t x, int32_t y, const char * text, uint32_t length,
+                   struct wld_extents * extents);
 
 void wld_flush(struct wld_renderer * renderer);
 

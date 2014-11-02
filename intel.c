@@ -272,8 +272,8 @@ void renderer_copy_rectangle(struct wld_renderer * base,
 
 void renderer_draw_text(struct wld_renderer * base,
                         struct font * font, uint32_t color,
-                        int32_t x, int32_t y, const char * text, int32_t length,
-                        struct wld_extents * extents)
+                        int32_t x, int32_t y, const char * text,
+                        uint32_t length, struct wld_extents * extents)
 {
     struct intel_renderer * renderer = intel_renderer(base);
     struct intel_buffer * dst = renderer->target;
@@ -288,6 +288,9 @@ void renderer_draw_text(struct wld_renderer * base,
 
     xy_setup_blt(&renderer->batch, true, BLT_RASTER_OPERATION_SRC,
                  0, color, dst->bo, dst->base.base.pitch);
+
+    if (length == -1)
+        length = strlen(text);
 
     while ((ret = FcUtf8ToUcs4((FcChar8 *) text, &c, length)) > 0 && c != '\0')
     {
