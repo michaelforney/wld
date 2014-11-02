@@ -387,7 +387,7 @@ struct buffer * context_import_buffer(struct wld_context * base,
 {
     struct nouveau_context * context = (void *) base;
     struct nouveau_buffer * buffer;
-    struct nouveau_bo * bo;
+    struct nouveau_bo * bo = NULL;
 
     switch (type)
     {
