@@ -156,27 +156,27 @@ $(WLD_LIB_SONAME) $(WLD_LIB_LINK): $(WLD_LIB)
 	$(call quiet,SYM,ln -sf) $< $@
 
 $(foreach dir,LIB PKGCONFIG,$(DESTDIR)$($(dir)DIR)) $(DESTDIR)$(INCLUDEDIR)/wld:
-	mkdir -p "$@"
+	mkdir -p $@
 
 .PHONY: install-wld.pc
 install-wld.pc: wld.pc | $(DESTDIR)$(PKGCONFIGDIR)
-	install -m 644 $< "$(DESTDIR)$(PKGCONFIGDIR)"
+	install -m 644 $< $(DESTDIR)$(PKGCONFIGDIR)
 
 .PHONY: install-libwld.a
 install-libwld.a: libwld.a | $(DESTDIR)$(LIBDIR)
-	install -m 644 $< "$(DESTDIR)$(LIBDIR)"
+	install -m 644 $< $(DESTDIR)$(LIBDIR)
 
 .PHONY: install-$(WLD_LIB)
 install-$(WLD_LIB): $(WLD_LIB) | $(DESTDIR)$(LIBDIR)
-	install -m 755 $< "$(DESTDIR)$(LIBDIR)"
+	install -m 755 $< $(DESTDIR)$(LIBDIR)
 
 .PHONY: install-$(WLD_LIB_LINK) install-$(WLD_LIB_SONAME)
 install-$(WLD_LIB_LINK) install-$(WLD_LIB_SONAME): install-$(WLD_LIB) | $(DESTDIR)$(LIBDIR)
-	ln -sf $(WLD_LIB) "$(DESTDIR)$(LIBDIR)/${@:install-%=%}"
+	ln -sf $(WLD_LIB) $(DESTDIR)$(LIBDIR)/${@:install-%=%}
 
 .PHONY: install
 install: $(TARGETS:%=install-%) | $(foreach dir,LIB PKGCONFIG,$(DESTDIR)$($(dir)DIR)) $(DESTDIR)$(INCLUDEDIR)/wld
-	install -m 644 $(WLD_HEADERS) "$(DESTDIR)$(INCLUDEDIR)/wld"
+	install -m 644 $(WLD_HEADERS) $(DESTDIR)$(INCLUDEDIR)/wld
 
 .PHONY: clean
 clean:
