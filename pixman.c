@@ -229,7 +229,7 @@ static pixman_image_t * pixman_image(struct buffer * buffer)
         goto error2;
 
     map->image = image;
-    map->exporter.export = &map_export;
+    map->exporter.exporter = &map_export;
     wld_buffer_add_exporter(&buffer->base, &map->exporter);
     map->destructor.destroy = &map_destroy;
     wld_buffer_add_destructor(&buffer->base, &map->destructor);

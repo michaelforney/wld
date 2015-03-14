@@ -77,7 +77,7 @@ bool wld_export(struct wld_buffer * base,
 
     for (exporter = buffer->exporters; exporter; exporter = exporter->next)
     {
-        if (exporter->export(exporter, &buffer->base, type, object))
+        if (exporter->exporter(exporter, &buffer->base, type, object))
             return true;
     }
 

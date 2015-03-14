@@ -115,7 +115,7 @@ static struct buffer * new_buffer(struct dumb_context * context,
                       width, height, format, pitch);
     buffer->context = context;
     buffer->handle = handle;
-    buffer->exporter.export = &export;
+    buffer->exporter.exporter = &export;
     wld_buffer_add_exporter(&buffer->base.base, &buffer->exporter);
 
     return &buffer->base;
