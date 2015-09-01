@@ -168,6 +168,7 @@ static inline uint32_t nvc0_format(uint32_t format)
     switch (format)
     {
         case WLD_FORMAT_XRGB8888:
+            return G80_SURFACE_FORMAT_BGRX8_UNORM;
         case WLD_FORMAT_ARGB8888:
             return G80_SURFACE_FORMAT_BGRA8_UNORM;
     }
