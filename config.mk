@@ -1,7 +1,7 @@
 # wld: config.mk
 
 CC                  = gcc
-CFLAGS              = -pipe
+CFLAGS              = -O2 -Wall -Wextra -pipe
 
 ENABLE_DEBUG        = 1
 ENABLE_STATIC       = 1
