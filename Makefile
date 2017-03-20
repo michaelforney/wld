@@ -2,7 +2,7 @@
 
 include config.mk
 
-PREFIX          ?= /usr/local
+PREFIX          ?= /usr
 LIBDIR          ?= $(PREFIX)/lib
 INCLUDEDIR      ?= $(PREFIX)/include
 PKGCONFIGDIR    ?= $(LIBDIR)/pkgconfig
