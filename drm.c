@@ -48,24 +48,24 @@ static const struct drm_driver * find_driver(int fd)
     if (fstat(fd, &st) == -1)
         return NULL;
 
-    path_part = path + snprintf(path, sizeof path,
-                                "/sys/dev/char/%u:%u/device/",
-                                major(st.st_rdev), minor(st.st_rdev));
+    if (getenv("WLD_DRM_DUMB"))
+        goto dumb;
 
     strcpy(path_part, "vendor");
     file = fopen(path, "r");
+    if (!file)
+        goto dumb;
     fgets(id, sizeof id, file);
     fclose(file);
     vendor_id = strtoul(id, NULL, 0);
 
     strcpy(path_part, "device");
     file = fopen(path, "r");
+    if (!file)
+        goto dumb;
     fgets(id, sizeof id, file);
     fclose(file);
     device_id = strtoul(id, NULL, 0);
-
-    if (getenv("WLD_DRM_DUMB"))
-        return &dumb_drm_driver;
 
     for (index = 0; index < ARRAY_LENGTH(drivers); ++index)
     {
@@ -77,6 +77,9 @@ static const struct drm_driver * find_driver(int fd)
     DEBUG("No DRM driver supports device 0x%x:0x%x\n", vendor_id, device_id);
 
     return NULL;
+
+dumb:
+    return &dumb_drm_driver;
 }
 
 EXPORT
