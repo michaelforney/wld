@@ -44,12 +44,18 @@ static const struct drm_driver * find_driver(int fd)
     struct stat st;
     FILE * file;
     uint32_t index;
+    int n;
 
     if (fstat(fd, &st) == -1)
         return NULL;
 
     if (getenv("WLD_DRM_DUMB"))
         goto dumb;
+
+    n = snprintf(path, sizeof(path), "/sys/dev/char/%u:%u/device/", major(st.st_rdev), minor(st.st_rdev));
+    if (n + 6 >= sizeof(path))
+        return NULL;
+    path_part = path + n;
 
     strcpy(path_part, "vendor");
     file = fopen(path, "r");
