@@ -39,6 +39,7 @@ static const struct intel_device_info device_info_hsw_gt1   = { .gen = 7 };
 static const struct intel_device_info device_info_hsw_gt2   = { .gen = 7 };
 static const struct intel_device_info device_info_hsw_gt3   = { .gen = 7 };
 static const struct intel_device_info device_info_bdw       = { .gen = 8 };
+static const struct intel_device_info device_info_skl       = { .gen = 9 };
 
 static const struct intel_device_info * device_info(int device_id)
 {
