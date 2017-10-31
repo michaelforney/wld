@@ -91,8 +91,8 @@ void intel_batch_flush(struct intel_batch * batch)
     drm_intel_bo_subdata(batch->bo, 0, batch->command_count << 2,
                          batch->commands);
     drm_intel_bo_mrb_exec(batch->bo, batch->command_count << 2, NULL, 0, 0,
-                          batch->device_info->gen >= 6 ? I915_EXEC_BLT
-                                                       : I915_EXEC_DEFAULT);
+                          GEN(batch, 6) ? I915_EXEC_BLT
+                                        : I915_EXEC_DEFAULT);
     drm_intel_gem_bo_clear_relocs(batch->bo, 0);
     batch->command_count = 0;
 }
