@@ -309,7 +309,7 @@ static inline void xy_src_copy_blt(struct intel_batch * batch,
         (batch->bo, intel_batch_offset(batch, GEN(batch, 8) ? 8 : 7), src, 0,
          I915_GEM_DOMAIN_RENDER, 0);
 
-    intel_batch_add_dwords(batch, 8,
+    intel_batch_add_dwords(batch, 4,
         BLT_BR00_CLIENT(INTEL_CLIENT_BLT)
       | BLT_BR00_OP(BLT_OP_XY_SRC_COPY_BLT)
       | BLT_BR00_32BPP_MASK(BLT_32BPP_MASK_ALPHA | BLT_32BPP_MASK_RGB)
