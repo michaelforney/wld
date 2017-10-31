@@ -44,6 +44,8 @@ struct intel_device_info
     int gen;
 };
 
+#define GEN(b, m) ((b)->device_info->gen >= (m))
+
 struct intel_batch
 {
     const struct intel_device_info * device_info;
