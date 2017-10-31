@@ -90,12 +90,12 @@ enum blt_raster_operation
 /* BR06 : Setup Expansion Foreground Color */
 #define BLT_BR06_FOREGROUND_COLOR(x)        ((x) << 0)  /* 31:0 */
 
-/* BR07 : Setup Blit Color Pattern Address */
+/* BR07 : Setup Blit Color Pattern Address Low Bits */
                                                         /* 31:29 */
 #define BLT_BR07_PAT_ADDRESS(x)             ((x) << 6)  /* 28:6 */
                                                         /* 5:0 */
 
-/* BR09 : Destination Address */
+/* BR09 : Destination Address Low Bits */
                                                         /* 31:29 */
 #define BLT_BR09_DST_ADDRESS(x)             ((x) << 0)  /* 28:0 */
 
@@ -103,7 +103,7 @@ enum blt_raster_operation
                                                         /* 31:16 */
 #define BLT_BR11_SRC_PITCH(x)               ((x) << 0)  /* 15:0 */
 
-/* BR12 : Source Address */
+/* BR12 : Source Address Low Bits */
                                                         /* 31:29 */
 #define BLT_BR12_SRC_ADDRESS(x)             ((x) << 0)  /* 28:0 */
 
@@ -143,6 +143,18 @@ enum blt_raster_operation
 #define BLT_BR26_SRC_Y1(x)                  ((x) << 16) /* 31:16 */
 #define BLT_BR26_SRC_X1(x)                  ((x) << 0)  /* 15:0 */
 
+/* BR27 : Destination Address High Bits */
+                                                        /* 31:16 */
+#define BLT_BR27_DST_ADDRESS_HI(x)          ((x) << 0)  /* 15:0 */
+
+/* BR28 : Source Address High Bits */
+                                                        /* 31:16 */
+#define BLT_BR28_SRC_ADDRESS_HI(x)          ((x) << 0)  /* 15:0 */
+
+/* BR30 : Setup Blit Color Pattern Address High Bits */
+                                                        /* 31:16 */
+#define BLT_BR30_PAT_ADDRESS_HI(x)          ((x) << 0)  /* 15:0 */
+
 static inline void xy_setup_blt(struct intel_batch * batch,
                                 bool monochrome_source_transparency,
                                 uint8_t raster_operation,
@@ -152,19 +164,19 @@ static inline void xy_setup_blt(struct intel_batch * batch,
 {
     uint32_t tiling_mode, swizzle_mode;
 
-    intel_batch_ensure_space(batch, 8);
+    intel_batch_ensure_space(batch, GEN(batch, 8) ? 10 : 8);
 
     drm_intel_bo_get_tiling(dst, &tiling_mode, &swizzle_mode);
     drm_intel_bo_emit_reloc_fence
         (batch->bo, intel_batch_offset(batch, 4), dst, 0,
          I915_GEM_DOMAIN_RENDER, I915_GEM_DOMAIN_RENDER);
 
-    intel_batch_add_dwords(batch, 8,
+    intel_batch_add_dwords(batch, 4,
         BLT_BR00_CLIENT(INTEL_CLIENT_BLT)
       | BLT_BR00_OP(BLT_OP_XY_SETUP_BLT)
       | BLT_BR00_32BPP_MASK(BLT_32BPP_MASK_ALPHA | BLT_32BPP_MASK_RGB)
       | BLT_BR00_DST_TILING_ENABLE(tiling_mode != I915_TILING_NONE)
-      | BLT_BR00_DWORD_LENGTH(6),
+      | BLT_BR00_DWORD_LENGTH(GEN(batch, 8) ? 8 : 6),
 
         BLT_BR01_CLIPPING_ENABLE(false)
       | BLT_BR01_MONO_SRC_TRANSPARENCY(monochrome_source_transparency)
@@ -178,12 +190,24 @@ static inline void xy_setup_blt(struct intel_batch * batch,
       | BLT_BR24_CLP_X1(0),
 
         BLT_BR25_CLP_Y2(0)
-      | BLT_BR25_CLP_X2(0),
+      | BLT_BR25_CLP_X2(0)
+    );
 
-        BLT_BR09_DST_ADDRESS(dst->offset),
+    intel_batch_add_dwords(batch, GEN(batch, 8) ? 2 : 1,
+        BLT_BR09_DST_ADDRESS(dst->offset64),
+        /* if gen8 */
+        BLT_BR27_DST_ADDRESS_HI(dst->offset64 >> 32)
+    );
+
+    intel_batch_add_dwords(batch, 2,
         BLT_BR05_BACKGROUND_COLOR(background_color),
-        BLT_BR06_FOREGROUND_COLOR(foreground_color),
-        BLT_BR07_PAT_ADDRESS(0)
+        BLT_BR06_FOREGROUND_COLOR(foreground_color)
+    );
+
+    intel_batch_add_dwords(batch, GEN(batch, 8) ? 2 : 1,
+        BLT_BR07_PAT_ADDRESS(0),
+        /* if gen8 */
+        BLT_BR30_PAT_ADDRESS_HI(0)
     );
 }
 
@@ -195,7 +219,7 @@ static inline int xy_text_blt(struct intel_batch * batch,
 {
     uint32_t tiling_mode, swizzle_mode;
 
-    if (!intel_batch_check_space(batch, 4))
+    if (!intel_batch_check_space(batch, GEN(batch, 8) ? 5 : 4))
         return INTEL_BATCH_NO_SPACE;
 
     drm_intel_bo_get_tiling(dst, &tiling_mode, &swizzle_mode);
@@ -204,16 +228,21 @@ static inline int xy_text_blt(struct intel_batch * batch,
         (batch->bo, intel_batch_offset(batch, 3), src, src_offset,
          I915_GEM_DOMAIN_RENDER, 0);
 
-    intel_batch_add_dwords(batch, 4,
+    intel_batch_add_dwords(batch, 3,
         BLT_BR00_CLIENT(INTEL_CLIENT_BLT)
       | BLT_BR00_OP(BLT_OP_XY_TEXT_BLT)
       | BLT_BR00_PACKING(BLT_PACKING_BYTE)
       | BLT_BR00_DST_TILING_ENABLE(tiling_mode != I915_TILING_NONE)
-      | BLT_BR00_DWORD_LENGTH(2),
+      | BLT_BR00_DWORD_LENGTH(GEN(batch, 8) ? 3 : 2),
 
         BLT_BR22_DST_Y1(dst_y1) | BLT_BR22_DST_X1(dst_x1),
-        BLT_BR23_DST_Y2(dst_y2) | BLT_BR23_DST_X2(dst_x2),
-        BLT_BR12_SRC_ADDRESS(src->offset + src_offset)
+        BLT_BR23_DST_Y2(dst_y2) | BLT_BR23_DST_X2(dst_x2)
+    );
+
+    intel_batch_add_dwords(batch, GEN(batch, 8) ? 2 : 1,
+        BLT_BR12_SRC_ADDRESS(src->offset64 + src_offset),
+        /* if gen8 */
+        BLT_BR28_SRC_ADDRESS_HI((src->offset64 + src_offset) >> 32)
     );
 
     return INTEL_BATCH_SUCCESS;
@@ -268,7 +297,7 @@ static inline void xy_src_copy_blt(struct intel_batch * batch,
 {
     uint32_t src_tiling_mode, dst_tiling_mode, swizzle;
 
-    intel_batch_ensure_space(batch, 8);
+    intel_batch_ensure_space(batch, GEN(batch, 8) ? 10 : 8);
 
     drm_intel_bo_get_tiling(dst, &dst_tiling_mode, &swizzle);
     drm_intel_bo_get_tiling(src, &src_tiling_mode, &swizzle);
@@ -277,7 +306,7 @@ static inline void xy_src_copy_blt(struct intel_batch * batch,
         (batch->bo, intel_batch_offset(batch, 4), dst, 0,
          I915_GEM_DOMAIN_RENDER, I915_GEM_DOMAIN_RENDER);
     drm_intel_bo_emit_reloc_fence
-        (batch->bo, intel_batch_offset(batch, 7), src, 0,
+        (batch->bo, intel_batch_offset(batch, GEN(batch, 8) ? 8 : 7), src, 0,
          I915_GEM_DOMAIN_RENDER, 0);
 
     intel_batch_add_dwords(batch, 8,
@@ -286,7 +315,7 @@ static inline void xy_src_copy_blt(struct intel_batch * batch,
       | BLT_BR00_32BPP_MASK(BLT_32BPP_MASK_ALPHA | BLT_32BPP_MASK_RGB)
       | BLT_BR00_SRC_TILING_ENABLE(src_tiling_mode != I915_TILING_NONE)
       | BLT_BR00_DST_TILING_ENABLE(dst_tiling_mode != I915_TILING_NONE)
-      | BLT_BR00_DWORD_LENGTH(6),
+      | BLT_BR00_DWORD_LENGTH(GEN(batch, 8) ? 8 : 6),
 
         BLT_BR13_CLIPPING_ENABLE(false)
       | BLT_BR13_COLOR_DEPTH(BLT_COLOR_DEPTH_32BIT)
@@ -297,13 +326,20 @@ static inline void xy_src_copy_blt(struct intel_batch * batch,
         BLT_BR22_DST_Y1(dst_y) | BLT_BR22_DST_X1(dst_x),
 
         BLT_BR23_DST_Y2(dst_y + height)
-      | BLT_BR23_DST_X2(dst_x + width),
-
-        BLT_BR09_DST_ADDRESS(dst->offset),
+      | BLT_BR23_DST_X2(dst_x + width)
+    );
+    intel_batch_add_dwords(batch, GEN(batch, 8) ? 2 : 1,
+        BLT_BR09_DST_ADDRESS(dst->offset64),
+        BLT_BR27_DST_ADDRESS_HI(dst->offset64 >> 32)
+    );
+    intel_batch_add_dwords(batch, 2,
         BLT_BR26_SRC_Y1(src_y) | BLT_BR26_SRC_X1(src_x),
         BLT_BR11_SRC_PITCH(src_tiling_mode == I915_TILING_NONE
-                           ? src_pitch : src_pitch >> 2),
-        BLT_BR12_SRC_ADDRESS(src->offset)
+                           ? src_pitch : src_pitch >> 2)
+    );
+    intel_batch_add_dwords(batch, GEN(batch, 8) ? 2 : 1,
+        BLT_BR12_SRC_ADDRESS(src->offset64),
+        BLT_BR28_SRC_ADDRESS_HI(src->offset64 >> 32)
     );
 }
 
@@ -315,7 +351,7 @@ static inline void xy_color_blt(struct intel_batch * batch,
 {
     uint32_t tiling_mode, swizzle_mode;
 
-    intel_batch_ensure_space(batch, 6);
+    intel_batch_ensure_space(batch, GEN(batch, 8) ? 7 : 6);
 
     drm_intel_bo_get_tiling(dst, &tiling_mode, &swizzle_mode);
 
@@ -323,12 +359,12 @@ static inline void xy_color_blt(struct intel_batch * batch,
         (batch->bo, intel_batch_offset(batch, 4), dst, 0,
          I915_GEM_DOMAIN_RENDER, I915_GEM_DOMAIN_RENDER);
 
-    intel_batch_add_dwords(batch, 6,
+    intel_batch_add_dwords(batch, 4,
         BLT_BR00_CLIENT(INTEL_CLIENT_BLT)
       | BLT_BR00_OP(BLT_OP_XY_COLOR_BLT)
       | BLT_BR00_32BPP_MASK(BLT_32BPP_MASK_ALPHA | BLT_32BPP_MASK_RGB)
       | BLT_BR00_DST_TILING_ENABLE(tiling_mode != I915_TILING_NONE)
-      | BLT_BR00_DWORD_LENGTH(4),
+      | BLT_BR00_DWORD_LENGTH(GEN(batch, 8) ? 5 : 4),
 
         BLT_BR13_CLIPPING_ENABLE(false)
       | BLT_BR13_COLOR_DEPTH(BLT_COLOR_DEPTH_32BIT)
@@ -337,8 +373,13 @@ static inline void xy_color_blt(struct intel_batch * batch,
                            ? dst_pitch : dst_pitch >> 2),
 
         BLT_BR22_DST_Y1(dst_y1) | BLT_BR22_DST_X1(dst_x1),
-        BLT_BR23_DST_Y2(dst_y2) | BLT_BR23_DST_X2(dst_x2),
-        BLT_BR09_DST_ADDRESS(dst->offset),
+        BLT_BR23_DST_Y2(dst_y2) | BLT_BR23_DST_X2(dst_x2)
+    );
+    intel_batch_add_dwords(batch, GEN(batch, 8) ? 2 : 1,
+        BLT_BR09_DST_ADDRESS(dst->offset64),
+        BLT_BR27_DST_ADDRESS_HI(dst->offset64 >> 32)
+    );
+    intel_batch_add_dword(batch,
         BLT_BR16_COLOR(color)
     );
 }
