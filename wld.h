@@ -49,7 +49,8 @@ enum wld_format
 
 enum wld_flags
 {
-    WLD_FLAG_MAP = 0x1 << 16
+    WLD_FLAG_MAP    = 1 << 16,
+    WLD_FLAG_CURSOR = 1 << 17,
 };
 
 bool wld_lookup_named_color(const char * name, uint32_t * color);

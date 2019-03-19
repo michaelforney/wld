@@ -155,7 +155,7 @@ struct buffer * context_create_buffer(struct wld_context * base,
     struct intel_context * context = intel_context(base);
     struct buffer * buffer;
     drm_intel_bo * bo;
-    uint32_t tiling_mode = width >= 128 ? I915_TILING_X : I915_TILING_NONE;
+    uint32_t tiling_mode = width >= 128 && !(flags & WLD_FLAG_CURSOR) ? I915_TILING_X : I915_TILING_NONE;
     unsigned long pitch;
 
     bo = drm_intel_bo_alloc_tiled(context->bufmgr, "buffer", width, height, 4,
