@@ -160,7 +160,7 @@ static inline void wld_font_text_extents(struct wld_font * font,
 
 struct wld_exporter
 {
-    bool (* export)(struct wld_exporter * exporter, struct wld_buffer * buffer,
+    bool (*exporter)(struct wld_exporter * exporter, struct wld_buffer * buffer,
                     uint32_t type, union wld_object * object);
     struct wld_exporter * next;
 };

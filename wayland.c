@@ -229,7 +229,7 @@ bool wayland_buffer_add_exporter(struct buffer * buffer, struct wl_buffer * wl)
         return false;
 
     wayland_buffer->wl = wl;
-    wayland_buffer->exporter.export = &buffer_export;
+    wayland_buffer->exporter.exporter = &buffer_export;
     wld_buffer_add_exporter(&buffer->base, &wayland_buffer->exporter);
     wayland_buffer->destructor.destroy = &buffer_destroy;
     wld_buffer_add_destructor(&buffer->base, &wayland_buffer->destructor);

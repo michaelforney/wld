@@ -142,7 +142,7 @@ static struct buffer * new_buffer(uint32_t width, uint32_t height,
     buffer_initialize(&buffer->base, &wld_buffer_impl,
                       width, height, format, pitch);
     buffer->bo = bo;
-    buffer->exporter.export = &export;
+    buffer->exporter.exporter = &export;
     wld_buffer_add_exporter(&buffer->base.base, &buffer->exporter);
 
     return &buffer->base;
