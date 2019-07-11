@@ -34,14 +34,14 @@ struct wl_surface;
 
 enum wld_wayland_interface_id {
 	/**
-     * Give up on trying any new interfaces. This can be considered as a
-     * sentinel for wld_wayland_create_context.
-     */
+	 * Give up on trying any new interfaces. This can be considered as a
+	 * sentinel for wld_wayland_create_context.
+	 */
 	WLD_NONE = -2,
 
 	/**
-     * Try any available interface.
-     */
+	 * Try any available interface.
+	 */
 	WLD_ANY = -1,
 	WLD_DRM,
 	WLD_SHM

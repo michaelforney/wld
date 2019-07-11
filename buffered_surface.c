@@ -70,8 +70,7 @@ buffered_surface_create(struct wld_context *context, uint32_t width, uint32_t he
 }
 
 pixman_region32_t *
-surface_damage(struct wld_surface *base,
-               pixman_region32_t *new_damage)
+surface_damage(struct wld_surface *base, pixman_region32_t *new_damage)
 {
 	struct buffered_surface *surface = buffered_surface(base);
 	struct buffer *back_buffer;

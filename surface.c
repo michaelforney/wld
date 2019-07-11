@@ -32,16 +32,14 @@ default_create_surface(struct wld_context *context,
 }
 
 void
-surface_initialize(struct wld_surface *surface,
-                   const struct wld_surface_impl *impl)
+surface_initialize(struct wld_surface *surface, const struct wld_surface_impl *impl)
 {
 	*((const struct wld_surface_impl **)&surface->impl) = impl;
 }
 
 EXPORT
 pixman_region32_t *
-wld_surface_damage(struct wld_surface *surface,
-                   pixman_region32_t *new_damage)
+wld_surface_damage(struct wld_surface *surface, pixman_region32_t *new_damage)
 {
 	return surface->impl->damage(surface, new_damage);
 }
@@ -55,8 +53,7 @@ wld_surface_take(struct wld_surface *surface)
 
 EXPORT
 void
-wld_surface_release(struct wld_surface *surface,
-                    struct wld_buffer *buffer)
+wld_surface_release(struct wld_surface *surface, struct wld_buffer *buffer)
 {
 	surface->impl->release(surface, (struct buffer *)buffer);
 }

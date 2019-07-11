@@ -24,8 +24,7 @@
 #include "wld-private.h"
 
 void
-default_fill_region(struct wld_renderer *renderer, uint32_t color,
-                    pixman_region32_t *region)
+default_fill_region(struct wld_renderer *renderer, uint32_t color, pixman_region32_t *region)
 {
 	pixman_box32_t *box;
 	int num_boxes;
@@ -59,8 +58,7 @@ default_copy_region(struct wld_renderer *renderer, struct buffer *buffer,
 }
 
 void
-renderer_initialize(struct wld_renderer *renderer,
-                    const struct wld_renderer_impl *impl)
+renderer_initialize(struct wld_renderer *renderer, const struct wld_renderer_impl *impl)
 {
 	*((const struct wld_renderer_impl **)&renderer->impl) = impl;
 	renderer->target = NULL;
@@ -75,16 +73,14 @@ wld_destroy_renderer(struct wld_renderer *renderer)
 
 EXPORT
 uint32_t
-wld_capabilities(struct wld_renderer *renderer,
-                 struct wld_buffer *buffer)
+wld_capabilities(struct wld_renderer *renderer, struct wld_buffer *buffer)
 {
 	return renderer->impl->capabilities(renderer, (struct buffer *)buffer);
 }
 
 EXPORT
 bool
-wld_set_target_buffer(struct wld_renderer *renderer,
-                      struct wld_buffer *buffer)
+wld_set_target_buffer(struct wld_renderer *renderer, struct wld_buffer *buffer)
 {
 	if (!renderer->impl->set_target(renderer, (struct buffer *)buffer))
 		return false;
@@ -96,8 +92,7 @@ wld_set_target_buffer(struct wld_renderer *renderer,
 
 EXPORT
 bool
-wld_set_target_surface(struct wld_renderer *renderer,
-                       struct wld_surface *surface)
+wld_set_target_surface(struct wld_renderer *renderer, struct wld_surface *surface)
 {
 	struct buffer *back_buffer;
 
@@ -117,8 +112,7 @@ wld_fill_rectangle(struct wld_renderer *renderer, uint32_t color,
 
 EXPORT
 void
-wld_fill_region(struct wld_renderer *renderer, uint32_t color,
-                pixman_region32_t *region)
+wld_fill_region(struct wld_renderer *renderer, uint32_t color, pixman_region32_t *region)
 {
 	renderer->impl->fill_region(renderer, color, region);
 }

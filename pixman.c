@@ -165,11 +165,10 @@ context_destroy(struct wld_context *context)
 }
 
 uint32_t
-renderer_capabilities(struct wld_renderer *renderer,
-                      struct buffer *buffer)
+renderer_capabilities(struct wld_renderer *renderer, struct buffer *buffer)
 {
 	/* The pixman renderer can read and write to any buffer using it's map
-     * implementation. */
+	 * implementation. */
 	return WLD_CAPABILITY_READ | WLD_CAPABILITY_WRITE;
 }
 
@@ -372,7 +371,7 @@ renderer_draw_text(struct wld_renderer *base,
 		                                                font, glyph);
 
 		/* If we don't have the glyph in our cache, do some conversions to make
-         * pixman happy, and then insert it. */
+		 * pixman happy, and then insert it. */
 		if (!glyphs[index].glyph) {
 			uint8_t *src, *dst;
 			uint32_t row, byte_index, bytes_per_row, pitch;
@@ -392,7 +391,7 @@ renderer_draw_text(struct wld_renderer *base,
 
 			for (row = 0; row < bitmap->rows; ++row) {
 				/* Pixman's A1 format expects the bits in the opposite order
-                 * that Freetype gives us. Sigh... */
+				 * that Freetype gives us. Sigh... */
 				for (byte_index = 0; byte_index < bytes_per_row; ++byte_index)
 					dst[byte_index] = reverse(src[byte_index]);
 

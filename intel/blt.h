@@ -269,9 +269,9 @@ xy_text_immediate_blt(struct intel_batch *batch,
 		intel_batch_add_dword(batch, *immediates++);
 
 	/* From BLT engine documentation:
-     *
-     * The IMMEDIATE_BLT data MUST transfer an even number of doublewords. The
-     * BLT engine will hang if it does not get an even number of doublewords. */
+	 *
+	 * The IMMEDIATE_BLT data MUST transfer an even number of doublewords. The
+	 * BLT engine will hang if it does not get an even number of doublewords. */
 	if (count & 1)
 		intel_batch_add_dword(batch, 0);
 

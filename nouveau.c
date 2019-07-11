@@ -95,24 +95,24 @@ driver_create_context(int drm_fd)
 
 	switch (context->device->chipset & ~0xf) {
 	/* TODO: Support NV50
-        case 0x50:
-        case 0x80:
-        case 0x90:
-        case 0xa0:
-            context->architecture = NV_ARCH_50;
-            break;
-        */
+	case 0x50:
+	case 0x80:
+	case 0x90:
+	case 0xa0:
+		context->architecture = NV_ARCH_50;
+		break;
+	*/
 	case 0xc0:
 	case 0xd0:
 		context->architecture = NV_ARCH_C0;
 		break;
 	/* TODO: Support NVE0
-        case 0xe0:
-        case 0xf0:
-        case 0x100:
-            context->architecture = NV_ARCH_E0;
-            break;
-        */
+	case 0xe0:
+	case 0xf0:
+	case 0x100:
+		context->architecture = NV_ARCH_E0;
+		break;
+	*/
 	default:
 		return NULL;
 	}
@@ -149,16 +149,14 @@ nv_add_dword(struct nouveau_pushbuf *push, uint32_t dword)
 }
 
 static inline void
-nv_add_dwords_va(struct nouveau_pushbuf *push,
-                 uint16_t count, va_list dwords)
+nv_add_dwords_va(struct nouveau_pushbuf *push, uint16_t count, va_list dwords)
 {
 	while (count--)
 		nv_add_dword(push, va_arg(dwords, uint32_t));
 }
 
 static inline void
-nv_add_data(struct nouveau_pushbuf *push,
-            void *data, uint32_t count)
+nv_add_data(struct nouveau_pushbuf *push, void *data, uint32_t count)
 {
 	memcpy(push->cur, data, count * 4);
 	push->cur += count;
@@ -188,16 +186,13 @@ enum {
 };
 
 static inline uint32_t
-nvc0_command(uint8_t type, uint8_t subchannel,
-             uint16_t method, uint16_t count_or_value)
+nvc0_command(uint8_t type, uint8_t subchannel, uint16_t method, uint16_t count_or_value)
 {
 	return type << 29 | count_or_value << 16 | subchannel << 13 | method >> 2;
 }
 
 static inline void
-nvc0_inline(struct nouveau_pushbuf *push,
-            uint8_t subchannel, uint16_t method,
-            uint16_t value)
+nvc0_inline(struct nouveau_pushbuf *push, uint8_t subchannel, uint16_t method, uint16_t value)
 {
 	nv_add_dword(push, nvc0_command(GF100_COMMAND_TYPE_INLINE,
 	                                subchannel, method, value));
@@ -606,7 +601,7 @@ renderer_draw_text(struct wld_renderer *base,
 
 		nvc0_2d(renderer->pushbuf, G80_2D_SIFC_WIDTH, 10,
 		        /* Use the pitch instead of width to ensure the correct
-                 * alignment is used. */
+			 * alignment is used. */
 		        glyph->bitmap.pitch * 8, glyph->bitmap.rows,
 		        0, 1, 0, 1,
 		        0, origin_x + glyph->x, 0, y + glyph->y);
@@ -652,7 +647,7 @@ buffer_map(struct buffer *base)
 	struct nouveau_buffer *buffer = nouveau_buffer(&base->base);
 
 	/* If the buffer is tiled, it cannot be mapped into virtual memory in order
-     * to appear linear like intel can do with map_gtt. */
+	 * to appear linear like intel can do with map_gtt. */
 	if (buffer->bo->config.nvc0.tile_mode)
 		return false;
 

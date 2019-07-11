@@ -59,13 +59,13 @@ struct glyph {
 	FT_Bitmap bitmap;
 
 	/**
-     * The offset from the origin to the top left corner of the bitmap.
-     */
+	 * The offset from the origin to the top left corner of the bitmap.
+	 */
 	int16_t x, y;
 
 	/**
-     * The width to advance to the origin of the next character.
-     */
+	 * The width to advance to the origin of the next character.
+	 */
 	uint16_t advance;
 };
 
@@ -119,7 +119,7 @@ struct wld_renderer_impl {
 struct buffer {
 	struct wld_buffer base;
 
-	unsigned references, map_references;
+	unsigned ref, map_ref;
 	struct wld_exporter *exporters;
 	struct wld_destructor *destructors;
 };

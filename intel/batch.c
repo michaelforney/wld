@@ -90,8 +90,7 @@ intel_batch_initialize(struct intel_batch *batch,
 		return false;
 
 	/* Alignment argument (4096) is not used */
-	batch->bo = drm_intel_bo_alloc(bufmgr, "batchbuffer",
-	                               sizeof batch->commands, 4096);
+	batch->bo = drm_intel_bo_alloc(bufmgr, "batchbuffer", sizeof batch->commands, 4096);
 
 	if (!batch->bo)
 		return false;

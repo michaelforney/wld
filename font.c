@@ -60,8 +60,7 @@ wld_font_destroy_context(struct wld_font_context *context)
 
 EXPORT
 struct wld_font *
-wld_font_open_name(struct wld_font_context *context,
-                   const char *name)
+wld_font_open_name(struct wld_font_context *context, const char *name)
 {
 	FcPattern *pattern, *match;
 	FcResult result;
@@ -82,8 +81,7 @@ wld_font_open_name(struct wld_font_context *context,
 
 EXPORT
 struct wld_font *
-wld_font_open_pattern(struct wld_font_context *context,
-                      FcPattern *match)
+wld_font_open_pattern(struct wld_font_context *context, FcPattern *match)
 {
 	char *filename;
 	struct font *font;

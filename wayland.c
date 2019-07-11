@@ -274,8 +274,8 @@ buffer_socket_process(struct buffer_socket *base)
 	struct wayland_buffer_socket *socket = wayland_buffer_socket(base);
 
 	/* Since events for our wl_buffers lie in a special queue used by WLD, we
-     * must dispatch these events here so that we see any release events before
-     * the next back buffer is chosen. */
+	 * must dispatch these events here so that we see any release events before
+	 * the next back buffer is chosen. */
 	wl_display_dispatch_queue_pending(socket->display, socket->queue);
 }
 

@@ -222,8 +222,7 @@ context_destroy(struct wld_context *base)
 
 /**** Renderer ****/
 uint32_t
-renderer_capabilities(struct wld_renderer *renderer,
-                      struct buffer *buffer)
+renderer_capabilities(struct wld_renderer *renderer, struct buffer *buffer)
 {
 	if (buffer->base.impl == &wld_buffer_impl)
 		return WLD_CAPABILITY_READ | WLD_CAPABILITY_WRITE;
