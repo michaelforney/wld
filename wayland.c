@@ -56,13 +56,6 @@ static const struct buffer_socket_impl buffer_socket_impl = {
 
 IMPL(wayland_buffer_socket, buffer_socket)
 
-static void sync_done(void *data, struct wl_callback *callback,
-                      uint32_t msecs);
-
-static const struct wl_callback_listener sync_listener = {
-	.done = &sync_done
-};
-
 static void buffer_release(void *data, struct wl_buffer *buffer);
 
 const static struct wayland_impl *impls[] = {
@@ -283,15 +276,6 @@ void
 buffer_socket_destroy(struct buffer_socket *socket)
 {
 	free(socket);
-}
-
-void
-sync_done(void *data, struct wl_callback *callback, uint32_t msecs)
-{
-	bool *done = data;
-
-	*done = true;
-	wl_callback_destroy(callback);
 }
 
 void
