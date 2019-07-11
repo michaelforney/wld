@@ -22,22 +22,21 @@
  */
 
 #ifndef DRM_DRIVER_NAME
-#   error "You must define DRM_DRIVER_NAME before including interface/drm.h"
+#error "You must define DRM_DRIVER_NAME before including interface/drm.h"
 #endif
 
 /* DRM driver */
 static bool driver_device_supported(uint32_t vendor_id, uint32_t device_id);
-static struct wld_context * driver_create_context(int drm_fd);
+static struct wld_context *driver_create_context(int drm_fd);
 
 #define EXPAND(f, x) f(x)
-#define VAR(name) name ## _drm_driver
-#define STRING(name) # name
+#define VAR(name) name##_drm_driver
+#define STRING(name) #name
 const struct drm_driver EXPAND(VAR, DRM_DRIVER_NAME) = {
-    .name = EXPAND(STRING, DRM_DRIVER_NAME),
-    .device_supported = &driver_device_supported,
-    .create_context = &driver_create_context,
+	.name = EXPAND(STRING, DRM_DRIVER_NAME),
+	.device_supported = &driver_device_supported,
+	.create_context = &driver_create_context,
 };
 #undef VAR
 #undef STRING
 #undef EXPAND
-

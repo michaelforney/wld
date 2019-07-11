@@ -32,25 +32,23 @@ struct wl_surface;
 
 #define WLD_WAYLAND_ID (0x3 << 24)
 
-enum wld_wayland_interface_id
-{
-    /**
+enum wld_wayland_interface_id {
+	/**
      * Give up on trying any new interfaces. This can be considered as a
      * sentinel for wld_wayland_create_context.
      */
-    WLD_NONE = -2,
+	WLD_NONE = -2,
 
-    /**
+	/**
      * Try any available interface.
      */
-    WLD_ANY = -1,
-    WLD_DRM,
-    WLD_SHM
+	WLD_ANY = -1,
+	WLD_DRM,
+	WLD_SHM
 };
 
-enum wld_wayland_object_type
-{
-    WLD_WAYLAND_OBJECT_BUFFER = WLD_WAYLAND_ID
+enum wld_wayland_object_type {
+	WLD_WAYLAND_OBJECT_BUFFER = WLD_WAYLAND_ID
 };
 
 /**
@@ -65,20 +63,18 @@ enum wld_wayland_object_type
  *
  * @see enum wld_wayland_interface_id
  */
-struct wld_context * wld_wayland_create_context
-    (struct wl_display * display, enum wld_wayland_interface_id id, ...);
+struct wld_context *wld_wayland_create_context(struct wl_display *display, enum wld_wayland_interface_id id, ...);
 
-struct wld_surface * wld_wayland_create_surface(struct wld_context * context,
-                                                uint32_t width, uint32_t height,
-                                                uint32_t format, uint32_t flags,
-                                                struct wl_surface * surface);
+struct wld_surface *wld_wayland_create_surface(struct wld_context *context,
+                                               uint32_t width, uint32_t height,
+                                               uint32_t format, uint32_t flags,
+                                               struct wl_surface *surface);
 
 /**
  * Check if the wayland implementation supports a particular pixel format.
  *
  * @see enum wld_format
  */
-bool wld_wayland_has_format(struct wld_context * context, uint32_t format);
+bool wld_wayland_has_format(struct wld_context *context, uint32_t format);
 
 #endif
-

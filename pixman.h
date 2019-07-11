@@ -28,17 +28,16 @@
 
 #define WLD_PIXMAN_ID (0x01 << 24)
 
-enum wld_pixman_object_type
-{
-    WLD_PIXMAN_OBJECT_IMAGE = WLD_PIXMAN_ID
+enum wld_pixman_object_type {
+	WLD_PIXMAN_OBJECT_IMAGE = WLD_PIXMAN_ID
 };
 
-extern struct wld_context * wld_pixman_context;
+extern struct wld_context *wld_pixman_context;
 
-static inline struct wld_context * wld_pixman_create_context()
+static inline struct wld_context *
+wld_pixman_create_context()
 {
-    return wld_pixman_context;
+	return wld_pixman_context;
 }
 
 #endif
-

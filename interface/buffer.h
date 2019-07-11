@@ -21,13 +21,12 @@
  * SOFTWARE.
  */
 
-static bool buffer_map(struct buffer * drawable);
-static bool buffer_unmap(struct buffer * drawable);
-static void buffer_destroy(struct buffer * drawable);
+static bool buffer_map(struct buffer *drawable);
+static bool buffer_unmap(struct buffer *drawable);
+static void buffer_destroy(struct buffer *drawable);
 
 static const struct wld_buffer_impl wld_buffer_impl = {
-    .map = &buffer_map,
-    .unmap = &buffer_unmap,
-    .destroy = &buffer_destroy
+	.map = &buffer_map,
+	.unmap = &buffer_unmap,
+	.destroy = &buffer_destroy
 };
-

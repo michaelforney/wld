@@ -21,21 +21,20 @@
  * SOFTWARE.
  */
 
-static pixman_region32_t * surface_damage(struct wld_surface * surface,
-                                          pixman_region32_t * new_damage);
-static struct buffer * surface_back(struct wld_surface * surface);
-static struct buffer * surface_take(struct wld_surface * surface);
-static bool surface_release(struct wld_surface * surface,
-                            struct buffer * buffer);
-static bool surface_swap(struct wld_surface * surface);
-static void surface_destroy(struct wld_surface * surface);
+static pixman_region32_t *surface_damage(struct wld_surface *surface,
+                                         pixman_region32_t *new_damage);
+static struct buffer *surface_back(struct wld_surface *surface);
+static struct buffer *surface_take(struct wld_surface *surface);
+static bool surface_release(struct wld_surface *surface,
+                            struct buffer *buffer);
+static bool surface_swap(struct wld_surface *surface);
+static void surface_destroy(struct wld_surface *surface);
 
 static const struct wld_surface_impl wld_surface_impl = {
-    .damage = &surface_damage,
-    .back = &surface_back,
-    .take = &surface_take,
-    .release = &surface_release,
-    .swap = &surface_swap,
-    .destroy = &surface_destroy
+	.damage = &surface_damage,
+	.back = &surface_back,
+	.take = &surface_take,
+	.release = &surface_release,
+	.swap = &surface_swap,
+	.destroy = &surface_destroy
 };
-

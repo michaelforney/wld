@@ -26,11 +26,10 @@
 
 #include "wld-private.h"
 
-struct drm_driver
-{
-    const char * name;
-    bool (* device_supported)(uint32_t vendor_id, uint32_t device_id);
-    struct wld_context * (* create_context)(int drm_fd);
+struct drm_driver {
+	const char *name;
+	bool (*device_supported)(uint32_t vendor_id, uint32_t device_id);
+	struct wld_context *(*create_context)(int drm_fd);
 };
 
 #if WITH_DRM_INTEL
@@ -40,7 +39,6 @@ extern const struct drm_driver intel_drm_driver;
 extern const struct drm_driver nouveau_drm_driver;
 #endif
 extern const struct drm_driver dumb_drm_driver;
-extern const struct wld_context_impl * dumb_context_impl;
+extern const struct wld_context_impl *dumb_context_impl;
 
 #endif
-

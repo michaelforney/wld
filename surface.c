@@ -23,48 +23,54 @@
 
 #include "wld-private.h"
 
-struct wld_surface * default_create_surface(struct wld_context * context,
-                                            uint32_t width, uint32_t height,
-                                            uint32_t format, uint32_t flags)
+struct wld_surface *
+default_create_surface(struct wld_context *context,
+                       uint32_t width, uint32_t height,
+                       uint32_t format, uint32_t flags)
 {
-    return buffered_surface_create(context, width, height, format, flags, NULL);
+	return buffered_surface_create(context, width, height, format, flags, NULL);
 }
 
-void surface_initialize(struct wld_surface * surface,
-                        const struct wld_surface_impl * impl)
+void
+surface_initialize(struct wld_surface *surface,
+                   const struct wld_surface_impl *impl)
 {
-    *((const struct wld_surface_impl **) &surface->impl) = impl;
-}
-
-EXPORT
-pixman_region32_t * wld_surface_damage(struct wld_surface * surface,
-                                       pixman_region32_t * new_damage)
-{
-    return surface->impl->damage(surface, new_damage);
+	*((const struct wld_surface_impl **)&surface->impl) = impl;
 }
 
 EXPORT
-struct wld_buffer * wld_surface_take(struct wld_surface * surface)
+pixman_region32_t *
+wld_surface_damage(struct wld_surface *surface,
+                   pixman_region32_t *new_damage)
 {
-    return &surface->impl->take(surface)->base;
+	return surface->impl->damage(surface, new_damage);
 }
 
 EXPORT
-void wld_surface_release(struct wld_surface * surface,
-                         struct wld_buffer * buffer)
+struct wld_buffer *
+wld_surface_take(struct wld_surface *surface)
 {
-    surface->impl->release(surface, (struct buffer *) buffer);
+	return &surface->impl->take(surface)->base;
 }
 
 EXPORT
-bool wld_swap(struct wld_surface * surface)
+void
+wld_surface_release(struct wld_surface *surface,
+                    struct wld_buffer *buffer)
 {
-    return surface->impl->swap(surface);
+	surface->impl->release(surface, (struct buffer *)buffer);
 }
 
 EXPORT
-void wld_destroy_surface(struct wld_surface * surface)
+bool
+wld_swap(struct wld_surface *surface)
 {
-    surface->impl->destroy(surface);
+	return surface->impl->swap(surface);
 }
 
+EXPORT
+void
+wld_destroy_surface(struct wld_surface *surface)
+{
+	surface->impl->destroy(surface);
+}

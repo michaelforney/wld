@@ -21,30 +21,25 @@
  * SOFTWARE.
  */
 
-static struct wld_renderer * context_create_renderer
-    (struct wld_context * context);
-static struct buffer * context_create_buffer
-    (struct wld_context * context,
-     uint32_t width, uint32_t height, uint32_t format, uint32_t flags);
-static struct buffer * context_import_buffer
-    (struct wld_context * context, uint32_t type, union wld_object object,
-     uint32_t width, uint32_t height, uint32_t format, uint32_t pitch);
+static struct wld_renderer *context_create_renderer(struct wld_context *context);
+static struct buffer *context_create_buffer(struct wld_context *context,
+                                            uint32_t width, uint32_t height, uint32_t format, uint32_t flags);
+static struct buffer *context_import_buffer(struct wld_context *context, uint32_t type, union wld_object object,
+                                            uint32_t width, uint32_t height, uint32_t format, uint32_t pitch);
 #ifdef CONTEXT_IMPLEMENTS_CREATE_SURFACE
-static struct wld_surface * context_create_surface
-    (struct wld_context * context,
-     uint32_t width, uint32_t height, uint32_t format, uint32_t flags);
+static struct wld_surface *context_create_surface(struct wld_context *context,
+                                                  uint32_t width, uint32_t height, uint32_t format, uint32_t flags);
 #endif
-static void context_destroy(struct wld_context * context);
+static void context_destroy(struct wld_context *context);
 
 static const struct wld_context_impl wld_context_impl = {
-    .create_renderer = &context_create_renderer,
-    .create_buffer = &context_create_buffer,
-    .import_buffer = &context_import_buffer,
+	.create_renderer = &context_create_renderer,
+	.create_buffer = &context_create_buffer,
+	.import_buffer = &context_import_buffer,
 #ifdef CONTEXT_IMPLEMENTS_CREATE_SURFACE
-    .create_surface = &context_create_surface,
+	.create_surface = &context_create_surface,
 #else
-    .create_surface = &default_create_surface,
+	.create_surface = &default_create_surface,
 #endif
-    .destroy = &context_destroy
+	.destroy = &context_destroy
 };
-

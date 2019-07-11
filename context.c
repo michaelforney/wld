@@ -23,48 +23,55 @@
 
 #include "wld-private.h"
 
-void context_initialize(struct wld_context * context,
-                        const struct wld_context_impl * impl)
+void
+context_initialize(struct wld_context *context,
+                   const struct wld_context_impl *impl)
 {
-    *((const struct wld_context_impl **) &context->impl) = impl;
+	*((const struct wld_context_impl **)&context->impl) = impl;
 }
 
 EXPORT
-struct wld_renderer * wld_create_renderer(struct wld_context * context)
+struct wld_renderer *
+wld_create_renderer(struct wld_context *context)
 {
-    return context->impl->create_renderer(context);
+	return context->impl->create_renderer(context);
 }
 
 EXPORT
-struct wld_buffer * wld_create_buffer(struct wld_context * context,
-                                      uint32_t width, uint32_t height,
-                                      uint32_t format, uint32_t flags)
+struct wld_buffer *
+wld_create_buffer(struct wld_context *context,
+                  uint32_t width, uint32_t height,
+                  uint32_t format, uint32_t flags)
 {
-    return &context->impl->create_buffer(context, width, height,
-                                         format, flags)->base;
+	return &context->impl->create_buffer(context, width, height,
+	                                     format, flags)
+	            ->base;
 }
 
 EXPORT
-struct wld_buffer * wld_import_buffer(struct wld_context * context,
-                                      uint32_t type, union wld_object object,
-                                      uint32_t width, uint32_t height,
-                                      uint32_t format, uint32_t pitch)
+struct wld_buffer *
+wld_import_buffer(struct wld_context *context,
+                  uint32_t type, union wld_object object,
+                  uint32_t width, uint32_t height,
+                  uint32_t format, uint32_t pitch)
 {
-    return &context->impl->import_buffer(context, type, object,
-                                         width, height, format, pitch)->base;
+	return &context->impl->import_buffer(context, type, object,
+	                                     width, height, format, pitch)
+	            ->base;
 }
 
 EXPORT
-struct wld_surface * wld_create_surface(struct wld_context * context,
-                                        uint32_t width, uint32_t height,
-                                        uint32_t format, uint32_t flags)
+struct wld_surface *
+wld_create_surface(struct wld_context *context,
+                   uint32_t width, uint32_t height,
+                   uint32_t format, uint32_t flags)
 {
-    return context->impl->create_surface(context, width, height, format, flags);
+	return context->impl->create_surface(context, width, height, format, flags);
 }
 
 EXPORT
-void wld_destroy_context(struct wld_context * context)
+void
+wld_destroy_context(struct wld_context *context)
 {
-    context->impl->destroy(context);
+	context->impl->destroy(context);
 }
-

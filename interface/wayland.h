@@ -22,20 +22,18 @@
  */
 
 #ifndef WAYLAND_IMPL_NAME
-#   error you must define WAYLAND_IMPL_NAME before including interface/wayland.h
+#error you must define WAYLAND_IMPL_NAME before including interface/wayland.h
 #endif
 
-static struct wayland_context * wayland_create_context
-    (struct wl_display * display, struct wl_event_queue * queue);
-static bool wayland_has_format(struct wld_context * context, uint32_t format);
+static struct wayland_context *wayland_create_context(struct wl_display *display, struct wl_event_queue *queue);
+static bool wayland_has_format(struct wld_context *context, uint32_t format);
 
 #define EXPAND(f, x) f(x)
-#define VAR(name) name ## _wayland_impl
+#define VAR(name) name##_wayland_impl
 const struct wayland_impl EXPAND(VAR, WAYLAND_IMPL_NAME) = {
-    .create_context = &wayland_create_context,
-    .has_format = &wayland_has_format,
-    //.create_surface = &wayland_create_surface,
+	.create_context = &wayland_create_context,
+	.has_format = &wayland_has_format,
+	//.create_surface = &wayland_create_surface,
 };
 #undef VAR
 #undef EXPAND
-

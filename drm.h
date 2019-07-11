@@ -29,24 +29,21 @@
 
 #define WLD_DRM_ID (0x02 << 24)
 
-enum wld_drm_object_type
-{
-    WLD_DRM_OBJECT_HANDLE = WLD_DRM_ID,
-    WLD_DRM_OBJECT_PRIME_FD,
+enum wld_drm_object_type {
+	WLD_DRM_OBJECT_HANDLE = WLD_DRM_ID,
+	WLD_DRM_OBJECT_PRIME_FD,
 };
 
-enum wld_drm_flags
-{
-    WLD_DRM_FLAG_SCANOUT    = 0x1,
-    WLD_DRM_FLAG_TILED      = 0x2
+enum wld_drm_flags {
+	WLD_DRM_FLAG_SCANOUT = 0x1,
+	WLD_DRM_FLAG_TILED = 0x2
 };
 
 /**
  * Create a new WLD context from an opened DRM device file descriptor.
  */
-struct wld_context * wld_drm_create_context(int fd);
+struct wld_context *wld_drm_create_context(int fd);
 
-bool wld_drm_is_dumb(struct wld_context * context);
+bool wld_drm_is_dumb(struct wld_context *context);
 
 #endif
-
