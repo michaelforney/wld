@@ -348,11 +348,16 @@ renderer_draw_text(struct wld_renderer *base,
 	uint32_t c;
 	struct glyph *glyph;
 	FT_UInt glyph_index;
-	pixman_glyph_t glyphs[length == -1 ? (length = strlen(text)) : length];
+	pixman_glyph_t *glyphs;
 	uint32_t index = 0, origin_x = 0;
 	pixman_color_t pixman_color = PIXMAN_COLOR(color);
 	pixman_image_t *solid;
 
+	if (length == -1)
+		length = strlen(text);
+	glyphs = malloc(length * sizeof(glyphs[0]));
+	if (!glyphs)
+		return;
 	solid = pixman_image_create_solid_fill(&pixman_color);
 
 	while ((ret = FcUtf8ToUcs4((FcChar8 *)text, &c, length)) > 0 && c != '\0') {
@@ -419,6 +424,7 @@ renderer_draw_text(struct wld_renderer *base,
 	                                0, 0, x, y, renderer->glyph_cache,
 	                                index, glyphs);
 
+	free(glyphs);
 	pixman_image_unref(solid);
 
 	if (extents)

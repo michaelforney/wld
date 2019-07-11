@@ -87,7 +87,7 @@ WLD_PACKAGES        = $(WLD_REQUIRES) $(WLD_REQUIRES_PRIVATE)
 WLD_PACKAGE_CFLAGS ?= $(call pkgconfig,$(WLD_PACKAGES),cflags,CFLAGS)
 WLD_PACKAGE_LIBS   ?= $(call pkgconfig,$(WLD_PACKAGES),libs,LIBS)
 
-FINAL_CFLAGS = $(CFLAGS) -fvisibility=hidden -std=c99
+FINAL_CFLAGS = $(CFLAGS) -fvisibility=hidden -std=c99 -Wvla
 FINAL_CPPFLAGS = $(CPPFLAGS) -D_XOPEN_SOURCE=700
 
 # Warning/error flags
