@@ -9,7 +9,7 @@ PROTOCOL_EXTENSIONS = $(dir)/wayland-drm.xml
 .PRECIOUS: $(dir)/%-protocol.c
 
 $(dir)/%-protocol.c: $(dir)/%.xml
-	$(call quiet,GEN,$(WAYLAND_SCANNER)) code < $< > $@
+	$(call quiet,GEN,$(WAYLAND_SCANNER)) private-code < $< > $@
 
 $(dir)/%-client-protocol.h: $(dir)/%.xml
 	$(call quiet,GEN,$(WAYLAND_SCANNER)) client-header < $< > $@
