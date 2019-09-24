@@ -4,6 +4,10 @@ dir := protocol
 
 PROTOCOL_EXTENSIONS = $(dir)/wayland-drm.xml
 
+# GNUMake correctly marks %-protocol.c as an intermediate file, and deletes it
+# after the build. The file can be preserved by marking it as precious.
+.PRECIOUS: $(dir)/%-protocol.c
+
 $(dir)/%-protocol.c: $(dir)/%.xml
 	$(call quiet,GEN,$(WAYLAND_SCANNER)) code < $< > $@
 
