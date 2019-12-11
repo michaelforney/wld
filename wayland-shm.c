@@ -177,7 +177,7 @@ context_create_buffer(struct wld_context *base,
 
 	unlink(name);
 
-	if (posix_fallocate(fd, 0, size) != 0)
+	if (posix_fallocate(fd, 0, size) != 0 && ftruncate(fd, size) != 0)
 		goto error2;
 
 	if (!(pool = wl_shm_create_pool(context->wl, fd, size)))
