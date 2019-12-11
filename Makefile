@@ -35,7 +35,13 @@ WLD_HEADERS = wld.h
 
 ifeq ($(ENABLE_DRM),1)
     WLD_REQUIRES_PRIVATE += libdrm
-    WLD_SOURCES += drm.c dumb.c
+
+    ifeq ($(shell uname),NetBSD)
+        WLD_SOURCES += drm-netbsd.c dumb.c
+    else
+        WLD_SOURCES += drm.c dumb.c
+    endif
+
     WLD_HEADERS += drm.h
 
     ifneq ($(findstring intel,$(DRM_DRIVERS)),)
@@ -94,6 +100,11 @@ FINAL_CPPFLAGS = $(CPPFLAGS) -D_XOPEN_SOURCE=700
 FINAL_CFLAGS += -Werror=implicit-function-declaration -Werror=implicit-int \
                 -Werror=pointer-sign -Werror=pointer-arith \
                 -Wall -Wno-missing-braces
+
+ifeq ($(shell uname),NetBSD)
+# Needed for mkostemp
+    FINAL_CPPFLAGS += -D_NETBSD_SOURCE
+endif
 
 ifeq ($(ENABLE_DEBUG),1)
     FINAL_CPPFLAGS += -DENABLE_DEBUG=1
