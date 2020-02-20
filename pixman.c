@@ -313,18 +313,25 @@ renderer_copy_region(struct wld_renderer *base, struct buffer *buffer,
 {
 	struct pixman_renderer *renderer = pixman_renderer(base);
 	pixman_image_t *src = pixman_image(buffer), *dst = renderer->target;
+	pixman_region32_t clip;
 
 	if (!src)
 		return;
 
-	pixman_image_set_clip_region32(src, region);
+	pixman_region32_init(&clip);
+	pixman_region32_copy(&clip, region);
+	pixman_region32_translate(&clip, dst_x, dst_y);
+
+	pixman_image_set_clip_region32(dst, &clip);
 	pixman_image_composite32(PIXMAN_OP_SRC, src, NULL, dst,
 	                         region->extents.x1, region->extents.y1, 0, 0,
 	                         region->extents.x1 + dst_x,
 	                         region->extents.y1 + dst_y,
 	                         region->extents.x2 - region->extents.x1,
 	                         region->extents.y2 - region->extents.y1);
-	pixman_image_set_clip_region32(src, NULL);
+	pixman_image_set_clip_region32(dst, NULL);
+
+	pixman_region32_fini(&clip);
 }
 
 static inline uint8_t
