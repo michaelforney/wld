@@ -95,10 +95,6 @@ FINAL_CFLAGS += -Werror=implicit-function-declaration -Werror=implicit-int \
                 -Werror=pointer-sign -Werror=pointer-arith \
                 -Wall -Wno-missing-braces
 
-ifeq ($(shell uname),Linux)
-    FINAL_CPPFLAGS += -DHAVE_SYS_SYSMACROS_H=1
-endif
-
 ifeq ($(shell uname),NetBSD)
     # Needed for mkostemp
     FINAL_CPPFLAGS += -D_NETBSD_SOURCE

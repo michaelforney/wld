@@ -24,10 +24,9 @@
 #include "drm.h"
 #include "drm-private.h"
 
-#ifdef HAVE_SYS_SYSMACROS_H
-#include <sys/sysmacros.h>
-#else
 #include <sys/types.h>
+#ifndef major
+#include <sys/sysmacros.h>
 #endif
 
 const static struct drm_driver *drivers[] = {
