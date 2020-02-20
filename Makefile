@@ -35,13 +35,7 @@ WLD_HEADERS = wld.h
 
 ifeq ($(ENABLE_DRM),1)
     WLD_REQUIRES_PRIVATE += libdrm
-
-    ifeq ($(shell uname),NetBSD)
-        WLD_SOURCES += drm-netbsd.c dumb.c
-    else
-        WLD_SOURCES += drm.c dumb.c
-    endif
-
+    WLD_SOURCES += drm.c dumb.c
     WLD_HEADERS += drm.h
 
     ifneq ($(findstring intel,$(DRM_DRIVERS)),)
@@ -76,6 +70,10 @@ ifeq ($(ENABLE_WAYLAND),1)
         WLD_SOURCES += wayland-drm.c protocol/wayland-drm-protocol.c
         WLD_CPPFLAGS += -DWITH_WAYLAND_DRM=1
     endif
+endif
+
+ifeq ($(shell uname),Linux)
+    WLD_CPPFLAGS += -DHAVE_SYS_SYSMACROS_H=1
 endif
 
 ifeq ($(if $(V),$(V),0), 0)
