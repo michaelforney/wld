@@ -261,17 +261,12 @@ void
 drm_device(void *data, struct wl_drm *wl, const char *name)
 {
 	struct drm_context *context = data;
-	drm_magic_t magic;
 
 	context->fd = open(name, O_RDWR);
-
 	if (context->fd == -1) {
 		DEBUG("Couldn't open DRM device '%s'\n", name);
 		return;
 	}
-
-	drmGetMagic(context->fd, &magic);
-	wl_drm_authenticate(wl, magic);
 }
 
 void
