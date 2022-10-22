@@ -42,7 +42,6 @@ struct drm_context {
 	struct wl_array formats;
 	uint32_t capabilities;
 	int fd;
-	bool authenticated;
 };
 
 #define WAYLAND_IMPL_NAME drm
@@ -118,14 +117,6 @@ wayland_create_context(struct wl_display *display,
 		goto error3;
 	}
 
-	/* Wait for DRM authentication. */
-	wl_display_roundtrip_queue(display, queue);
-
-	if (!context->authenticated) {
-		DEBUG("DRM authentication failed\n");
-		goto error4;
-	}
-
 	if (!(context->driver_context = wld_drm_create_context(context->fd))) {
 		DEBUG("Couldn't initialize context for DRM device\n");
 		goto error4;
@@ -166,7 +157,7 @@ wld_wayland_drm_get_fd(struct wld_context *base)
 {
 	struct drm_context *context = drm_context(base);
 
-	return context->authenticated ? context->fd : -1;
+	return context->fd;
 }
 
 struct wld_renderer *
@@ -280,9 +271,6 @@ drm_format(void *data, struct wl_drm *wl, uint32_t format)
 void
 drm_authenticated(void *data, struct wl_drm *wl)
 {
-	struct drm_context *context = data;
-
-	context->authenticated = true;
 }
 
 void
