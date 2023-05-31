@@ -177,7 +177,11 @@ context_create_buffer(struct wld_context *base,
 
 	unlink(name);
 
+#ifdef __OpenBSD__
+	if (ftruncate(fd, size) != 0)
+#else
 	if (posix_fallocate(fd, 0, size) != 0 && ftruncate(fd, size) != 0)
+#endif
 		goto error2;
 
 	if (!(pool = wl_shm_create_pool(context->wl, fd, size)))
