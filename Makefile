@@ -106,7 +106,7 @@ ifeq ($(shell uname),OpenBSD)
     # Needed for 'major' macros
     FINAL_CPPFLAGS += -D_BSD_SOURCE
 else
-    WLD_LDFLAGS += -WL,-no-undefined
+    WLD_LDFLAGS += -Wl,-no-undefined
 endif
 
 ifeq ($(ENABLE_DEBUG),1)
