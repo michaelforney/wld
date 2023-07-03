@@ -53,9 +53,6 @@ find_driver(int fd)
 	if (fstat(fd, &st) == -1)
 		return NULL;
 
-	if (getenv("WLD_DRM_DUMB"))
-		goto dumb;
-
 	n = snprintf(path, sizeof(path), "/sys/dev/char/%u:%u/device/", major(st.st_rdev), minor(st.st_rdev));
 	if (n + 6 >= sizeof(path))
 		return NULL;
@@ -64,7 +61,7 @@ find_driver(int fd)
 	strcpy(path_part, "vendor");
 	file = fopen(path, "r");
 	if (!file)
-		goto dumb;
+		return NULL;
 	fgets(id, sizeof id, file);
 	fclose(file);
 	vendor_id = strtoul(id, NULL, 0);
@@ -72,7 +69,7 @@ find_driver(int fd)
 	strcpy(path_part, "device");
 	file = fopen(path, "r");
 	if (!file)
-		goto dumb;
+		return NULL;
 	fgets(id, sizeof id, file);
 	fclose(file);
 	device_id = strtoul(id, NULL, 0);
@@ -83,12 +80,7 @@ find_driver(int fd)
 			return drivers[index];
 	}
 
-	DEBUG("No DRM driver supports device 0x%x:0x%x\n", vendor_id, device_id);
-
 	return NULL;
-
-dumb:
-	return &dumb_drm_driver;
 }
 
 EXPORT
@@ -96,11 +88,19 @@ struct wld_context *
 wld_drm_create_context(int fd)
 {
 	const struct drm_driver *driver;
+	struct wld_context *context;
 
-	if (!(driver = find_driver(fd)))
-		return NULL;
+	if (!getenv("WLD_DRM_DUMB")) {
+		driver = find_driver(fd);
+		if (driver) {
+			context = driver->create_context(fd);
+			if (context)
+				return context;
+		}
+	}
 
-	return driver->create_context(fd);
+	DEBUG("Falling back to dumb DRM driver\n");
+	return dumb_drm_driver.create_context(fd);
 }
 
 EXPORT
