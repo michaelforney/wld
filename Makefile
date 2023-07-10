@@ -18,6 +18,8 @@ WLD_LIB_LINK    := libwld.so
 WLD_LIB_SONAME  := $(WLD_LIB_LINK).$(VERSION_MAJOR)
 WLD_LIB         := $(WLD_LIB_LINK).$(VERSION)
 
+WLD_LDFLAGS     := -Wl,-soname,$(WLD_LIB_SONAME)
+
 TARGETS         := wld.pc
 CLEAN_FILES     :=
 
@@ -100,6 +102,13 @@ ifeq ($(shell uname),NetBSD)
     FINAL_CPPFLAGS += -D_NETBSD_SOURCE
 endif
 
+ifeq ($(shell uname),OpenBSD)
+    # Needed for 'major' macros
+    FINAL_CPPFLAGS += -D_BSD_SOURCE
+else
+    WLD_LDFLAGS += -Wl,-no-undefined
+endif
+
 ifeq ($(ENABLE_DEBUG),1)
     FINAL_CPPFLAGS += -DENABLE_DEBUG=1
     FINAL_CFLAGS += -g
@@ -155,7 +164,7 @@ libwld.a: $(WLD_STATIC_OBJECTS)
 	$(call quiet,AR) cr $@ $^
 
 $(WLD_LIB): $(WLD_SHARED_OBJECTS)
-	$(link) $(WLD_PACKAGE_LIBS) -shared -Wl,-soname,$(WLD_LIB_SONAME),-no-undefined
+	$(link) $(WLD_PACKAGE_LIBS) -shared $(WLD_LDFLAGS)
 
 $(WLD_LIB_SONAME) $(WLD_LIB_LINK): $(WLD_LIB)
 	$(call quiet,SYM,ln -sf) $< $@
