@@ -217,7 +217,7 @@ wld_font_text_extents_n(struct wld_font *font_base,
 
 	extents->advance = 0;
 
-	while ((ret = FcUtf8ToUcs4((FcChar8 *)text, &c, length) > 0) && c != '\0') {
+	while ((ret = FcUtf8ToUcs4((FcChar8 *)text, &c, length)) > 0 && c != '\0') {
 		length -= ret;
 		text += ret;
 		glyph_index = FT_Get_Char_Index(font->face, c);
