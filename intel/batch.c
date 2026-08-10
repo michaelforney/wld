@@ -41,6 +41,7 @@ static const struct intel_device_info device_info_hsw_gt3 = { .gen = 7 };
 static const struct intel_device_info device_info_bdw_gt1 = { .gen = 8 };
 static const struct intel_device_info device_info_bdw_gt2 = { .gen = 8 };
 static const struct intel_device_info device_info_bdw_gt3 = { .gen = 8 };
+static const struct intel_device_info device_info_bdw_rsvd = { .gen = 8 };
 static const struct intel_device_info device_info_chv = { .gen = 8 };
 static const struct intel_device_info device_info_skl_gt1 = { .gen = 9 };
 static const struct intel_device_info device_info_skl_gt2 = { .gen = 9 };
@@ -62,6 +63,11 @@ static const struct intel_device_info device_info_cnl_2x8 = { .gen = 10 };
 static const struct intel_device_info device_info_cnl_3x8 = { .gen = 10 };
 static const struct intel_device_info device_info_cnl_4x8 = { .gen = 10 };
 static const struct intel_device_info device_info_cnl_5x8 = { .gen = 10 };
+static const struct intel_device_info device_info_cnl = { .gen = 10 };
+static const struct intel_device_info device_info_icl = { .gen = 11 };
+static const struct intel_device_info device_info_ehl = { .gen = 11 };
+static const struct intel_device_info device_info_jpl = { .gen = 11 };
+static const struct intel_device_info device_info_gen12 = { .gen = 12 };
 
 static const struct intel_device_info *
 device_info(int device_id)
