@@ -34,6 +34,7 @@
 #include "pixman.h"
 
 #include <nouveau.h>
+#include <string.h>
 #include <sys/mman.h>
 
 enum nv_architecture {
@@ -74,6 +75,20 @@ struct nouveau_buffer {
 IMPL(nouveau_context, wld_context)
 IMPL(nouveau_renderer, wld_renderer)
 IMPL(nouveau_buffer, wld_buffer)
+
+static void
+pack_gray_row_to_mono(uint8_t *dst, const uint8_t *src, uint32_t width)
+{
+	uint32_t x, bytes_per_row;
+
+	bytes_per_row = (width + 7) / 8;
+	memset(dst, 0, bytes_per_row);
+
+	for (x = 0; x < width; ++x) {
+		if (src[x] >= 128)
+			dst[x / 8] |= 0x80 >> (x & 7);
+	}
+}
 
 /**** DRM driver ****/
 bool
@@ -594,22 +609,55 @@ renderer_draw_text(struct wld_renderer *base,
 		if (glyph->bitmap.width == 0 || glyph->bitmap.rows == 0)
 			goto advance;
 
-		count = (glyph->bitmap.pitch * glyph->bitmap.rows + 3) / 4;
+		if (glyph->bitmap.pixel_mode == FT_PIXEL_MODE_MONO) {
+			count = (glyph->bitmap.pitch * glyph->bitmap.rows + 3) / 4;
+		} else {
+			uint32_t bytes_per_row = (glyph->bitmap.width + 7) / 8;
+			count = (bytes_per_row * glyph->bitmap.rows + 3) / 4;
+		}
 
 		if (!ensure_space(renderer->pushbuf, 12 + count))
 			return;
 
-		nvc0_2d(renderer->pushbuf, G80_2D_SIFC_WIDTH, 10,
-		        /* Use the pitch instead of width to ensure the correct
-			 * alignment is used. */
-		        glyph->bitmap.pitch * 8, glyph->bitmap.rows,
-		        0, 1, 0, 1,
-		        0, origin_x + glyph->x, 0, y + glyph->y);
-		nv_add_dword(renderer->pushbuf,
-		             nvc0_command(GF100_COMMAND_TYPE_NON_INCREASING,
-		                          GF100_SUBCHANNEL_2D,
-		                          G80_2D_SIFC_DATA, count));
-		nv_add_data(renderer->pushbuf, glyph->bitmap.buffer, count);
+		if (glyph->bitmap.pixel_mode == FT_PIXEL_MODE_MONO) {
+			nvc0_2d(renderer->pushbuf, G80_2D_SIFC_WIDTH, 10,
+			        /* Use the pitch instead of width to ensure the correct
+				 * alignment is used. */
+			        glyph->bitmap.pitch * 8, glyph->bitmap.rows,
+			        0, 1, 0, 1,
+			        0, origin_x + glyph->x, 0, y + glyph->y);
+			nv_add_dword(renderer->pushbuf,
+			             nvc0_command(GF100_COMMAND_TYPE_NON_INCREASING,
+			                          GF100_SUBCHANNEL_2D,
+			                          G80_2D_SIFC_DATA, count));
+			nv_add_data(renderer->pushbuf, glyph->bitmap.buffer, count);
+		} else {
+			uint32_t bytes_per_row = (glyph->bitmap.width + 7) / 8;
+			uint32_t row;
+			uint8_t *mono = malloc(bytes_per_row * glyph->bitmap.rows);
+			uint8_t *dst = mono;
+
+			if (!mono)
+				return;
+
+			for (row = 0; row < glyph->bitmap.rows; ++row) {
+				const uint8_t *src = glyph->bitmap.buffer +
+				                     (row * glyph->bitmap.pitch);
+				pack_gray_row_to_mono(dst, src, glyph->bitmap.width);
+				dst += bytes_per_row;
+			}
+
+			nvc0_2d(renderer->pushbuf, G80_2D_SIFC_WIDTH, 10,
+			        bytes_per_row * 8, glyph->bitmap.rows,
+			        0, 1, 0, 1,
+			        0, origin_x + glyph->x, 0, y + glyph->y);
+			nv_add_dword(renderer->pushbuf,
+			             nvc0_command(GF100_COMMAND_TYPE_NON_INCREASING,
+			                          GF100_SUBCHANNEL_2D,
+			                          G80_2D_SIFC_DATA, count));
+			nv_add_data(renderer->pushbuf, mono, count);
+			free(mono);
+		}
 
 	advance:
 		origin_x += glyph->advance;

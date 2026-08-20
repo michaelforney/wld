@@ -24,6 +24,8 @@
 #include "pixman.h"
 #include "wld-private.h"
 
+#include <string.h>
+
 #define PIXMAN_COLOR(c)                              \
 	{                                            \
 		.alpha = ((c >> 24) & 0xff) * 0x101, \
@@ -344,6 +346,58 @@ reverse(uint8_t byte)
 	return byte;
 }
 
+static pixman_image_t *
+glyph_bitmap_to_pixman_image(struct glyph *glyph)
+{
+	FT_Bitmap *bitmap = &glyph->bitmap;
+	pixman_image_t *image;
+	uint8_t *src, *dst;
+	uint32_t row, byte_index, bytes_per_row, pitch;
+
+	switch (bitmap->pixel_mode) {
+	case FT_PIXEL_MODE_MONO:
+		image = pixman_image_create_bits(PIXMAN_a1, bitmap->width,
+		                                 bitmap->rows, NULL, bitmap->pitch);
+		if (!image)
+			return NULL;
+
+		pitch = pixman_image_get_stride(image);
+		bytes_per_row = (bitmap->width + 7) / 8;
+		src = bitmap->buffer;
+		dst = (uint8_t *)pixman_image_get_data(image);
+
+		for (row = 0; row < bitmap->rows; ++row) {
+			/* Pixman's A1 format expects the bits in the opposite order
+			 * that Freetype gives us. */
+			for (byte_index = 0; byte_index < bytes_per_row; ++byte_index)
+				dst[byte_index] = reverse(src[byte_index]);
+
+			dst += pitch;
+			src += bitmap->pitch;
+		}
+		return image;
+	case FT_PIXEL_MODE_GRAY:
+		image = pixman_image_create_bits(PIXMAN_a8, bitmap->width,
+		                                 bitmap->rows, NULL, 0);
+		if (!image)
+			return NULL;
+
+		pitch = pixman_image_get_stride(image);
+		src = bitmap->buffer;
+		dst = (uint8_t *)pixman_image_get_data(image);
+
+		for (row = 0; row < bitmap->rows; ++row) {
+			memset(dst, 0, pitch);
+			memcpy(dst, src, bitmap->width);
+			dst += pitch;
+			src += bitmap->pitch;
+		}
+		return image;
+	default:
+		return NULL;
+	}
+}
+
 void
 renderer_draw_text(struct wld_renderer *base,
                    struct font *font, uint32_t color,
@@ -385,31 +439,11 @@ renderer_draw_text(struct wld_renderer *base,
 		/* If we don't have the glyph in our cache, do some conversions to make
 		 * pixman happy, and then insert it. */
 		if (!glyphs[index].glyph) {
-			uint8_t *src, *dst;
-			uint32_t row, byte_index, bytes_per_row, pitch;
 			pixman_image_t *image;
-			FT_Bitmap *bitmap;
-
-			bitmap = &glyph->bitmap;
-			image = pixman_image_create_bits(PIXMAN_a1, bitmap->width, bitmap->rows, NULL, bitmap->pitch);
+			image = glyph_bitmap_to_pixman_image(glyph);
 
 			if (!image)
 				goto advance;
-
-			pitch = pixman_image_get_stride(image);
-			bytes_per_row = (bitmap->width + 7) / 8;
-			src = bitmap->buffer;
-			dst = (uint8_t *)pixman_image_get_data(image);
-
-			for (row = 0; row < bitmap->rows; ++row) {
-				/* Pixman's A1 format expects the bits in the opposite order
-				 * that Freetype gives us. Sigh... */
-				for (byte_index = 0; byte_index < bytes_per_row; ++byte_index)
-					dst[byte_index] = reverse(src[byte_index]);
-
-				dst += pitch;
-				src += bitmap->pitch;
-			}
 
 			/* Insert the glyph into the cache. */
 			pixman_glyph_cache_freeze(renderer->glyph_cache);

@@ -172,7 +172,8 @@ font_ensure_glyph(struct font *font, FT_UInt glyph_index)
 			if (!glyph)
 				return false;
 
-			FT_Load_Glyph(font->face, glyph_index, FT_LOAD_RENDER | FT_LOAD_MONOCHROME | FT_LOAD_TARGET_MONO);
+			FT_Load_Glyph(font->face, glyph_index,
+			              FT_LOAD_RENDER | FT_LOAD_TARGET_NORMAL);
 
 			FT_Bitmap_New(&glyph->bitmap);
 

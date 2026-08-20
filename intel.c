@@ -29,6 +29,7 @@
 
 #include <i915_drm.h>
 #include <intel_bufmgr.h>
+#include <string.h>
 #include <unistd.h>
 
 struct intel_context {
@@ -56,6 +57,20 @@ struct intel_buffer {
 IMPL(intel_context, wld_context)
 IMPL(intel_renderer, wld_renderer)
 IMPL(intel_buffer, wld_buffer)
+
+static void
+pack_gray_row_to_mono(uint8_t *dst, const uint8_t *src, uint32_t width)
+{
+	uint32_t x, bytes_per_row;
+
+	bytes_per_row = (width + 7) / 8;
+	memset(dst, 0, bytes_per_row);
+
+	for (x = 0; x < width; ++x) {
+		if (src[x] >= 128)
+			dst[x / 8] |= 0x80 >> (x & 7);
+	}
+}
 
 /**** DRM driver ****/
 bool
@@ -315,8 +330,15 @@ renderer_draw_text(struct wld_renderer *base,
 
 		/* XY_TEXT_IMMEDIATE requires a pitch with no extra bytes */
 		for (row = 0; row < glyph->bitmap.rows; ++row) {
-			memcpy(byte, glyph->bitmap.buffer + (row * glyph->bitmap.pitch),
-			       (glyph->bitmap.width + 7) / 8);
+			const uint8_t *src = glyph->bitmap.buffer +
+			                     (row * glyph->bitmap.pitch);
+			uint32_t bytes_per_row = (glyph->bitmap.width + 7) / 8;
+
+			if (glyph->bitmap.pixel_mode == FT_PIXEL_MODE_MONO) {
+				memcpy(byte, src, bytes_per_row);
+			} else {
+				pack_gray_row_to_mono(byte, src, glyph->bitmap.width);
+			}
 			byte += (glyph->bitmap.width + 7) / 8;
 		}
 
