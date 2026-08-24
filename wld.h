@@ -249,6 +249,12 @@ void wld_copy_rectangle(struct wld_renderer *renderer,
                         int32_t src_x, int32_t src_y,
                         uint32_t width, uint32_t height);
 
+void wld_draw_circle(struct wld_renderer *renderer, uint32_t color,
+                     int32_t x1, int32_t y1, uint32_t r, bool fill);
+
+void wld_draw_line(struct wld_renderer *renderer, uint32_t color,
+                   int32_t x1, int32_t y1, int32_t x2, int32_t y2);
+
 void wld_copy_region(struct wld_renderer *renderer,
                      struct wld_buffer *buffer,
                      int32_t dst_x, int32_t dst_y, pixman_region32_t *region);

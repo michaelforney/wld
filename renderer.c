@@ -139,6 +139,101 @@ wld_copy_region(struct wld_renderer *renderer,
 	                            dst_x, dst_y, region);
 }
 
+static void
+circle_points(struct wld_renderer *renderer, uint32_t color, 
+              int32_t x1, int32_t y1, 
+              int32_t x2, int32_t y2, bool fill)
+{
+	if (fill) {
+		renderer->impl->fill_rectangle(renderer, color, x1-x2, y1+y2,
+				                       2*x2+1, 1);
+		renderer->impl->fill_rectangle(renderer, color, x1-x2, y1-y2,
+				                       2*x2+1, 1);
+		renderer->impl->fill_rectangle(renderer, color, x1-y2, y1+x2,
+				                       2*y2+1, 1);
+		renderer->impl->fill_rectangle(renderer, color, x1-y2, y1-x2,
+				                       2*y2+1, 1);
+	} else {
+		renderer->impl->fill_rectangle(renderer, color, x1+x2, y1+y2, 1, 1);
+		renderer->impl->fill_rectangle(renderer, color, x1-x2, y1+y2, 1, 1);
+		renderer->impl->fill_rectangle(renderer, color, x1+x2, y1-y2, 1, 1);
+		renderer->impl->fill_rectangle(renderer, color, x1-x2, y1-y2, 1, 1);
+		renderer->impl->fill_rectangle(renderer, color, x1+y2, y1+x2, 1, 1);
+		renderer->impl->fill_rectangle(renderer, color, x1-y2, y1+x2, 1, 1);
+		renderer->impl->fill_rectangle(renderer, color, x1+y2, y1-x2, 1, 1);
+		renderer->impl->fill_rectangle(renderer, color, x1-y2, y1-x2, 1, 1);
+	}
+}
+
+EXPORT
+void
+wld_draw_circle(struct wld_renderer *renderer, uint32_t color,
+                int32_t x1, int32_t y1, 
+                uint32_t r, bool fill)
+{
+	int32_t x2 = 0, y2 = r;
+	int32_t d = 3 - (2*r);
+
+	circle_points(renderer, color, x1, y1, x2, y2, fill);
+
+	while (y2 >= x2) {
+		if (d > 0) {
+			y2--;
+			d = d + 4*(x2-y2) + 10;
+		}
+		else
+			d = d + 4*x2 + 6;
+
+		x2++;
+
+		circle_points(renderer, color, x1, y1, x2, y2, fill);
+	}
+}
+
+
+EXPORT
+void
+wld_draw_line(struct wld_renderer *renderer, uint32_t color,
+              int32_t x1, int32_t y1,
+              int32_t x2, int32_t y2)
+{
+	int32_t dx = abs(x2-x1),  sx = x1 < x2 ? 1 : -1;
+	int32_t dy = -abs(y2-y1), sy = y1 < y2 ? 1 : -1;
+	int32_t err = dx + dy, e2;
+
+	/* just use fill_rectangle for purely vertical and horizontal line */
+	if (y1 == y2) {
+		int32_t lx = sx > 0 ? x1 : x2;
+		renderer->impl->fill_rectangle(renderer, color, lx, y1, dx + 1, 1);
+		return;
+	}
+
+	if (x1 == x2) {
+		int32_t ly = sy > 0 ? y1 : y2;
+		renderer->impl->fill_rectangle(renderer, color, x1, ly, 1, -dy + 1);
+		return;
+	}
+
+	while (true) {
+		renderer->impl->fill_rectangle(renderer, color, x1, y1, 1, 1);
+
+		if (x1 == x2 && y1 == y2)
+			break;
+
+		e2 = 2 * err;
+
+		if (e2 >= dy) {
+			err += dy;
+			x1 += sx;
+		}
+
+		if (e2 <= dx) {
+			err += dx;
+			y1 += sy;
+		}
+	}
+}
+
 EXPORT
 void
 wld_draw_text(struct wld_renderer *renderer,

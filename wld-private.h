@@ -108,6 +108,10 @@ struct wld_renderer_impl {
 	void (*copy_region)(struct wld_renderer *renderer, struct buffer *src,
 	                    int32_t dst_x, int32_t dst_y,
 	                    pixman_region32_t *region);
+	void (*draw_circle)(struct wld_renderer *renderer, uint32_t color,
+                        int32_t x1, int32_t y1, uint32_t r, bool fill);
+	void (*draw_line)(struct wld_renderer *renderer, uint32_t color,
+                      int32_t x1, int32_t y1, int32_t x2, int32_t y2);
 	void (*draw_text)(struct wld_renderer *renderer,
 	                  struct font *font, uint32_t color,
 	                  int32_t x, int32_t y, const char *text, uint32_t length,
